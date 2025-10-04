@@ -1,0 +1,33 @@
+const mongoose = require('mongoose');
+
+const postSchema = new mongoose.Schema({
+  content: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  create_at: {
+    type: Date,
+    default: Date.now
+  },
+  status: {
+    type: String,
+    required: true,
+    enum: ['draft', 'published', 'archived'],
+    default: 'published'
+  },
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  class_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class',
+    required: true
+  }
+}, {
+  timestamps: true
+});
+
+module.exports = mongoose.model('Post', postSchema);
