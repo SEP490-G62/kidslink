@@ -7,11 +7,13 @@ const {
   loginValidators,
   register,
   login,
-  me
+  forgotPassword,
+  forgotPasswordValidators
 } = require('../controllers/authController');
 
 router.post('/register', registerValidators, register);
 router.post('/login', loginValidators, login);
+router.post('/forgot-password', forgotPasswordValidators, forgotPassword);
 
 
 module.exports = router;
