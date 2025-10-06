@@ -28,3 +28,4 @@ const dailyReportSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('DailyReport', dailyReportSchema);
+

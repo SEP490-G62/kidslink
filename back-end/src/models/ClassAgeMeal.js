@@ -20,3 +20,4 @@ const classAgeMealSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('ClassAgeMeal', classAgeMealSchema);
+

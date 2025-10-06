@@ -20,16 +20,7 @@ const healthCareStaffSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  phone_number: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  email: {
-    type: String,
-    required: true,
-    trim: true
-  },
+
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -41,3 +32,4 @@ const healthCareStaffSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('HealthCareStaff', healthCareStaffSchema);
+

@@ -19,3 +19,4 @@ const pickupStudentSchema = new mongoose.Schema({
 pickupStudentSchema.index({ pickup_id: 1, student_id: 1 }, { unique: true });
 
 module.exports = mongoose.model('PickupStudent', pickupStudentSchema);
+

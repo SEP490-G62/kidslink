@@ -80,3 +80,4 @@ await newUser.save();
 4. Các junction tables có compound index để tránh duplicate
 5. Sử dụng ObjectId để liên kết giữa các collections
 6. Các enum values được định nghĩa rõ ràng cho các trường có giá trị cố định
+

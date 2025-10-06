@@ -19,3 +19,4 @@ const conversationParticipantSchema = new mongoose.Schema({
 conversationParticipantSchema.index({ user_id: 1, conversation_id: 1 }, { unique: true });
 
 module.exports = mongoose.model('ConversationParticipant', conversationParticipantSchema);
+

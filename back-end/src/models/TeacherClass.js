@@ -24,3 +24,4 @@ const teacherClassSchema = new mongoose.Schema({
 teacherClassSchema.index({ teacher_id: 1, class_id: 1 }, { unique: true });
 
 module.exports = mongoose.model('TeacherClass', teacherClassSchema);
+

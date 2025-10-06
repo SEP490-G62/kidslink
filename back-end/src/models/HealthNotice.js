@@ -40,3 +40,4 @@ const healthNoticeSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('HealthNotice', healthNoticeSchema);
+

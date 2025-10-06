@@ -19,3 +19,4 @@ const parentStudentSchema = new mongoose.Schema({
 parentStudentSchema.index({ parent_id: 1, student_id: 1 }, { unique: true });
 
 module.exports = mongoose.model('ParentStudent', parentStudentSchema);
+

@@ -29,3 +29,4 @@ const classFeeSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('ClassFee', classFeeSchema);
+

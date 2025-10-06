@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+const connectDB = require('./src/config/database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,6 +36,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static files
 app.use('/uploads', express.static('uploads'));
 
+// Kết nối Database
+connectDB();
+
 // Routes
 app.get('/', (req, res) => {
   res.json({
@@ -54,7 +58,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes sẽ được thêm vào đây
-// app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', require('./src/routes/auth'));
 // app.use('/api/users', require('./routes/users'));
 // app.use('/api/kids', require('./routes/kids'));
 

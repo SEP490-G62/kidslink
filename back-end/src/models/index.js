@@ -49,3 +49,4 @@ module.exports = {
   Pickup: require('./Pickup'),
   PickupStudent: require('./PickupStudent')
 };
+
