@@ -10,6 +10,11 @@ const parentStudentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Student',
     required: true
+  },
+  relationship: {
+    type: String,
+    required: true,
+    trim: true
   }
 }, {
   timestamps: true
@@ -19,4 +24,7 @@ const parentStudentSchema = new mongoose.Schema({
 parentStudentSchema.index({ parent_id: 1, student_id: 1 }, { unique: true });
 
 module.exports = mongoose.model('ParentStudent', parentStudentSchema);
+
+
+
 

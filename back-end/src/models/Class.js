@@ -22,10 +22,21 @@ const classSchema = new mongoose.Schema({
     ref: 'ClassAge',
     required: true
   },
-
+  teacher_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Teacher',
+    required: true
+  },
+  teacher_id2: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Teacher'
+  }
 }, {
   timestamps: true
 });
 
 module.exports = mongoose.model('Class', classSchema);
+
+
+
 

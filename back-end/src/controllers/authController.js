@@ -22,7 +22,14 @@ const registerValidators = [
   body('password').isString().isLength({ min: 6 }).withMessage('password tối thiểu 6 ký tự'),
   body('role').isIn(allowedRoles).withMessage('role không hợp lệ'),
   body('email').isString().trim().notEmpty().withMessage('email là bắt buộc').bail().isEmail().withMessage('email không hợp lệ'),
-  body('phone_number').isString().trim().notEmpty().withMessage('phone_number là bắt buộc'),
+  body('phone_number')
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage('phone_number là bắt buộc')
+    .bail()
+    .matches(/^(\+84|0)(3|5|7|8|9)\d{8}$/)
+    .withMessage('phone_number không hợp lệ (số di động Việt Nam)'),
   body('avatar_url').optional().isURL().withMessage('avatar_url phải là URL hợp lệ')
 ];
 
@@ -30,6 +37,54 @@ const loginValidators = [
   body('username').isString().trim().notEmpty().withMessage('username là bắt buộc'),
   body('password').isString().notEmpty().withMessage('password là bắt buộc')
 ];
+
+// Forgot password validator
+const forgotPasswordValidators = [
+  body('email').isString().trim().notEmpty().withMessage('email là bắt buộc').bail().isEmail().withMessage('email không hợp lệ')
+];
+
+function generateRandomPassword(length = 10) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+async function forgotPassword(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng với email này' });
+    }
+
+    const newPassword = generateRandomPassword(10);
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(newPassword, salt);
+
+    user.password_hash = password_hash;
+    await user.save();
+
+    const { sendMail } = require('../utils/mailer');
+    await sendMail({
+      to: email,
+      subject: 'KidsLink - Mật khẩu mới của bạn',
+      text: `Xin chào ${user.full_name},\n\nMật khẩu mới: ${newPassword}\nVui lòng đăng nhập và đổi mật khẩu ngay sau khi đăng nhập.`,
+      html: `<p>Xin chào <strong>${user.full_name}</strong>,</p><p>Mật khẩu mới: <strong>${newPassword}</strong></p><p>Vui lòng đăng nhập và đổi mật khẩu ngay sau khi đăng nhập.</p>`
+    });
+
+    return res.json({ message: 'Đã gửi mật khẩu mới tới email của bạn' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Không thể xử lý yêu cầu', message: err.message });
+  }
+}
 
 async function register(req, res) {
   const errors = validationResult(req);
@@ -172,8 +227,10 @@ async function login(req, res) {
 module.exports = {
   registerValidators,
   loginValidators,
+  forgotPasswordValidators,
   register,
   login,
+  forgotPassword,
 };
 
 

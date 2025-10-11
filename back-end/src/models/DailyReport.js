@@ -22,10 +22,23 @@ const dailyReportSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Student',
     required: true
+  },
+  teacher_checkin_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Teacher',
+    required: true
+  },
+  teacher_checkout_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Teacher',
+    required: true
   }
 }, {
   timestamps: true
 });
 
 module.exports = mongoose.model('DailyReport', dailyReportSchema);
+
+
+
 

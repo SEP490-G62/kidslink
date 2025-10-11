@@ -8,6 +8,7 @@ const postSchema = new mongoose.Schema({
   },
   create_at: {
     type: Date,
+    required: true,
     default: Date.now
   },
   status: {
@@ -31,4 +32,7 @@ const postSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Post', postSchema);
+
+
+
 

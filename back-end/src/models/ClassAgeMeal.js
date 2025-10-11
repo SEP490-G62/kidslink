@@ -11,8 +11,9 @@ const classAgeMealSchema = new mongoose.Schema({
     ref: 'Meal',
     required: true
   },
-  meal_date: {
-    type: Date,
+  weekday_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'WeekDay',
     required: true
   }
 }, {
@@ -20,4 +21,7 @@ const classAgeMealSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('ClassAgeMeal', classAgeMealSchema);
+
+
+
 

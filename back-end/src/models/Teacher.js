@@ -20,7 +20,6 @@ const teacherSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -32,4 +31,7 @@ const teacherSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Teacher', teacherSchema);
+
+
+
 

@@ -8,16 +8,15 @@ const dishSchema = new mongoose.Schema({
   },
   description: {
     type: String,
+    required: true,
     trim: true
-  },
-  class_age_meal_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'ClassAgeMeal',
-    required: true
   }
 }, {
   timestamps: true
 });
 
 module.exports = mongoose.model('Dish', dishSchema);
+
+
+
 

@@ -13,13 +13,11 @@ const schoolSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: true,
     unique: true,
     trim: true
   },
   email: {
     type: String,
-    required: true,
     unique: true,
     trim: true
   },
@@ -34,7 +32,6 @@ const schoolSchema = new mongoose.Schema({
   },
   qr_data: {
     type: String,
-    required: true,
     unique: true
   }
 }, {
