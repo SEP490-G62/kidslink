@@ -12,7 +12,7 @@ const feeSchema = new mongoose.Schema({
     trim: true
   },
   amount: {
-    type: Number,
+    type: mongoose.Schema.Types.Decimal128,
     required: true
   }
 }, {
@@ -20,4 +20,7 @@ const feeSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Fee', feeSchema);
+
+
+
 

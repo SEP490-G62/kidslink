@@ -19,10 +19,18 @@ const pickupSchema = new mongoose.Schema({
   avatar_url: {
     type: String,
     required: true
+  },
+  phone: {
+    type: String,
+    required: true,
+    trim: true
   }
 }, {
   timestamps: true
 });
 
 module.exports = mongoose.model('Pickup', pickupSchema);
+
+
+
 

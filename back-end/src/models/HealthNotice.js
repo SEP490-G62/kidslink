@@ -21,8 +21,8 @@ const healthNoticeSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  notice_date: {
-    type: Date,
+  notice_time: {
+    type: String,
     required: true
   },
   note: {
@@ -40,4 +40,7 @@ const healthNoticeSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('HealthNotice', healthNoticeSchema);
+
+
+
 
