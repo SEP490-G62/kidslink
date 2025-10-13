@@ -59,7 +59,7 @@ app.get('/health', (req, res) => {
 
 // API routes sẽ được thêm vào đây
 app.use('/api/auth', require('./src/routes/auth'));
-// app.use('/api/users', require('./routes/users'));
+app.use('/api/users', require('./src/routes/user'));
 // app.use('/api/kids', require('./routes/kids'));
 
 // 404 handler
