@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const paymentSchema = new mongoose.Schema({
-  payment_date: {
-    type: Date,
+  payment_time: {
+    type: String,
     required: true
   },
   payment_method: {
@@ -10,14 +10,8 @@ const paymentSchema = new mongoose.Schema({
     required: true,
     enum: [1, 2, 3, 4] // 1: cash, 2: bank transfer, 3: credit card, 4: other
   },
-  status: {
-    type: Number,
-    required: true,
-    default: 1 // 1: pending, 2: completed, 3: failed, 4: cancelled
-  },
-  invoice_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Invoice',
+  total_amount: {
+    type: mongoose.Schema.Types.Decimal128,
     required: true
   }
 }, {
@@ -25,4 +19,7 @@ const paymentSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Payment', paymentSchema);
+
+
+
 

@@ -12,7 +12,8 @@ const classFeeSchema = new mongoose.Schema({
     required: true
   },
   due_date: {
-    type: Date
+    type: Date,
+    required: true
   },
   note: {
     type: String,
@@ -29,4 +30,7 @@ const classFeeSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('ClassFee', classFeeSchema);
+
+
+
 

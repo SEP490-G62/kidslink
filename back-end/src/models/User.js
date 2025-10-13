@@ -8,7 +8,6 @@ const userSchema = new mongoose.Schema({
   },
   username: {
     type: String,
-    required: true,
     unique: true,
     trim: true
   },
@@ -25,20 +24,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  phone_number: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  email: {
-    type: String,
-    required: true,
-    trim: true
-  },
   status: {
     type: Number,
     required: true,
     default: 1 // 1: active, 0: inactive
+  },
+  email: {
+    type: String,
+    trim: true
+  },
+  phone_number: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true

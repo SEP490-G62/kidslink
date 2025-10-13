@@ -6,11 +6,6 @@ const conversationSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  class_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Class',
-    required: true
-  },
   create_at: {
     type: Date,
     required: true,
@@ -20,6 +15,11 @@ const conversationSchema = new mongoose.Schema({
     type: Date,
     required: true,
     default: Date.now
+  },
+  class_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class',
+    required: true
   }
 }, {
   timestamps: true

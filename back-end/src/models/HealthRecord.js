@@ -6,11 +6,11 @@ const healthRecordSchema = new mongoose.Schema({
     required: true
   },
   height_cm: {
-    type: Number,
+    type: mongoose.Schema.Types.Decimal128,
     required: true
   },
   weight_kg: {
-    type: Number,
+    type: mongoose.Schema.Types.Decimal128,
     required: true
   },
   note: {
@@ -33,4 +33,7 @@ const healthRecordSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('HealthRecord', healthRecordSchema);
+
+
+
 

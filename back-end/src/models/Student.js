@@ -13,7 +13,7 @@ const studentSchema = new mongoose.Schema({
   gender: {
     type: Number,
     required: true,
-    enum: [0, 1] // 0: female, 1: male
+    enum: [0, 1] // 0: male, 1: female
   },
   avatar_url: {
     type: String,
@@ -29,11 +29,7 @@ const studentSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  discount: {
-    type: Number,
-    required: true,
-    default: 0
-  }
+
 }, {
   timestamps: true
 });

@@ -20,3 +20,6 @@ conversationParticipantSchema.index({ user_id: 1, conversation_id: 1 }, { unique
 
 module.exports = mongoose.model('ConversationParticipant', conversationParticipantSchema);
 
+
+
+

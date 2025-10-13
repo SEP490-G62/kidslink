@@ -16,11 +16,13 @@ module.exports = {
   Activity: require('./Activity'),
   Calendar: require('./Calendar'),
   Slot: require('./Slot'),
+  WeekDay: require('./WeekDay'),
   
   // Meal models
   Meal: require('./Meal'),
   ClassAgeMeal: require('./ClassAgeMeal'),
   Dish: require('./Dish'),
+  DishesClassAgeMeal: require('./DishesClassAgeMeal'),
   
   // Communication models
   Conversation: require('./Conversation'),
@@ -49,4 +51,7 @@ module.exports = {
   Pickup: require('./Pickup'),
   PickupStudent: require('./PickupStudent')
 };
+
+
+
 
