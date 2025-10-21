@@ -41,11 +41,15 @@ import Billing from "layouts/billing";
 import VirtualReality from "layouts/virtual-reality";
 import RTL from "layouts/rtl";
 import Profile from "layouts/profile";
+import TeacherHome from "layouts/teacher";
 import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
+import ForgotPassword from "layouts/authentication/forgot-password";
+import Unauthorized from "layouts/authentication/unauthorized";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
+import ProtectedRoute from "components/ProtectedRoute";
 
 const routes = [
   {
@@ -62,7 +66,15 @@ const routes = [
     key: "dashboard",
     route: "/dashboard",
     icon: <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-tv-2" />,
-    component: <Dashboard />,
+    component: <ProtectedRoute><Dashboard /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Teacher Dashboard",
+    key: "teacher-dashboard",
+    route: "/teacher",
+    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-books" />,
+    component: <ProtectedRoute requiredRoles={['teacher']}><TeacherHome /></ProtectedRoute>,
   },
   {
     type: "route",
@@ -105,7 +117,7 @@ const routes = [
     key: "profile",
     route: "/profile",
     icon: <ArgonBox component="i" color="dark" fontSize="14px" className="ni ni-single-02" />,
-    component: <Profile />,
+    component: <ProtectedRoute><Profile /></ProtectedRoute>,
   },
   {
     type: "route",
@@ -124,6 +136,22 @@ const routes = [
     route: "/authentication/sign-up",
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-collection" />,
     component: <SignUp />,
+  },
+  {
+    type: "route",
+    name: "Forgot Password",
+    key: "forgot-password",
+    route: "/authentication/forgot-password",
+    icon: <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-key-25" />,
+    component: <ForgotPassword />,
+  },
+  {
+    type: "route",
+    name: "Unauthorized",
+    key: "unauthorized",
+    route: "/unauthorized",
+    icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-lock-circle-open" />,
+    component: <Unauthorized />,
   },
 ];
 

@@ -115,9 +115,7 @@ function Landing() {
             <ArgonButton component={Link} to="/authentication/sign-in" color="info" size="large">
               Đăng nhập
             </ArgonButton>
-            <ArgonButton component={Link} to="/authentication/sign-up" color="secondary" variant="outlined" size="large">
-              Đăng ký dùng thử
-            </ArgonButton>
+
           </ArgonBox>
         </Container>
       </ArgonBox>
@@ -458,15 +456,13 @@ function Landing() {
             Sẵn sàng chuyên nghiệp hóa vận hành mầm non?
           </ArgonTypography>
           <ArgonTypography variant="body1" color="text" mb={3}>
-            Đăng nhập để bắt đầu, hoặc đăng ký dùng thử miễn phí.
+            Đăng nhập để bắt đầu
           </ArgonTypography>
           <ArgonBox display="flex" justifyContent="center" gap={2}>
             <ArgonButton component={Link} to="/authentication/sign-in" color="info">
               Đăng nhập
             </ArgonButton>
-            <ArgonButton component={Link} to="/authentication/sign-up" color="success" variant="gradient">
-              Đăng ký dùng thử
-            </ArgonButton>
+
           </ArgonBox>
         </Container>
       </ArgonBox>

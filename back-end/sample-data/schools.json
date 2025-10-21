@@ -1,0 +1,19 @@
+[
+  {
+    "_id": { "$oid": "6710a0000000000000000100" },
+    "school_name": "Mầm non Trường A",
+    "address": "123 Đường ABC, Quận 1, TP.HCM",
+    "phone": "+84 28 1234 5678",
+    "email": "contact@truonga.edu.vn",
+    "logo_url": "https://res.cloudinary.com/demo/image/upload/v1/logo-truong-a.png",
+    "status": 1,
+    "qr_data": "SCHOOL-A-QR-001",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  }
+]
+
+
+
+
+

@@ -1,0 +1,46 @@
+[
+  {
+    "_id": { "$oid": "6710a0000000000000000001" },
+    "full_name": "Admin Trường A",
+    "username": "admin.truonga",
+    "password_hash": "$2b$10$examplehashadmin",
+    "role": "school_admin",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-admin.png",
+    "status": 1,
+    "email": "admin@truonga.edu.vn",
+    "phone_number": "+84 900 000 001",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000002" },
+    "full_name": "Giáo viên Nguyễn Văn B",
+    "username": "teacher.b",
+    "password_hash": "$2b$10$examplehashteacher",
+    "role": "teacher",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-teacher.png",
+    "status": 1,
+    "email": "gv.b@truonga.edu.vn",
+    "phone_number": "+84 900 000 002",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000003" },
+    "full_name": "Phụ huynh Trần C",
+    "username": "parent.c",
+    "password_hash": "$2b$10$examplehashparent",
+    "role": "parent",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-parent.png",
+    "status": 1,
+    "email": "ph.c@example.com",
+    "phone_number": "+84 900 000 003",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  }
+]
+
+
+
+
+
