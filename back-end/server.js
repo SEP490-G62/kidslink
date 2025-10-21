@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+const router = require("./src/routes/index.js");
 const connectDB = require('./src/config/database');
 
 const app = express();
@@ -57,9 +58,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes sẽ được thêm vào đây
-app.use('/api/auth', require('./src/routes/auth'));
-app.use('/api/users', require('./src/routes/user'));
+// API routes
+app.use("/", router);
 // app.use('/api/kids', require('./routes/kids'));
 
 // 404 handler
