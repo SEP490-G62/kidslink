@@ -316,15 +316,53 @@ const getComments = async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
-    // Lấy replies cho mỗi comment
+    // Lấy replies cho mỗi comment (bao gồm nested replies)
     for (let comment of comments) {
       const replies = await PostComment.find({ parent_comment_id: comment._id })
         .populate('user_id', 'full_name username avatar_url role')
         .sort({ create_at: 1 })
-        .limit(5); // Giới hạn 5 replies để tránh quá tải
+        .limit(10);
       
-      comment.replies = replies;
+      // Fetch nested replies cho mỗi reply
+      for (let reply of replies) {
+        const nestedReplies = await PostComment.find({ parent_comment_id: reply._id })
+          .populate('user_id', 'full_name username avatar_url role')
+          .sort({ create_at: 1 })
+          .limit(5); // Limit nested replies
+        
+        // Convert reply to plain object và thêm nested replies
+        const replyObj = reply.toObject();
+        replyObj.replies = nestedReplies;
+        
+        // Thay thế reply trong array
+        const replyIndex = replies.findIndex(r => r._id.toString() === reply._id.toString());
+        if (replyIndex !== -1) {
+          replies[replyIndex] = replyObj;
+        }
+      }
+      
+      // Convert to plain object để có thể thêm replies
+      const commentObj = comment.toObject();
+      commentObj.replies = replies;
+      
+      // Thay thế comment trong array
+      const commentIndex = comments.findIndex(c => c._id.toString() === comment._id.toString());
+      if (commentIndex !== -1) {
+        comments[commentIndex] = commentObj;
+      }
     }
+
+    // Debug log để kiểm tra structure
+    console.log('Backend comments structure:', comments.map(c => ({
+      id: c._id,
+      content: c.contents,
+      repliesCount: c.replies ? c.replies.length : 0,
+      nestedReplies: c.replies ? c.replies.map(r => ({
+        id: r._id,
+        content: r.contents,
+        nestedCount: r.replies ? r.replies.length : 0
+      })) : []
+    })));
 
     const totalComments = await PostComment.countDocuments({ 
       post_id: postId,
