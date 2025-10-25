@@ -8,10 +8,78 @@
     "class_id": { "$oid": "6710a0000000000000000500" },
     "createdAt": { "$date": "2024-09-05T08:00:00.000Z" },
     "updatedAt": { "$date": "2024-09-05T08:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000901" },
+    "content": "Thông báo chung của trường về lịch nghỉ Tết Nguyên đán 2025. Trường sẽ nghỉ từ ngày 28/1/2025 đến hết ngày 5/2/2025. Các phụ huynh vui lòng chuẩn bị cho con em mình.",
+    "create_at": { "$date": "2024-12-15T09:00:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000001" },
+    "class_id": { "$oid": "6710a0000000000000000500" },
+    "createdAt": { "$date": "2024-12-15T09:00:00.000Z" },
+    "updatedAt": { "$date": "2024-12-15T09:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000902" },
+    "content": "Chia sẻ kinh nghiệm nuôi dạy con: Tôi muốn chia sẻ với các phụ huynh khác về cách giúp con tập trung học tập ở nhà. Con tôi đã có tiến bộ rõ rệt sau khi áp dụng phương pháp Pomodoro - học 25 phút, nghỉ 5 phút.",
+    "create_at": { "$date": "2024-12-14T20:30:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000003" },
+    "class_id": { "$oid": "6710a0000000000000000500" },
+    "createdAt": { "$date": "2024-12-14T20:30:00.000Z" },
+    "updatedAt": { "$date": "2024-12-14T20:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000903" },
+    "content": "Hoạt động ngoại khóa tuần này: Các con đã có những hoạt động thú vị trong tuần qua với nhiều trò chơi và bài học bổ ích. Hôm nay các con đã học cách làm bánh và vẽ tranh. Tôi rất vui khi thấy các con hào hứng tham gia!",
+    "create_at": { "$date": "2024-12-13T14:30:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000002" },
+    "class_id": { "$oid": "6710a0000000000000000500" },
+    "createdAt": { "$date": "2024-12-13T14:30:00.000Z" },
+    "updatedAt": { "$date": "2024-12-13T14:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000904" },
+    "content": "Bài viết của phụ huynh khác: Xin chào các phụ huynh! Tôi muốn hỏi về việc chuẩn bị đồ dùng học tập cho con. Con tôi sắp vào lớp MGB-1, cần chuẩn bị những gì? Cảm ơn mọi người!",
+    "create_at": { "$date": "2024-12-12T16:45:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000004" },
+    "class_id": { "$oid": "6710a0000000000000000501" },
+    "createdAt": { "$date": "2024-12-12T16:45:00.000Z" },
+    "updatedAt": { "$date": "2024-12-12T16:45:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000905" },
+    "content": "Bài giảng Toán lớp MGB-2: Hôm nay chúng ta học về số đếm từ 1 đến 10. Các con đã rất hào hứng khi học đếm bằng ngón tay và sử dụng các đồ vật trong lớp.",
+    "create_at": { "$date": "2024-12-11T10:15:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000005" },
+    "class_id": { "$oid": "6710a0000000000000000501" },
+    "createdAt": { "$date": "2024-12-11T10:15:00.000Z" },
+    "updatedAt": { "$date": "2024-12-11T10:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000906" },
+    "content": "Lưu ý về sức khỏe: Những lưu ý quan trọng về sức khỏe của các con trong mùa đông này. Vui lòng cho con mặc đủ ấm và uống đủ nước. Nếu con có dấu hiệu ốm, xin vui lòng cho con nghỉ ở nhà để tránh lây lan.",
+    "create_at": { "$date": "2024-12-10T16:45:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000006" },
+    "class_id": { "$oid": "6710a0000000000000000500" },
+    "createdAt": { "$date": "2024-12-10T16:45:00.000Z" },
+    "updatedAt": { "$date": "2024-12-10T16:45:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000907" },
+    "content": "Hoạt động thể dục lớp MGB-2: Tuần này các con đã học các bài tập thể dục cơ bản và chơi trò chơi vận động. Tôi rất vui khi thấy các con tích cực tham gia và có sức khỏe tốt!",
+    "create_at": { "$date": "2024-12-09T15:20:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000002" },
+    "class_id": { "$oid": "6710a0000000000000000501" },
+    "createdAt": { "$date": "2024-12-09T15:20:00.000Z" },
+    "updatedAt": { "$date": "2024-12-09T15:20:00.000Z" }
   }
 ]
-
-
 
 
 
