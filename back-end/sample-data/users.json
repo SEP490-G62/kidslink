@@ -37,6 +37,45 @@
     "phone_number": "+84 900 000 003",
     "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
     "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000004" },
+    "full_name": "Phụ huynh Nguyễn Thị D",
+    "username": "parent.d",
+    "password_hash": "$2b$10$examplehashparent2",
+    "role": "parent",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-parent2.png",
+    "status": 1,
+    "email": "ph.d@example.com",
+    "phone_number": "+84 900 000 004",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000005" },
+    "full_name": "Giáo viên Lê Văn E",
+    "username": "teacher.e",
+    "password_hash": "$2b$10$examplehashteacher2",
+    "role": "teacher",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-teacher2.png",
+    "status": 1,
+    "email": "gv.e@truonga.edu.vn",
+    "phone_number": "+84 900 000 005",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000006" },
+    "full_name": "Y tá Minh",
+    "username": "nurse.minh",
+    "password_hash": "$2b$10$examplehashnurse",
+    "role": "health_care_staff",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-nurse.png",
+    "status": 1,
+    "email": "nurse.minh@truonga.edu.vn",
+    "phone_number": "+84 900 000 006",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
   }
 ]
 

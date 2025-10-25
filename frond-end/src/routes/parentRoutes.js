@@ -15,7 +15,6 @@ Coded by KidsLink Team
 
 // Parent Layouts
 import ParentHome from "layouts/parent";
-import ParentPosts from "layouts/parent/posts/index";
 import PostDetail from "layouts/parent/posts/detail";
 import ParentChildInfo from "layouts/parent/child-info/index";
 import ParentDailyReport from "layouts/parent/daily-report/index";
@@ -39,14 +38,6 @@ const parentRoutes = [
     route: "/parent",
     icon: <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-tv-2" />,
     component: <ParentHome />,
-  },
-  {
-    type: "route",
-    name: "Bài đăng",
-    key: "parent-posts",
-    route: "/parent/posts",
-    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-single-copy-04" />,
-    component: <ParentPosts />,
   },
   {
     type: "route",
