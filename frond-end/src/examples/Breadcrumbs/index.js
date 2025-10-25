@@ -30,6 +30,65 @@ import ArgonTypography from "components/ArgonTypography";
 function Breadcrumbs({ icon, title, route, light }) {
   const routes = route.slice(0, -1);
 
+  // Mapping từ tiếng Anh sang tiếng Việt
+  const translateRoute = (routeName) => {
+    const translations = {
+      'parent': 'Phụ huynh',
+      'teacher': 'Giáo viên',
+      'admin': 'Quản trị viên',
+      'school': 'Trường học',
+      'dashboard': 'Trang chủ',
+      'posts': 'Bài viết',
+      'daily-report': 'Báo cáo hàng ngày',
+      'class-calendar': 'Lịch lớp học',
+      'menu': 'Thực đơn',
+      'child-info': 'Thông tin con',
+      'fee-payment': 'Học phí',
+      'personal-info': 'Thông tin cá nhân',
+      'complaints-feedback': 'Khiếu nại & Góp ý',
+      'chat': 'Tin nhắn',
+      'authentication': 'Xác thực',
+      'sign-in': 'Đăng nhập',
+      'sign-up': 'Đăng ký',
+      'profile': 'Hồ sơ',
+      'settings': 'Cài đặt',
+      'notifications': 'Thông báo',
+      'help': 'Trợ giúp',
+      'logout': 'Đăng xuất'
+    };
+    
+    return translations[routeName] || routeName;
+  };
+
+  const translateTitle = (titleName) => {
+    const titleTranslations = {
+      'parent': 'Phụ huynh',
+      'teacher': 'Giáo viên', 
+      'admin': 'Quản trị viên',
+      'school': 'Trường học',
+      'dashboard': 'Trang chủ',
+      'posts': 'Bài viết',
+      'daily-report': 'Báo cáo hàng ngày',
+      'class-calendar': 'Lịch lớp học',
+      'menu': 'Thực đơn',
+      'child-info': 'Thông tin con',
+      'fee-payment': 'Học phí',
+      'personal-info': 'Thông tin cá nhân',
+      'complaints-feedback': 'Khiếu nại & Góp ý',
+      'chat': 'Tin nhắn',
+      'authentication': 'Xác thực',
+      'sign-in': 'Đăng nhập',
+      'sign-up': 'Đăng ký',
+      'profile': 'Hồ sơ',
+      'settings': 'Cài đặt',
+      'notifications': 'Thông báo',
+      'help': 'Trợ giúp',
+      'logout': 'Đăng xuất'
+    };
+    
+    return titleTranslations[titleName] || titleName.replace("-", " ");
+  };
+
   return (
     <ArgonBox mr={{ xs: 0, xl: 8 }}>
       <MuiBreadcrumbs
@@ -61,7 +120,7 @@ function Breadcrumbs({ icon, title, route, light }) {
               opacity={light ? 0.8 : 0.5}
               sx={{ lineHeight: 0 }}
             >
-              {el}
+              {translateRoute(el)}
             </ArgonTypography>
           </Link>
         ))}
@@ -72,7 +131,7 @@ function Breadcrumbs({ icon, title, route, light }) {
           color={light ? "white" : "dark"}
           sx={{ lineHeight: 0 }}
         >
-          {title.replace("-", " ")}
+          {translateTitle(title)}
         </ArgonTypography>
       </MuiBreadcrumbs>
       <ArgonTypography
@@ -82,7 +141,7 @@ function Breadcrumbs({ icon, title, route, light }) {
         color={light ? "white" : "dark"}
         noWrap
       >
-        {title.replace("-", " ")}
+        {translateTitle(title)}
       </ArgonTypography>
     </ArgonBox>
   );

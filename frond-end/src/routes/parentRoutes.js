@@ -41,22 +41,6 @@ const parentRoutes = [
   },
   {
     type: "route",
-    name: "Chi tiết bài đăng",
-    key: "parent-post-detail",
-    route: "/parent/posts/:id",
-    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-single-copy-04" />,
-    component: <PostDetail />,
-  },
-  {
-    type: "route",
-    name: "Thông tin con",
-    key: "parent-child-info",
-    route: "/parent/child-info",
-    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-circle-08" />,
-    component: <ParentChildInfo />,
-  },
-  {
-    type: "route",
     name: "Báo cáo hàng ngày",
     key: "parent-daily-report",
     route: "/parent/daily-report",
@@ -78,6 +62,22 @@ const parentRoutes = [
     route: "/parent/menu",
     icon: <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-archive-2" />,
     component: <ParentMenu />,
+  },
+  // {
+  //   type: "route",
+  //   name: "Chi tiết bài đăng",
+  //   key: "parent-post-detail",
+  //   route: "/parent/posts/:id",
+  //   icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-single-copy-04" />,
+  //   component: <PostDetail />,
+  // },
+  {
+    type: "route",
+    name: "Thông tin con",
+    key: "parent-child-info",
+    route: "/parent/child-info",
+    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-circle-08" />,
+    component: <ParentChildInfo />,
   },
   {
     type: "route",
@@ -114,14 +114,6 @@ const parentRoutes = [
     route: "/parent/chat",
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
     component: <ParentChat />,
-  },
-  {
-    type: "route",
-    name: "Chi tiết tin nhắn",
-    key: "parent-chat-detail",
-    route: "/parent/chat/:id",
-    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
-    component: <ChatDetail />,
   },
 ];
 
