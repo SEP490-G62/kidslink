@@ -8,15 +8,10 @@ import { useState, useEffect } from "react";
 
 // @mui material components
 import Grid from "@mui/material/Grid";
-import Icon from "@mui/material/Icon";
 import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Avatar from "@mui/material/Avatar";
 import Chip from "@mui/material/Chip";
-import Button from "@mui/material/Button";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
-import IconButton from "@mui/material/IconButton";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -35,6 +30,9 @@ import typography from "assets/theme/base/typography";
 import QuickActions from "layouts/parent/components/QuickActions";
 import UpcomingEvents from "layouts/parent/components/UpcomingEvents";
 
+// Post components
+import { PostsFeed } from "layouts/parent/posts";
+
 // Services
 import parentService from "services/parentService";
 
@@ -42,16 +40,11 @@ function ParentDashboard() {
   const { size } = typography;
   const [activeTab, setActiveTab] = useState(0);
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Fetch posts from API
+  // Fetch posts from API for tab counts
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        
         const result = await parentService.getAllPosts();
         
         if (result.success) {
@@ -63,6 +56,7 @@ function ParentDashboard() {
             author: post.user_id.full_name,
             authorRole: post.user_id.role === 'school_admin' ? 'school' : post.user_id.role,
             avatar: post.user_id.avatar_url,
+            images: post.images || [],
             image: post.images && post.images.length > 0 ? post.images[0] : null,
             date: new Date(post.create_at).toLocaleDateString('vi-VN'),
             time: new Date(post.create_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
@@ -73,14 +67,9 @@ function ParentDashboard() {
           }));
           
           setPosts(transformedPosts);
-        } else {
-          setError(result.error);
         }
       } catch (err) {
         console.error('Error fetching posts:', err);
-        setError('Có lỗi xảy ra khi tải bài viết');
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -96,30 +85,6 @@ function ParentDashboard() {
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
-  };
-
-  const getFilteredPosts = () => {
-    let filtered = posts;
-    
-    // Filter by tab
-    if (activeTab > 0) {
-      const filterValue = tabs[activeTab].value;
-      filtered = filtered.filter(post => post.authorRole === filterValue);
-    }
-    
-    return filtered;
-  };
-
-  const handleLike = (postId) => {
-    console.log("Toggle like for post:", postId);
-  };
-
-  const handleComment = (postId) => {
-    console.log("Comment on post:", postId);
-  };
-
-  const handleShare = (postId) => {
-    console.log("Share post:", postId);
   };
   
   return (
@@ -218,158 +183,22 @@ function ParentDashboard() {
           </Card>
         </ArgonBox>
 
-        {/* Facebook-style Posts Feed - Centered */}
-        <ArgonBox maxWidth="600px" mx="auto">
-          {/* Loading State */}
-          {loading && (
-            <Card sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
-              <ArgonTypography variant="h6" color="text" mb={1}>
-                Đang tải bài viết...
-              </ArgonTypography>
-              <ArgonTypography variant="body2" color="text">
-                Vui lòng chờ trong giây lát
-              </ArgonTypography>
-            </Card>
-          )}
-
-          {/* Error State */}
-          {error && (
-            <Card sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
-              <ArgonTypography variant="h6" color="error" mb={1}>
-                Có lỗi xảy ra
-              </ArgonTypography>
-              <ArgonTypography variant="body2" color="text" mb={2}>
-                {error}
-              </ArgonTypography>
-              <Button 
-                variant="contained" 
-                color="primary"
-                onClick={() => window.location.reload()}
-              >
-                Thử lại
-              </Button>
-            </Card>
-          )}
-
-          {/* Posts List */}
-          {!loading && !error && getFilteredPosts().map((post) => (
-            <Card 
-              key={post.id} 
-              sx={{ 
-                mb: 2, 
-                borderRadius: 2, 
-                boxShadow: 1,
-                '&:hover': { 
-                  boxShadow: 3,
-                  transition: 'box-shadow 0.2s ease-in-out'
-                }
-              }}
-            >
-              {/* Post Header */}
-              <ArgonBox p={2} pb={1}>
-                <ArgonBox display="flex" alignItems="center" justifyContent="space-between">
-                  <ArgonBox display="flex" alignItems="center">
-                    <Avatar
-                      src={post.avatar}
-                      alt={post.author}
-                      sx={{ width: 40, height: 40, mr: 2 }}
-                    />
-                    <ArgonBox>
-                      <ArgonTypography variant="h6" fontWeight="bold" color="dark">
-                        {post.author}
-                      </ArgonTypography>
-                      <ArgonBox display="flex" alignItems="center" gap={1}>
-                        <ArgonTypography variant="caption" color="text">
-                          {post.date} lúc {post.time}
-                        </ArgonTypography>
-                        {/* <Chip 
-                          label={post.category} 
-                          size="small" 
-                          color="primary" 
-                          sx={{ 
-                            height: 20, 
-                            fontSize: '10px',
-                            fontWeight: 'bold'
-                          }}
-                        /> */}
-                      </ArgonBox>
-                    </ArgonBox>
-                  </ArgonBox>
-                </ArgonBox>
-              </ArgonBox>
-
-              {/* Post Content */}
-              <ArgonBox px={2} pb={1}>
-                <ArgonTypography variant="body1" color="dark" mb={2} sx={{ lineHeight: 1.6 }}>
-                  {post.content}
-                </ArgonTypography>
-              </ArgonBox>
-
-              {/* Post Image */}
-              {post.image && (
-                <ArgonBox>
-                  <img
-                    src={post.image}
-                    alt={post.title}
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      maxHeight: '400px',
-                      objectFit: 'cover'
-                    }}
-                  />
-                </ArgonBox>
-              )}
-
-              {/* Post Actions */}
-              <ArgonBox px={2} py={1} borderTop="1px solid #e0e0e0">
-                <ArgonBox display="flex" justifyContent="space-around">
-                  <Button
-                    startIcon={<i className="ni ni-like-2" />}
-                    onClick={() => handleLike(post.id)}
-                    sx={{
-                      color: post.isLiked ? '#1976d2' : '#8e8e8e',
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      '&:hover': {
-                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
-                      }
-                    }}
-                  >
-                    Thích
-                  </Button>
-                  <Button
-                    startIcon={<i className="ni ni-chat-round" />}
-                    onClick={() => handleComment(post.id)}
-                    sx={{
-                      color: '#8e8e8e',
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      '&:hover': {
-                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
-                      }
-                    }}
-                  >
-                    Bình luận
-                  </Button>
-                </ArgonBox>
-              </ArgonBox>
-            </Card>
-          ))}
-
-          {/* No Posts Message */}
-          {!loading && !error && getFilteredPosts().length === 0 && (
-            <Card sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
-              <ArgonTypography variant="h6" color="text" mb={1}>
-                Không có bài viết nào
-              </ArgonTypography>
-              <ArgonTypography variant="body2" color="text">
-                Chưa có bài viết nào trong danh mục này
-              </ArgonTypography>
-            </Card>
-          )}
-        </ArgonBox>
+        {/* Posts Feed Component */}
+        <PostsFeed 
+          activeTab={activeTab}
+          tabs={tabs}
+          onUpdateCommentCount={(postId, increment) => {
+            setPosts(prevPosts => 
+              prevPosts.map(post => 
+                post.id === postId 
+                  ? { ...post, comments: post.comments + increment }
+                  : post
+              )
+            );
+          }}
+        />
       </ArgonBox>
+      
       {/* <Footer /> */}
     </DashboardLayout>
   );
