@@ -1,0 +1,137 @@
+/**
+=========================================================
+* KidsLink Parent Routes - v1.0.0
+=========================================================
+
+* Product Page: KidsLink Parent Portal
+* Copyright 2024 KidsLink Team
+
+Coded by KidsLink Team
+
+ =========================================================
+
+* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+*/
+
+// Parent Layouts
+import ParentHome from "layouts/parent";
+import ParentPosts from "layouts/parent/posts/index";
+import PostDetail from "layouts/parent/posts/detail";
+import ParentChildInfo from "layouts/parent/child-info/index";
+import ParentDailyReport from "layouts/parent/daily-report/index";
+import ParentClassCalendar from "layouts/parent/class-calendar/index";
+import ParentMenu from "layouts/parent/menu/index";
+import ParentFeePayment from "layouts/parent/fee-payment/index";
+import ParentPersonalInfo from "layouts/parent/personal-info/index";
+import ParentComplaintsFeedback from "layouts/parent/complaints-feedback/index";
+import ParentChat from "layouts/parent/chat/index";
+import ChatDetail from "layouts/parent/chat/detail";
+
+// Argon Dashboard 2 MUI components
+import ArgonBox from "components/ArgonBox";
+import ProtectedRoute from "components/ProtectedRoute";
+
+const parentRoutes = [
+  {
+    type: "route",
+    name: "Trang chủ",
+    key: "parent-home",
+    route: "/parent",
+    icon: <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-tv-2" />,
+    component: <ParentHome />,
+  },
+  {
+    type: "route",
+    name: "Bài đăng",
+    key: "parent-posts",
+    route: "/parent/posts",
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-single-copy-04" />,
+    component: <ParentPosts />,
+  },
+  {
+    type: "route",
+    name: "Chi tiết bài đăng",
+    key: "parent-post-detail",
+    route: "/parent/posts/:id",
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-single-copy-04" />,
+    component: <PostDetail />,
+  },
+  {
+    type: "route",
+    name: "Thông tin con",
+    key: "parent-child-info",
+    route: "/parent/child-info",
+    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-circle-08" />,
+    component: <ParentChildInfo />,
+  },
+  {
+    type: "route",
+    name: "Báo cáo hàng ngày",
+    key: "parent-daily-report",
+    route: "/parent/daily-report",
+    icon: <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-paper-diploma" />,
+    component: <ParentDailyReport />,
+  },
+  {
+    type: "route",
+    name: "Lịch lớp học",
+    key: "parent-class-calendar",
+    route: "/parent/class-calendar",
+    icon: <ArgonBox component="i" color="dark" fontSize="14px" className="ni ni-calendar-grid-58" />,
+    component: <ParentClassCalendar />,
+  },
+  {
+    type: "route",
+    name: "Thực đơn",
+    key: "parent-menu",
+    route: "/parent/menu",
+    icon: <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-archive-2" />,
+    component: <ParentMenu />,
+  },
+  {
+    type: "route",
+    name: "Học phí",
+    key: "parent-fee-payment",
+    route: "/parent/fee-payment",
+    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-credit-card" />,
+    component: <ParentFeePayment />,
+  },
+  {
+    type: "divider",
+    key: "parent-divider-1"
+  },
+  {
+    type: "route",
+    name: "Thông tin cá nhân",
+    key: "parent-personal-info",
+    route: "/parent/personal-info",
+    icon: <ArgonBox component="i" color="text" fontSize="14px" className="ni ni-single-02" />,
+    component: <ParentPersonalInfo />,
+  },
+  {
+    type: "route",
+    name: "Khiếu nại & Góp ý",
+    key: "parent-complaints-feedback",
+    route: "/parent/complaints-feedback",
+    icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-chat-round" />,
+    component: <ParentComplaintsFeedback />,
+  },
+  {
+    type: "route",
+    name: "Tin nhắn",
+    key: "parent-chat",
+    route: "/parent/chat",
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
+    component: <ParentChat />,
+  },
+  {
+    type: "route",
+    name: "Chi tiết tin nhắn",
+    key: "parent-chat-detail",
+    route: "/parent/chat/:id",
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
+    component: <ChatDetail />,
+  },
+];
+
+export default parentRoutes;

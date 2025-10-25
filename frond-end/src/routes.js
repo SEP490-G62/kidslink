@@ -42,6 +42,7 @@ import VirtualReality from "layouts/virtual-reality";
 import RTL from "layouts/rtl";
 import Profile from "layouts/profile";
 import TeacherHome from "layouts/teacher";
+import ParentHome from "layouts/parent";
 import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
 import ForgotPassword from "layouts/authentication/forgot-password";
@@ -75,6 +76,14 @@ const routes = [
     route: "/teacher",
     icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-books" />,
     component: <ProtectedRoute requiredRoles={['teacher']}><TeacherHome /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Parent Dashboard",
+    key: "parent-dashboard",
+    route: "/parent",
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-single-02" />,
+    component: <ParentHome />,
   },
   {
     type: "route",
