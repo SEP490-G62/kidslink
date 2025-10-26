@@ -120,6 +120,58 @@ function CommentModal({
     }
   };
 
+  // Helper function để tìm và cập nhật comment trong nested structure
+  const updateCommentInNestedStructure = (comments, parentCommentId, newReply) => {
+    return comments.map(comment => {
+      // Nếu là main comment
+      if (comment._id === parentCommentId) {
+        return {
+          ...comment,
+          replies: [...(comment.replies || []), { ...newReply, isNew: true }]
+        };
+      }
+      
+      // Nếu có replies, tìm kiếm trong nested structure
+      if (comment.replies && comment.replies.length > 0) {
+        const updatedReplies = updateRepliesInNestedStructure(comment.replies, parentCommentId, newReply);
+        if (updatedReplies !== comment.replies) {
+          return {
+            ...comment,
+            replies: updatedReplies
+          };
+        }
+      }
+      
+      return comment;
+    });
+  };
+
+  // Helper function để cập nhật replies trong nested structure
+  const updateRepliesInNestedStructure = (replies, parentCommentId, newReply) => {
+    return replies.map(reply => {
+      // Nếu tìm thấy parent comment
+      if (reply._id === parentCommentId) {
+        return {
+          ...reply,
+          replies: [...(reply.replies || []), { ...newReply, isNew: true }]
+        };
+      }
+      
+      // Nếu có nested replies, tiếp tục tìm kiếm
+      if (reply.replies && reply.replies.length > 0) {
+        const updatedNestedReplies = updateRepliesInNestedStructure(reply.replies, parentCommentId, newReply);
+        if (updatedNestedReplies !== reply.replies) {
+          return {
+            ...reply,
+            replies: updatedNestedReplies
+          };
+        }
+      }
+      
+      return reply;
+    });
+  };
+
   const handleReplyComment = async (parentCommentId) => {
     if (!replyText.trim() || !selectedPost) return;
     
@@ -139,52 +191,17 @@ function CommentModal({
           }
         };
 
-        // Cập nhật comments state để thêm reply ngay lập tức
+        // Cập nhật comments state với nested structure
         setComments(prevComments => 
-          prevComments.map(comment => {
-            // Kiểm tra nếu reply cho main comment
-            if (comment._id === parentCommentId) {
-              return {
-                ...comment,
-                replies: [...(comment.replies || []), { ...newReply, isNew: true }]
-              };
-            }
-            // Kiểm tra nếu reply cho reply (nested reply)
-            if (comment.replies) {
-              const updatedReplies = comment.replies.map(reply => {
-                if (reply._id === parentCommentId) {
-                  return {
-                    ...reply,
-                    replies: [...(reply.replies || []), { ...newReply, isNew: true }]
-                  };
-                }
-                return reply;
-              });
-              
-              if (updatedReplies.some(reply => reply.replies)) {
-                return {
-                  ...comment,
-                  replies: updatedReplies
-                };
-              }
-            }
-            return comment;
-          })
+          updateCommentInNestedStructure(prevComments, parentCommentId, newReply)
         );
 
         // Remove isNew flag sau 3 giây
         setTimeout(() => {
           setComments(prevComments => 
             prevComments.map(comment => {
-              if (comment._id === parentCommentId) {
-                return {
-                  ...comment,
-                  replies: comment.replies.map(reply => 
-                    reply._id === newReply._id ? { ...reply, isNew: false } : reply
-                  )
-                };
-              }
-              return comment;
+              const updatedComment = removeIsNewFlagFromNested(comment, newReply._id);
+              return updatedComment;
             })
           );
         }, 3000);
@@ -200,6 +217,31 @@ function CommentModal({
     } finally {
       setReplyLoading(false);
     }
+  };
+
+  // Helper function để remove isNew flag từ nested structure
+  const removeIsNewFlagFromNested = (comment, replyId) => {
+    if (comment.replies) {
+      const updatedReplies = comment.replies.map(reply => {
+        if (reply._id === replyId) {
+          return { ...reply, isNew: false };
+        }
+        if (reply.replies) {
+          return {
+            ...reply,
+            replies: removeIsNewFlagFromNested({ replies: reply.replies }, replyId).replies
+          };
+        }
+        return reply;
+      });
+      
+      return {
+        ...comment,
+        replies: updatedReplies
+      };
+    }
+    
+    return comment;
   };
 
   const handleStartReply = (comment) => {
@@ -218,6 +260,217 @@ function CommentModal({
     setReplyingTo(null);
     setReplyText('');
     onClose();
+  };
+
+  // PropTypes for ReplyComponent
+  const ReplyComponentPropTypes = {
+    reply: PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      contents: PropTypes.string.isRequired,
+      create_at: PropTypes.string.isRequired,
+      isNew: PropTypes.bool,
+      user_id: PropTypes.shape({
+        full_name: PropTypes.string,
+        avatar_url: PropTypes.string
+      }),
+      replies: PropTypes.array
+    }).isRequired,
+    level: PropTypes.number
+  };
+
+  // Recursive component để render unlimited levels of replies
+  const ReplyComponent = ({ reply, level = 0 }) => {
+    const marginLeft = level * 3; // Tăng margin cho mỗi level
+    
+    return (
+      <ArgonBox 
+        key={reply._id} 
+        mb={1} 
+        p={1.5} 
+        bgcolor={reply.isNew ? "rgba(102, 126, 234, 0.1)" : "#f0f2f5"} 
+        sx={{
+          borderRadius: '8px',
+          backgroundColor: reply.isNew ? 'rgba(102, 126, 234, 0.1) !important' : '#f0f2f5 !important',
+          marginLeft: `${marginLeft}px`,
+          animation: reply.isNew ? 'fadeInUp 0.5s ease-out' : 'none',
+          '@keyframes fadeInUp': {
+            '0%': {
+              opacity: 0,
+              transform: 'translateY(10px)',
+              backgroundColor: 'rgba(102, 126, 234, 0.2)'
+            },
+            '50%': {
+              backgroundColor: 'rgba(102, 126, 234, 0.15)'
+            },
+            '100%': {
+              opacity: 1,
+              transform: 'translateY(0)',
+              backgroundColor: 'rgba(102, 126, 234, 0.1)'
+            }
+          }
+        }}
+      >
+        <ArgonBox display="flex" alignItems="flex-start" mb={0.5}>
+          <Avatar
+            src={reply.user_id?.avatar_url}
+            alt={reply.user_id?.full_name}
+            sx={{ 
+              width: 28, 
+              height: 28, 
+              mr: 1.5,
+              border: '1px solid #e3f2fd'
+            }}
+          />
+          <ArgonBox flex={1}>
+            <ArgonBox display="flex" alignItems="center" mb={0.25}>
+              <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
+                {reply.user_id?.full_name}
+              </ArgonTypography>
+              <ArgonTypography variant="caption" color="text.secondary" fontSize="11px" ml={1}>
+                {new Date(reply.create_at).toLocaleString('vi-VN')}
+              </ArgonTypography>
+            </ArgonBox>
+            <ArgonTypography variant="body2" color="text" sx={{ 
+              lineHeight: 1.5, 
+              fontSize: '13px',
+              fontWeight: 400,
+              mb: 0.75
+            }}>
+              {reply.contents}
+            </ArgonTypography>
+            <Button
+              size="small"
+              onClick={() => handleStartReply(reply)}
+              sx={{
+                color: '#65676b',
+                textTransform: 'none',
+                fontSize: '12px',
+                fontWeight: '600',
+                minWidth: 'auto',
+                px: 1.5,
+                py: 0.5,
+                backgroundColor: '#e4e6ea',
+                borderRadius: '6px'
+              }}
+            >
+              Trả lời
+            </Button>
+          </ArgonBox>
+        </ArgonBox>
+
+        {/* Reply Input */}
+        {replyingTo && replyingTo._id === reply._id && (
+          <ArgonBox 
+            ml={3} 
+            mt={1} 
+            p={1.5} 
+            bgcolor="rgba(102, 126, 234, 0.05)" 
+            borderRadius={1.5}
+            border="1px solid rgba(102, 126, 234, 0.2)"
+          >
+            <ArgonTypography variant="caption" color="text.secondary" mb={0.5} fontSize="10px">
+              Trả lời {reply.user_id?.full_name}:
+            </ArgonTypography>
+            <ArgonBox display="flex" alignItems="flex-end" gap={0.5} width="100%">
+              <TextField
+                fullWidth
+                multiline
+                minRows={1}
+                maxRows={4}
+                placeholder="Viết trả lời..."
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                variant="outlined"
+                size="small"
+                sx={{ 
+                  flex: 1,
+                  width: '100%',
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '15px',
+                    backgroundColor: 'white',
+                    fontSize: '12px',
+                    width: '100%'
+                  },
+                  '& .MuiInputBase-input': {
+                    width: '100% !important',
+                    wordWrap: 'break-word',
+                    whiteSpace: 'pre-wrap',
+                    overflowWrap: 'break-word'
+                  }
+                }}
+              />
+              <Button 
+                onClick={() => handleReplyComment(reply._id)}
+                variant="contained"
+                disabled={!replyText.trim() || replyLoading}
+                startIcon={replyLoading ? <CircularProgress size={12} /> : <i className="ni ni-send" />}
+                sx={{
+                  borderRadius: '15px',
+                  minWidth: 'auto',
+                  px: 1.5,
+                  py: 0.5,
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '10px',
+                  color: 'white !important',
+                  background: 'linear-gradient(135deg, #4c63d2 0%, #5a4fcf 100%)',
+                  boxShadow: '0 2px 6px rgba(76, 99, 210, 0.3)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #3d52c4 0%, #4a3fc7 100%)',
+                    color: 'white !important',
+                    boxShadow: '0 3px 8px rgba(76, 99, 210, 0.4)'
+                  },
+                  '&:disabled': {
+                    background: '#e0e0e0',
+                    color: '#9e9e9e !important',
+                    boxShadow: 'none'
+                  },
+                  '& .MuiSvgIcon-root': {
+                    color: 'white !important'
+                  },
+                  '& .ni': {
+                    color: 'white !important'
+                  },
+                  '& .MuiButton-startIcon': {
+                    color: 'white !important'
+                  }
+                }}
+              >
+                {replyLoading ? 'Gửi...' : 'Gửi'}
+              </Button>
+              <Button 
+                onClick={handleCancelReply}
+                size="small"
+                sx={{
+                  color: '#6c757d',
+                  textTransform: 'none',
+                  minWidth: 'auto',
+                  px: 0.5,
+                  fontSize: '10px'
+                }}
+              >
+                Hủy
+              </Button>
+            </ArgonBox>
+          </ArgonBox>
+        )}
+
+        {/* Recursive rendering of nested replies */}
+        {reply.replies && Array.isArray(reply.replies) && reply.replies.length > 0 && (
+          <ArgonBox mt={1}>
+            {reply.replies.map((nestedReply) => (
+              <ReplyComponent key={nestedReply._id} reply={nestedReply} level={level + 1} />
+            ))}
+          </ArgonBox>
+        )}
+      </ArgonBox>
+    );
+  };
+
+  // Add PropTypes to ReplyComponent
+  ReplyComponent.propTypes = ReplyComponentPropTypes;
+  ReplyComponent.defaultProps = {
+    level: 0
   };
 
   return (
@@ -295,12 +548,10 @@ function CommentModal({
                 {/* Main Comment */}
                 <ArgonBox 
                   p={2} 
-                  bgcolor="rgba(248, 249, 250, 0.5)" 
+                  bgcolor="#f0f2f5" 
                   sx={{
-                    '&:hover': {
-                      bgcolor: 'rgba(102, 126, 234, 0.05)',
-                      transition: 'all 0.2s ease-in-out'
-                    }
+                    borderRadius: '8px',
+                    backgroundColor: '#f0f2f5 !important'
                   }}
                 >
                   <ArgonBox display="flex" alignItems="flex-start" mb={1}>
@@ -323,33 +574,33 @@ function CommentModal({
                           {new Date(comment.create_at).toLocaleString('vi-VN')}
                         </ArgonTypography>
                       </ArgonBox>
-                    </ArgonBox>
+                      <ArgonTypography variant="body2" color="text" sx={{ 
+                        lineHeight: 1.5, 
+                        fontSize: '13px',
+                        fontWeight: 400,
+                        mb: 1
+                      }}>
+                        {comment.contents}
+                      </ArgonTypography>
                     <Button
                       size="small"
                       onClick={() => handleStartReply(comment)}
                       sx={{
-                        color: '#6c757d',
+                          color: '#65676b',
                         textTransform: 'none',
-                        fontSize: '11px',
+                          fontSize: '12px',
+                          fontWeight: '600',
                         minWidth: 'auto',
-                        px: 1,
-                        py: 0.25,
-                        '&:hover': {
-                          color: '#1976d2',
-                          backgroundColor: 'rgba(25, 118, 210, 0.08)'
-                        }
+                          px: 1.5,
+                          py: 0.5,
+                          backgroundColor: '#e4e6ea',
+                          borderRadius: '6px'
                       }}
                     >
                       Trả lời
                     </Button>
                   </ArgonBox>
-                  <ArgonTypography variant="body2" color="text" sx={{ 
-                    lineHeight: 1.5, 
-                    fontSize: '13px',
-                    fontWeight: 400
-                  }}>
-                    {comment.contents}
-                  </ArgonTypography>
+                  </ArgonBox>
                 </ArgonBox>
 
                 {/* Reply Input */}
@@ -464,264 +715,15 @@ function CommentModal({
                   </ArgonBox>
                 )}
 
-                {/* Nested Replies */}
+                {/* Nested Replies - Using Recursive Component */}
                 {comment.replies && Array.isArray(comment.replies) && comment.replies.length > 0 && (
                   <ArgonBox ml={4} mt={1}>
-                    {comment.replies.map((reply, replyIndex) => (
-                      <ArgonBox 
-                        key={reply._id || replyIndex} 
-                        mb={1} 
-                        p={1.5} 
-                        bgcolor={reply.isNew ? "rgba(102, 126, 234, 0.1)" : "rgba(248, 249, 250, 0.3)"} 
-                        sx={{
-                          animation: reply.isNew ? 'fadeInUp 0.5s ease-out' : 'none',
-                          '&:hover': {
-                            bgcolor: reply.isNew ? "rgba(102, 126, 234, 0.12)" : "rgba(102, 126, 234, 0.05)",
-                            transition: 'all 0.2s ease-in-out'
-                          },
-                          '@keyframes fadeInUp': {
-                            '0%': {
-                              opacity: 0,
-                              transform: 'translateY(10px)',
-                              backgroundColor: 'rgba(102, 126, 234, 0.2)'
-                            },
-                            '50%': {
-                              backgroundColor: 'rgba(102, 126, 234, 0.15)'
-                            },
-                            '100%': {
-                              opacity: 1,
-                              transform: 'translateY(0)',
-                              backgroundColor: 'rgba(102, 126, 234, 0.1)'
-                            }
-                          }
-                        }}
-                      >
-                        <ArgonBox display="flex" alignItems="flex-start" mb={0.5}>
-                          <Avatar
-                            src={reply.user_id?.avatar_url}
-                            alt={reply.user_id?.full_name}
-                            sx={{ 
-                              width: 28, 
-                              height: 28, 
-                              mr: 1.5,
-                              border: '1px solid #e3f2fd'
-                            }}
-                          />
-                          <ArgonBox flex={1}>
-                            <ArgonBox display="flex" alignItems="center" mb={0.25}>
-                              <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
-                                {reply.user_id?.full_name}
-                              </ArgonTypography>
-                              <ArgonTypography variant="caption" color="text.secondary" fontSize="11px" ml={1}>
-                                {new Date(reply.create_at).toLocaleString('vi-VN')}
-                              </ArgonTypography>
-                            </ArgonBox>
-                          </ArgonBox>
-                          <Button
-                            size="small"
-                            onClick={() => handleStartReply(reply)}
-                            sx={{
-                              color: '#6c757d',
-                              textTransform: 'none',
-                              fontSize: '11px',
-                              minWidth: 'auto',
-                              px: 1,
-                              py: 0.25,
-                              '&:hover': {
-                                color: '#1976d2',
-                                backgroundColor: 'rgba(25, 118, 210, 0.08)'
-                              }
-                            }}
-                          >
-                            Trả lời
-                          </Button>
-                        </ArgonBox>
-                        <ArgonTypography variant="body2" color="text" sx={{ 
-                          lineHeight: 1.5, 
-                          fontSize: '13px',
-                          fontWeight: 400
-                        }}>
-                          {reply.contents}
-                        </ArgonTypography>
-
-                        {/* Nested Replies (replies của replies) */}
-                        {reply.replies && Array.isArray(reply.replies) && reply.replies.length > 0 && (
-                          <ArgonBox ml={3} mt={1}>
-                            {reply.replies.map((nestedReply, nestedIndex) => (
-                              <ArgonBox 
-                                key={nestedReply._id || nestedIndex} 
-                                mb={0.75} 
-                                p={1} 
-                                bgcolor={nestedReply.isNew ? "rgba(102, 126, 234, 0.08)" : "rgba(248, 249, 250, 0.2)"} 
-                                sx={{
-                                  animation: nestedReply.isNew ? 'fadeInUp 0.5s ease-out' : 'none',
-                                  '&:hover': {
-                                    bgcolor: nestedReply.isNew ? "rgba(102, 126, 234, 0.1)" : "rgba(102, 126, 234, 0.03)",
-                                    transition: 'all 0.2s ease-in-out'
-                                  },
-                                  '@keyframes fadeInUp': {
-                                    '0%': {
-                                      opacity: 0,
-                                      transform: 'translateY(5px)',
-                                      backgroundColor: 'rgba(102, 126, 234, 0.2)'
-                                    },
-                                    '100%': {
-                                      opacity: 1,
-                                      transform: 'translateY(0)',
-                                      backgroundColor: 'rgba(102, 126, 234, 0.08)'
-                                    }
-                                  }
-                                }}
-                              >
-                                <ArgonBox display="flex" alignItems="flex-start" mb={0.25}>
-                                  <Avatar
-                                    src={nestedReply.user_id?.avatar_url}
-                                    alt={nestedReply.user_id?.full_name}
-                                    sx={{ 
-                                      width: 24, 
-                                      height: 24, 
-                                      mr: 1,
-                                      border: '1px solid #e3f2fd'
-                                    }}
-                                  />
-                                  <ArgonBox flex={1}>
-                                    <ArgonBox display="flex" alignItems="center" mb={0.25}>
-                                      <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
-                                        {nestedReply.user_id?.full_name}
-                                      </ArgonTypography>
-                                      <ArgonTypography variant="caption" color="text.secondary" fontSize="11px" ml={1}>
-                                        {new Date(nestedReply.create_at).toLocaleString('vi-VN')}
-                                      </ArgonTypography>
-                                    </ArgonBox>
-                                  </ArgonBox>
-                                  <Button
-                                    size="small"
-                                    onClick={() => handleStartReply(nestedReply)}
-                                    sx={{
-                                      color: '#6c757d',
-                                      textTransform: 'none',
-                                      fontSize: '11px',
-                                      minWidth: 'auto',
-                                      px: 0.75,
-                                      py: 0.25,
-                                      '&:hover': {
-                                        color: '#1976d2',
-                                        backgroundColor: 'rgba(25, 118, 210, 0.08)'
-                                      }
-                                    }}
-                                  >
-                                    Trả lời
-                                  </Button>
-                                </ArgonBox>
-                                <ArgonTypography variant="body2" color="text" sx={{ 
-                                  lineHeight: 1.5, 
-                                  fontSize: '13px',
-                                  fontWeight: 400
-                                }}>
-                                  {nestedReply.contents}
-                                </ArgonTypography>
-                              </ArgonBox>
-                            ))}
-                          </ArgonBox>
-                        )}
-
-                        {/* Reply Input cho nested replies */}
-                        {replyingTo && replyingTo._id === reply._id && (
-                          <ArgonBox 
-                            ml={3} 
-                            mt={1} 
-                            p={1.5} 
-                            bgcolor="rgba(102, 126, 234, 0.05)" 
-                            borderRadius={1.5}
-                            border="1px solid rgba(102, 126, 234, 0.2)"
-                          >
-                            <ArgonTypography variant="caption" color="text.secondary" mb={0.5} fontSize="10px">
-                              Trả lời {reply.user_id?.full_name}:
-                            </ArgonTypography>
-                            <ArgonBox display="flex" alignItems="flex-end" gap={0.5} width="100%">
-                              <TextField
-                                fullWidth
-                                multiline
-                                minRows={1}
-                                maxRows={4}
-                                placeholder="Viết trả lời..."
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                variant="outlined"
-                                size="small"
-                                sx={{ 
-                                  flex: 1,
-                                  width: '100%',
-                                  '& .MuiOutlinedInput-root': {
-                                    borderRadius: '15px',
-                                    backgroundColor: 'white',
-                                    fontSize: '12px',
-                                    width: '100%'
-                                  },
-                                  '& .MuiInputBase-input': {
-                                    width: '100% !important',
-                                    wordWrap: 'break-word',
-                                    whiteSpace: 'pre-wrap',
-                                    overflowWrap: 'break-word'
-                                  }
-                                }}
-                              />
-                              <Button 
-                                onClick={() => handleReplyComment(reply._id)}
-                                variant="contained"
-                                disabled={!replyText.trim() || replyLoading}
-                                startIcon={replyLoading ? <CircularProgress size={12} /> : <i className="ni ni-send" />}
-                                sx={{
-                                  borderRadius: '15px',
-                                  minWidth: 'auto',
-                                  px: 1.5,
-                                  py: 0.5,
-                                  textTransform: 'none',
-                                  fontWeight: 'bold',
-                                  fontSize: '10px',
-                                  color: 'white !important',
-                                  background: 'linear-gradient(135deg, #4c63d2 0%, #5a4fcf 100%)',
-                                  boxShadow: '0 2px 6px rgba(76, 99, 210, 0.3)',
-                                  '&:hover': {
-                                    background: 'linear-gradient(135deg, #3d52c4 0%, #4a3fc7 100%)',
-                                    color: 'white !important',
-                                    boxShadow: '0 3px 8px rgba(76, 99, 210, 0.4)'
-                                  },
-                                  '&:disabled': {
-                                    background: '#e0e0e0',
-                                    color: '#9e9e9e !important',
-                                    boxShadow: 'none'
-                                  },
-                                  '& .MuiSvgIcon-root': {
-                                    color: 'white !important'
-                                  },
-                                  '& .ni': {
-                                    color: 'white !important'
-                                  },
-                                  '& .MuiButton-startIcon': {
-                                    color: 'white !important'
-                                  }
-                                }}
-                              >
-                                {replyLoading ? 'Gửi...' : 'Gửi'}
-                              </Button>
-                              <Button 
-                                onClick={handleCancelReply}
-                                size="small"
-                                sx={{
-                                  color: '#6c757d',
-                                  textTransform: 'none',
-                                  minWidth: 'auto',
-                                  px: 0.5,
-                                  fontSize: '10px'
-                                }}
-                              >
-                                Hủy
-                              </Button>
-                            </ArgonBox>
-                          </ArgonBox>
-                        )}
-                      </ArgonBox>
+                    {comment.replies.map((reply) => (
+                      <ReplyComponent 
+                        key={reply._id} // eslint-disable-line react/prop-types
+                        reply={reply} 
+                        level={0} 
+                      />
                     ))}
                   </ArgonBox>
                 )}
