@@ -30,7 +30,7 @@ class ParentService {
    */
   async toggleLike(postId) {
     try {
-      const response = await apiService.post(`/parent/posts/${postId}/like`, {});
+      const response = await apiService.post(`/parent/posts/${postId}/like`, {}, true);
       return response;
     } catch (error) {
       console.error('ParentService.toggleLike Error:', error);
@@ -75,7 +75,7 @@ class ParentService {
         data.parent_comment_id = parentCommentId;
       }
       
-      const response = await apiService.post(`/parent/posts/${postId}/comments`, data);
+      const response = await apiService.post(`/parent/posts/${postId}/comments`, data, true);
       return response;
     } catch (error) {
       console.error('ParentService.createComment Error:', error);
