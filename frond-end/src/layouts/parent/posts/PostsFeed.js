@@ -29,11 +29,19 @@ import parentService from "services/parentService";
 function PostsFeed({ 
   activeTab, 
   tabs, 
+  posts: propPosts,
   onUpdateCommentCount 
 }) {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState(propPosts || []);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Update posts when propPosts changes
+  useEffect(() => {
+    if (propPosts) {
+      setPosts(propPosts);
+    }
+  }, [propPosts]);
   
   // Modal states
   const [commentModalOpen, setCommentModalOpen] = useState(false);
@@ -43,48 +51,7 @@ function PostsFeed({
   const [galleryImages, setGalleryImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Fetch posts from API
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const result = await parentService.getAllPosts();
-        
-        if (result.success) {
-          // Transform API data to match component structure
-          const transformedPosts = result.data.data.map(post => ({
-            id: post._id,
-            title: post.content.substring(0, 50) + (post.content.length > 50 ? '...' : ''),
-            content: post.content,
-            author: post.user_id.full_name,
-            authorRole: post.user_id.role === 'school_admin' ? 'school' : post.user_id.role,
-            avatar: post.user_id.avatar_url,
-            images: post.images || [],
-            image: post.images && post.images.length > 0 ? post.images[0] : null,
-            date: new Date(post.create_at).toLocaleDateString('vi-VN'),
-            time: new Date(post.create_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-            category: post.class_id ? post.class_id.class_name : 'Chung',
-            likes: post.like_count,
-            comments: post.comment_count,
-            isLiked: post.is_liked
-          }));
-          
-          setPosts(transformedPosts);
-        } else {
-          setError(result.error);
-        }
-      } catch (err) {
-        console.error('Error fetching posts:', err);
-        setError('Có lỗi xảy ra khi tải bài viết');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPosts();
-  }, []);
+  // Posts are now passed as props from parent component
 
   const getFilteredPosts = () => {
     let filtered = posts;
@@ -295,6 +262,7 @@ function PostsFeed({
 PostsFeed.propTypes = {
   activeTab: PropTypes.number.isRequired,
   tabs: PropTypes.array.isRequired,
+  posts: PropTypes.array,
   onUpdateCommentCount: PropTypes.func.isRequired
 };
 
