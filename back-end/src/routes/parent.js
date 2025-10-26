@@ -4,6 +4,10 @@ const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const {
   getAllPosts,
+  createPost,
+  updatePost,
+  deletePost,
+  getChildren,
   toggleLike,
   getLikes,
   createComment,
@@ -17,8 +21,14 @@ const {
 router.use(authenticate);
 router.use(authorize(['parent']));
 
+// Routes cho children
+router.get('/children', getChildren);
+
 // Routes cho posts
 router.get('/posts', getAllPosts);
+router.post('/posts', createPost);
+router.put('/posts/:postId', updatePost);
+router.delete('/posts/:postId', deletePost);
 
 // Routes cho likes
 router.post('/posts/:postId/like', toggleLike);

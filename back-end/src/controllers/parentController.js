@@ -7,6 +7,10 @@ const likesController = require('./parent/likesController');
 module.exports = {
   // Export functions from posts controller
   getAllPosts: postsController.getAllPosts,
+  createPost: postsController.createPost,
+  updatePost: postsController.updatePost,
+  deletePost: postsController.deletePost,
+  getChildren: postsController.getChildren,
   
   // Export functions from likes controller
   toggleLike: likesController.toggleLike,
