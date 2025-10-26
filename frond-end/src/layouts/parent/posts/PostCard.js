@@ -236,12 +236,28 @@ function PostCard({
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
-                  bgcolor="rgba(0,0,0,0.6)"
+                  bgcolor="rgba(0,0,0,0.7)"
                   borderRadius="12px"
-                  sx={{ cursor: 'pointer' }}
+                  sx={{ 
+                    cursor: 'pointer',
+                    backdropFilter: 'blur(2px)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      bgcolor: 'rgba(0,0,0,0.8)',
+                      transform: 'scale(1.02)'
+                    }
+                  }}
                   onClick={() => onOpenGallery(post.images, 3)}
                 >
-                  <ArgonTypography variant="h4" color="white" fontWeight="bold">
+                  <ArgonTypography 
+                    variant="h4" 
+                    color="white" 
+                    fontWeight="bold"
+                    sx={{
+                      textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                      fontSize: { xs: '24px', sm: '32px' }
+                    }}
+                  >
                     +{post.images.length - 4}
                   </ArgonTypography>
                 </ArgonBox>
