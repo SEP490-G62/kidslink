@@ -36,7 +36,7 @@ const parentRoutes = [
     key: "parent-home",
     route: "/parent",
     icon: <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-tv-2" />,
-    component: <ParentHome />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentHome /></ProtectedRoute>,
   },
   {
     type: "route",
@@ -44,7 +44,7 @@ const parentRoutes = [
     key: "parent-daily-report",
     route: "/parent/daily-report",
     icon: <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-paper-diploma" />,
-    component: <ParentDailyReport />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentDailyReport /></ProtectedRoute>,
   },
   {
     type: "route",
@@ -52,7 +52,7 @@ const parentRoutes = [
     key: "parent-class-calendar",
     route: "/parent/class-calendar",
     icon: <ArgonBox component="i" color="dark" fontSize="14px" className="ni ni-calendar-grid-58" />,
-    component: <ParentClassCalendar />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentClassCalendar /></ProtectedRoute>,
   },
   {
     type: "route",
@@ -60,7 +60,7 @@ const parentRoutes = [
     key: "parent-menu",
     route: "/parent/menu",
     icon: <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-archive-2" />,
-    component: <ParentMenu />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentMenu /></ProtectedRoute>,
   },
   {
     type: "route",
@@ -68,7 +68,7 @@ const parentRoutes = [
     key: "parent-child-info",
     route: "/parent/child-info",
     icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-circle-08" />,
-    component: <ParentChildInfo />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentChildInfo /></ProtectedRoute>,
   },
   {
     type: "route",
@@ -76,7 +76,7 @@ const parentRoutes = [
     key: "parent-fee-payment",
     route: "/parent/fee-payment",
     icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-credit-card" />,
-    component: <ParentFeePayment />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentFeePayment /></ProtectedRoute>,
   },
   {
     type: "divider",
@@ -88,7 +88,7 @@ const parentRoutes = [
     key: "parent-personal-info",
     route: "/parent/personal-info",
     icon: <ArgonBox component="i" color="text" fontSize="14px" className="ni ni-single-02" />,
-    component: <ParentPersonalInfo />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentPersonalInfo /></ProtectedRoute>,
   },
   {
     type: "route",
@@ -96,7 +96,7 @@ const parentRoutes = [
     key: "parent-complaints-feedback",
     route: "/parent/complaints-feedback",
     icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-chat-round" />,
-    component: <ParentComplaintsFeedback />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentComplaintsFeedback /></ProtectedRoute>,
   },
   {
     type: "route",
@@ -104,7 +104,15 @@ const parentRoutes = [
     key: "parent-chat",
     route: "/parent/chat",
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
-    component: <ParentChat />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentChat /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Chi tiết tin nhắn",
+    key: "parent-chat-detail",
+    route: "/parent/chat/:conversationId",
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ChatDetail /></ProtectedRoute>,
   },
 ];
 
