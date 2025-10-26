@@ -8,7 +8,7 @@ const router = require("./src/routes/index.js");
 const connectDB = require('./src/config/database');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware bảo mật
 app.use(helmet());
