@@ -61,6 +61,30 @@ const createComment = async (req, res) => {
   }
 };
 
+// Hàm đệ quy để lấy tất cả các level của replies
+const getRepliesRecursively = async (parentCommentId) => {
+  try {
+    // Lấy tất cả replies trực tiếp của comment này
+    const directReplies = await PostComment.find({ parent_comment_id: parentCommentId })
+      .populate('user_id', 'full_name username avatar_url role')
+      .sort({ create_at: 1 });
+
+    // Với mỗi reply, lấy tiếp các replies của nó (đệ quy)
+    const repliesWithNested = [];
+    for (let reply of directReplies) {
+      const replyObj = reply.toObject();
+      // Gọi đệ quy để lấy tất cả replies của reply này
+      replyObj.replies = await getRepliesRecursively(reply._id);
+      repliesWithNested.push(replyObj);
+    }
+
+    return repliesWithNested;
+  } catch (error) {
+    console.error('Error in getRepliesRecursively:', error);
+    return [];
+  }
+};
+
 // GET /api/parent/posts/:postId/comments - Lấy danh sách comment của bài post
 const getComments = async (req, res) => {
   try {
@@ -79,40 +103,13 @@ const getComments = async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
-    // Lấy replies cho mỗi comment (bao gồm nested replies)
+    // Lấy tất cả replies cho mỗi comment (bao gồm tất cả các level)
+    const commentsWithReplies = [];
     for (let comment of comments) {
-      const replies = await PostComment.find({ parent_comment_id: comment._id })
-        .populate('user_id', 'full_name username avatar_url role')
-        .sort({ create_at: 1 })
-        .limit(10);
-      
-      // Fetch nested replies cho mỗi reply
-      for (let reply of replies) {
-        const nestedReplies = await PostComment.find({ parent_comment_id: reply._id })
-          .populate('user_id', 'full_name username avatar_url role')
-          .sort({ create_at: 1 })
-          .limit(5); // Limit nested replies
-        
-        // Convert reply to plain object và thêm nested replies
-        const replyObj = reply.toObject();
-        replyObj.replies = nestedReplies;
-        
-        // Thay thế reply trong array
-        const replyIndex = replies.findIndex(r => r._id.toString() === reply._id.toString());
-        if (replyIndex !== -1) {
-          replies[replyIndex] = replyObj;
-        }
-      }
-      
-      // Convert to plain object để có thể thêm replies
       const commentObj = comment.toObject();
-      commentObj.replies = replies;
-      
-      // Thay thế comment trong array
-      const commentIndex = comments.findIndex(c => c._id.toString() === comment._id.toString());
-      if (commentIndex !== -1) {
-        comments[commentIndex] = commentObj;
-      }
+      // Sử dụng hàm đệ quy để lấy tất cả các level của replies
+      commentObj.replies = await getRepliesRecursively(comment._id);
+      commentsWithReplies.push(commentObj);
     }
 
     const totalComments = await PostComment.countDocuments({ 
@@ -123,7 +120,7 @@ const getComments = async (req, res) => {
     res.json({
       success: true,
       data: {
-        comments,
+        comments: commentsWithReplies,
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(totalComments / limit),
@@ -177,6 +174,24 @@ const updateComment = async (req, res) => {
   }
 };
 
+// Hàm đệ quy để xóa tất cả replies của một comment
+const deleteRepliesRecursively = async (parentCommentId) => {
+  try {
+    // Lấy tất cả replies trực tiếp
+    const directReplies = await PostComment.find({ parent_comment_id: parentCommentId });
+    
+    // Với mỗi reply, xóa đệ quy tất cả replies của nó
+    for (let reply of directReplies) {
+      await deleteRepliesRecursively(reply._id);
+    }
+    
+    // Xóa tất cả replies trực tiếp
+    await PostComment.deleteMany({ parent_comment_id: parentCommentId });
+  } catch (error) {
+    console.error('Error in deleteRepliesRecursively:', error);
+  }
+};
+
 // DELETE /api/parent/comments/:commentId - Xóa comment
 const deleteComment = async (req, res) => {
   try {
@@ -195,8 +210,8 @@ const deleteComment = async (req, res) => {
       });
     }
 
-    // Xóa tất cả replies của comment này
-    await PostComment.deleteMany({ parent_comment_id: commentId });
+    // Xóa tất cả replies của comment này (bao gồm tất cả các level)
+    await deleteRepliesRecursively(commentId);
     
     // Xóa comment chính
     await PostComment.findByIdAndDelete(commentId);
