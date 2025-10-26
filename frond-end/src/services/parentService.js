@@ -8,8 +8,7 @@ class ParentService {
    */
   async getAllPosts() {
     try {
-      // Gọi API không cần authentication (tạm thời)
-      const data = await apiService.get('/api/parent/posts', false);
+      const data = await apiService.get('/parent/posts');
       
       return {
         success: true,
@@ -31,8 +30,7 @@ class ParentService {
    */
   async toggleLike(postId) {
     try {
-      // Gọi API không cần authentication (tạm thời)
-      const response = await apiService.post(`/api/parent/posts/${postId}/like`, {}, false);
+      const response = await apiService.post(`/parent/posts/${postId}/like`, {});
       return response;
     } catch (error) {
       console.error('ParentService.toggleLike Error:', error);
@@ -52,8 +50,7 @@ class ParentService {
    */
   async getLikes(postId, page = 1, limit = 10) {
     try {
-      // Gọi API không cần authentication (tạm thời)
-      const response = await apiService.get(`/api/parent/posts/${postId}/likes?page=${page}&limit=${limit}`, false);
+      const response = await apiService.get(`/parent/posts/${postId}/likes?page=${page}&limit=${limit}`);
       return response;
     } catch (error) {
       console.error('ParentService.getLikes Error:', error);
@@ -78,8 +75,7 @@ class ParentService {
         data.parent_comment_id = parentCommentId;
       }
       
-      // Gọi API không cần authentication (tạm thời)
-      const response = await apiService.post(`/api/parent/posts/${postId}/comments`, data, false);
+      const response = await apiService.post(`/parent/posts/${postId}/comments`, data);
       return response;
     } catch (error) {
       console.error('ParentService.createComment Error:', error);
@@ -99,8 +95,7 @@ class ParentService {
    */
   async getComments(postId, page = 1, limit = 10) {
     try {
-      // Gọi API không cần authentication (tạm thời)
-      const response = await apiService.get(`/api/parent/posts/${postId}/comments?page=${page}&limit=${limit}`, false);
+      const response = await apiService.get(`/parent/posts/${postId}/comments?page=${page}&limit=${limit}`);
       return response;
     } catch (error) {
       console.error('ParentService.getComments Error:', error);
@@ -119,8 +114,7 @@ class ParentService {
    */
   async updateComment(commentId, contents) {
     try {
-      // Gọi API không cần authentication (tạm thời)
-      const response = await apiService.put(`/api/parent/comments/${commentId}`, { contents }, false);
+      const response = await apiService.put(`/parent/comments/${commentId}`, { contents });
       return response;
     } catch (error) {
       console.error('ParentService.updateComment Error:', error);
@@ -138,8 +132,7 @@ class ParentService {
    */
   async deleteComment(commentId) {
     try {
-      // Gọi API không cần authentication (tạm thời)
-      const response = await apiService.delete(`/api/parent/comments/${commentId}`, false);
+      const response = await apiService.delete(`/parent/comments/${commentId}`);
       return response;
     } catch (error) {
       console.error('ParentService.deleteComment Error:', error);

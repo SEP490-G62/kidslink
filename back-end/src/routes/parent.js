@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-// const { authenticate } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 const {
   getAllPosts,
   toggleLike,
@@ -13,9 +13,9 @@ const {
   createCommentValidators
 } = require('../controllers/parentController');
 
-// TẠM THỜI: Bỏ qua authentication để test với hardcoded parent ID
-// TODO: Thêm lại authentication khi có token thực tế
-// router.use(authenticate);
+// Áp dụng authentication và authorization cho tất cả routes
+router.use(authenticate);
+router.use(authorize(['parent']));
 
 // Routes cho posts
 router.get('/posts', getAllPosts);

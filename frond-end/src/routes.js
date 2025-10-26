@@ -83,7 +83,7 @@ const routes = [
     key: "parent-dashboard",
     route: "/parent",
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-single-02" />,
-    component: <ParentHome />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentHome /></ProtectedRoute>,
   },
   {
     type: "route",

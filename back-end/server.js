@@ -59,7 +59,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
-app.use("/api", router);
+app.use("/", router);
 // app.use('/api/kids', require('./routes/kids'));
 
 // 404 handler
