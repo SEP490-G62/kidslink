@@ -33,6 +33,14 @@ function CommentItem({
   postId
 }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
+  
+  // Số lượng replies hiển thị ban đầu (giống Facebook)
+  const INITIAL_REPLIES_COUNT = 0;
+  const hasMoreReplies = comment.replies && comment.replies.length > INITIAL_REPLIES_COUNT;
+  const visibleReplies = showReplies 
+    ? comment.replies 
+    : (comment.replies || []).slice(0, INITIAL_REPLIES_COUNT);
 
   const handleStartReply = (commentToReply) => {
     setReplyingTo(commentToReply);
@@ -249,7 +257,7 @@ function CommentItem({
       {/* Recursive Replies */}
       {comment.replies && Array.isArray(comment.replies) && comment.replies.length > 0 && (
         <ArgonBox ml={getMarginLeft(depth)} mt={1}>
-          {comment.replies.map((reply, replyIndex) => (
+          {visibleReplies.map((reply, replyIndex) => (
             <CommentItem
               key={reply._id || replyIndex}
               comment={reply}
@@ -264,6 +272,66 @@ function CommentItem({
               postId={postId}
             />
           ))}
+          
+          {/* Xem thêm replies */}
+          {hasMoreReplies && (
+            <ArgonBox 
+              ml={getMarginLeft(depth + 1)} 
+              mt={1.5}
+              sx={{
+                position: 'relative',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  left: '-12px',
+                  top: '50%',
+                  width: '2px',
+                  height: '20px',
+                  backgroundColor: '#e4e6ea',
+                  transform: 'translateY(-50%)'
+                }
+              }}
+            >
+              <Button
+                size="small"
+                onClick={() => setShowReplies(!showReplies)}
+                startIcon={
+                  <i 
+                    className={`ni ${showReplies ? 'ni-bold-up' : 'ni-bold-down'}`}
+                    style={{ fontSize: '10px' }}
+                  />
+                }
+                sx={{
+                  color: '#4c63d2',
+                  textTransform: 'none',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  minWidth: 'auto',
+                  px: 2,
+                  py: 0.8,
+                  backgroundColor: 'rgba(76, 99, 210, 0.08)',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(76, 99, 210, 0.2)',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'rgba(76, 99, 210, 0.15)',
+                    color: '#3d4db8',
+                    borderColor: 'rgba(76, 99, 210, 0.3)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 2px 8px rgba(76, 99, 210, 0.2)'
+                  },
+                  '&:active': {
+                    transform: 'translateY(0px)'
+                  }
+                }}
+              >
+                {showReplies 
+                  ? `Ẩn ${comment.replies.length - INITIAL_REPLIES_COUNT} trả lời` 
+                  : `Xem ${comment.replies.length} trả lời`
+                }
+              </Button>
+            </ArgonBox>
+          )}
         </ArgonBox>
       )}
     </ArgonBox>
