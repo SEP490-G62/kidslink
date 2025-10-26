@@ -16,7 +16,7 @@ Coded by www.creative-tim.com
 import { useState, useEffect } from "react";
 
 // react-router components
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
@@ -27,19 +27,31 @@ import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Icon from "@mui/material/Icon";
 import Avatar from "@mui/material/Avatar";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Divider from "@mui/material/Divider";
+import Chip from "@mui/material/Chip";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 
 // Custom styles for DashboardNavbar
-import { navbar, navbarContainer, navbarIconButton } from "examples/Navbars/DashboardNavbar/styles";
+import { navbar, navbarContainer, navbarIconButton, navbarDesktopMenu } from "examples/Navbars/DashboardNavbar/styles";
 
 // Argon Dashboard 2 MUI context
-import { useArgonController, setTransparentNavbar } from "context";
+import { useArgonController, setTransparentNavbar, setMiniSidenav } from "context";
 
 // Auth context
 import { useAuth } from "context/AuthContext";
+
+// Breadcrumbs component
+import Breadcrumbs from "examples/Breadcrumbs/parent";
+
+// Services
+import parentService from "services/parentService";
 
 // Images
 import team2 from "assets/images/team-2.jpg";
@@ -47,8 +59,49 @@ import team2 from "assets/images/team-2.jpg";
 function DashboardNavbar({ absolute, light }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useArgonController();
-  const { transparentNavbar, fixedNavbar } = controller;
-  const { user } = useAuth();
+  const { transparentNavbar, fixedNavbar, miniSidenav } = controller;
+  const { user, selectedChild, setSelectedChild } = useAuth();
+  const location = useLocation();
+  const [children, setChildren] = useState([]);
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  // Get current route for breadcrumbs
+  const getCurrentRoute = () => {
+    const pathname = location.pathname;
+    if (pathname === "/") return { route: ["parent"], title: "dashboard", icon: "dashboard" };
+    
+    const routes = pathname.split("/").filter(Boolean);
+    const title = routes[routes.length - 1] || "dashboard";
+    return {
+      route: routes,
+      title,
+      icon: "home"
+    };
+  };
+
+  const { route, title, icon } = getCurrentRoute();
+
+  // Fetch children when user is logged in
+  useEffect(() => {
+    const fetchChildren = async () => {
+      if (user && user.role === 'parent') {
+        try {
+          const result = await parentService.getChildren();
+          if (result.success && result.data) {
+            setChildren(result.data);
+            // Set default child (oldest child) if not already set
+            if (!selectedChild && result.data.length > 0) {
+              setSelectedChild(result.data[0]);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching children:', error);
+        }
+      }
+    };
+    
+    fetchChildren();
+  }, [user, selectedChild, setSelectedChild]);
 
   useEffect(() => {
     // Setting the navbar type
@@ -76,6 +129,23 @@ function DashboardNavbar({ absolute, light }) {
     return () => window.removeEventListener("scroll", handleTransparentNavbar);
   }, [dispatch, fixedNavbar]);
 
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleChildSelect = (child) => {
+    setSelectedChild(child);
+    handleMenuClose();
+  };
+
+  const handleMiniSidenav = () => {
+    setMiniSidenav(dispatch, !miniSidenav);
+  };
+
   return (
     <AppBar
       position={absolute ? "absolute" : navbarType}
@@ -83,11 +153,189 @@ function DashboardNavbar({ absolute, light }) {
       sx={(theme) => navbar(theme, { transparentNavbar, absolute, light })}
     >
       <Toolbar sx={(theme) => navbarContainer(theme, { navbarType })}>
-        <ArgonBox sx={{ display: "flex", justifyContent: "flex-end", width: "100%", alignItems: "center" }}>
-          {user ? (
-            // Hiển thị avatar và tên nếu đã đăng nhập
-            <ArgonBox sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Avatar 
+        <ArgonBox sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+          {/* Menu button and Breadcrumbs on the left */}
+          <ArgonBox sx={{ display: "flex", alignItems: "center", flex: 1 }}>
+            <Breadcrumbs 
+              icon={icon}
+              title={title}
+              route={route}
+              light={light && transparentNavbar}
+            />
+            <Icon 
+              fontSize="medium" 
+              sx={{
+                ...navbarDesktopMenu,
+                color: 'white !important'
+              }} 
+              onClick={handleMiniSidenav}
+            >
+              {miniSidenav ? "menu_open" : "menu"}
+            </Icon>
+          </ArgonBox>
+
+          {/* Children Dropdown - Show only if user has children */}
+          {children.length > 0 && selectedChild && (
+            <ArgonBox sx={{ display: "flex", alignItems: "center", gap: 1, mr: 2 }}>
+              <IconButton
+                onClick={handleMenuOpen}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  backgroundColor: 'rgba(94, 114, 228, 0.08)',
+                  minWidth: 'auto',
+                  width: 'auto',
+                  maxWidth: 'none',
+                  '&:hover': {
+                    backgroundColor: 'rgba(94, 114, 228, 0.15)'
+                  }
+                }}
+              >
+                <Avatar 
+                  src={selectedChild.avatar_url} 
+                  sx={{ 
+                    width: 32, 
+                    height: 32,
+                    border: '2px solid',
+                    borderColor: 'primary.main'
+                  }}
+                >
+                  {selectedChild.full_name?.charAt(0)}
+                </Avatar>
+                <ArgonBox sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'flex-start',
+                  minWidth: 0,
+                  flex: 1
+                }}>
+                  <ArgonTypography 
+                    variant="button" 
+                    fontWeight="bold" 
+                    color="dark" 
+                    sx={{ 
+                      fontSize: '12px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '100%'
+                    }}
+                  >
+                    {selectedChild.full_name}
+                  </ArgonTypography>
+                  {selectedChild.class && (
+                    <Chip 
+                      label={selectedChild.class.class_name}
+                      size="small"
+                      sx={{ 
+                        height: 18,
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                        maxWidth: '100%',
+                        '& .MuiChip-label': {
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }
+                      }}
+                    />
+                  )}
+                </ArgonBox>
+                <Icon sx={{ color: 'dark.main', flexShrink: 0 }}>
+                  <i className="ni ni-bold-down" />
+                </Icon>
+              </IconButton>
+              
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                PaperProps={{
+                  sx: {
+                    minWidth: 280,
+                    mt: 1,
+                    borderRadius: 2,
+                    boxShadow: 4
+                  }
+                }}
+              >
+                <ArgonBox px={2} py={1}>
+                  <ArgonTypography variant="caption" fontWeight="bold" color="dark">
+                    Chọn con để xem thông tin
+                  </ArgonTypography>
+                </ArgonBox>
+                <Divider />
+                {children.map((child) => (
+                  <MenuItem 
+                    key={child._id}
+                    onClick={() => handleChildSelect(child)}
+                    selected={selectedChild._id === child._id}
+                    sx={{
+                      py: 2,
+                      '&.Mui-selected': {
+                        backgroundColor: 'rgba(94, 114, 228, 0.08)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(94, 114, 228, 0.15)'
+                        }
+                      }
+                    }}
+                  >
+                    <Avatar 
+                      src={child.avatar_url} 
+                      sx={{ 
+                        width: 40, 
+                        height: 40,
+                        mr: 2
+                      }}
+                    >
+                      {child.full_name?.charAt(0)}
+                    </Avatar>
+                    <ArgonBox flex={1}>
+                      <ArgonTypography variant="button" fontWeight="bold" color="dark">
+                        {child.full_name}
+                      </ArgonTypography>
+                      <ArgonBox display="flex" gap={1} mt={0.5}>
+                        {child.class ? (
+                          <Chip 
+                            label={child.class.class_name}
+                            size="small"
+                            color="primary"
+                            sx={{ 
+                              height: 20,
+                              fontSize: '10px',
+                              fontWeight: 'bold'
+                            }}
+                          />
+                        ) : (
+                          <ArgonTypography variant="caption" color="text">
+                            Chưa có lớp
+                          </ArgonTypography>
+                        )}
+                      </ArgonBox>
+                    </ArgonBox>
+                    {selectedChild._id === child._id && (
+                      <Icon sx={{ color: 'primary.main' }}>
+                        <i className="ni ni-check-bold" />
+                      </Icon>
+                    )}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </ArgonBox>
+          )}
+
+          {/* User info on the right */}
+          <ArgonBox sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {user ? (
+              // Hiển thị avatar và tên nếu đã đăng nhập
+              <>
+                <Avatar 
                 src={user.avatar_url || team2}
                 sx={{ width: 32, height: 32 }}
               >
@@ -100,8 +348,8 @@ function DashboardNavbar({ absolute, light }) {
               >
                 {user.full_name || 'Parent'}
               </ArgonTypography>
-            </ArgonBox>
-          ) : (
+              </>
+            ) : (
             // Hiển thị nút Sign in nếu chưa đăng nhập
             <Link to="/authentication/sign-in/basic">
               <IconButton sx={navbarIconButton} size="small">
@@ -121,7 +369,8 @@ function DashboardNavbar({ absolute, light }) {
                 </ArgonTypography>
               </IconButton>
             </Link>
-          )}
+            )}
+          </ArgonBox>
         </ArgonBox>
       </Toolbar>
     </AppBar>

@@ -11,6 +11,16 @@ import PropTypes from "prop-types";
 import Card from "@mui/material/Card";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Divider from "@mui/material/Divider";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -21,13 +31,22 @@ import parentService from "services/parentService";
 
 function PostCard({ 
   post, 
+  currentUserId,
   onLike, 
   onComment, 
   onShowLikes, 
-  onOpenGallery 
+  onOpenGallery,
+  onEditPost,
+  onDeletePost
 }) {
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likes);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Check if current user owns this post
+  const isOwnPost = currentUserId && post.authorId && post.authorId === currentUserId;
 
   const handleLike = async () => {
     try {
@@ -40,6 +59,46 @@ function PostCard({
     } catch (error) {
       console.error('Error toggling like:', error);
     }
+  };
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleEditClick = () => {
+    handleMenuClose();
+    onEditPost(post);
+  };
+
+  const handleDeleteClick = () => {
+    handleMenuClose();
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await parentService.deletePost(post.id);
+      if (response.success) {
+        onDeletePost(post.id);
+        setDeleteDialogOpen(false);
+      } else {
+        alert('Có lỗi xảy ra khi xóa bài viết: ' + (response.error || 'Lỗi không xác định'));
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Có lỗi xảy ra khi xóa bài viết');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
   };
 
   const renderImages = () => {
@@ -246,6 +305,93 @@ function PostCard({
               </ArgonBox>
             </ArgonBox>
           </ArgonBox>
+          {/* Action menu for own posts */}
+          {isOwnPost && (
+            <>
+              <IconButton
+                onClick={handleMenuOpen}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    color: 'primary.main'
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
+              >
+                <i className="ni ni-settings-gear-65" style={{ fontSize: '20px' }} />
+              </IconButton>
+              
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                PaperProps={{
+                  sx: {
+                    minWidth: 180,
+                    mt: 1,
+                    borderRadius: 2,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                    border: '1px solid rgba(0,0,0,0.05)'
+                  }
+                }}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              >
+                {onEditPost && (
+                  <MenuItem 
+                    onClick={handleEditClick}
+                    sx={{
+                      py: 1.5,
+                      px: 2,
+                      '&:hover': {
+                        backgroundColor: 'rgba(94, 114, 228, 0.08)'
+                      }
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <i className="ni ni-settings-gear-65" style={{ fontSize: '18px', color: '#5e72e4' }} />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="Chỉnh sửa"
+                      primaryTypographyProps={{
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    />
+                  </MenuItem>
+                )}
+                
+                {onDeletePost && (
+                  <>
+                    {onEditPost && <Divider sx={{ my: 0.5 }} />}
+                    <MenuItem 
+                      onClick={handleDeleteClick}
+                      sx={{
+                        py: 1.5,
+                        px: 2,
+                        '&:hover': {
+                          backgroundColor: 'rgba(244, 67, 54, 0.08)'
+                        }
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <i className="ni ni-fat-remove" style={{ fontSize: '18px', color: '#f44336' }} />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Xóa bài viết"
+                        primaryTypographyProps={{
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#f44336'
+                        }}
+                      />
+                    </MenuItem>
+                  </>
+                )}
+              </Menu>
+            </>
+          )}
         </ArgonBox>
       </ArgonBox>
 
@@ -351,6 +497,100 @@ function PostCard({
           </Button>
         </ArgonBox>
       </ArgonBox>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+          }
+        }}
+      >
+        <DialogTitle>
+          <ArgonBox display="flex" alignItems="center" gap={2}>
+            <ArgonBox
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <i className="ni ni-fat-remove" style={{ fontSize: '24px', color: '#f44336' }} />
+            </ArgonBox>
+            <ArgonTypography variant="h6" fontWeight="bold" color="dark">
+              Xác nhận xóa bài viết
+            </ArgonTypography>
+          </ArgonBox>
+        </DialogTitle>
+        
+        <DialogContent>
+          <ArgonTypography variant="body1" color="text" mb={2}>
+            Bạn có chắc chắn muốn xóa bài viết này không?
+          </ArgonTypography>
+          <ArgonTypography variant="body2" color="text.secondary">
+            Hành động này không thể hoàn tác. Bài viết và tất cả dữ liệu liên quan (hình ảnh, bình luận, lượt thích) sẽ bị xóa vĩnh viễn.
+          </ArgonTypography>
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button
+            onClick={handleDeleteCancel}
+            disabled={isDeleting}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              py: 1,
+              textTransform: 'none',
+              fontWeight: 'bold',
+              border: '1px solid #e0e0e0',
+              color: 'text.secondary',
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.04)'
+              }
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            disabled={isDeleting}
+            variant="contained"
+            color="error"
+            startIcon={isDeleting ? <i className="ni ni-spinner" /> : <i className="ni ni-fat-remove" />}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              py: 1,
+              textTransform: 'none',
+              fontWeight: 'bold',
+              color: 'white !important',
+              background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%)',
+                color: 'white !important'
+              },
+              '&:disabled': {
+                background: 'rgba(244, 67, 54, 0.3)',
+                color: 'rgba(255, 255, 255, 0.7) !important'
+              },
+              '& .MuiButton-label': {
+                color: 'white !important'
+              }
+            }}
+          >
+            {isDeleting ? 'Đang xóa...' : 'Xóa bài viết'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }
@@ -358,6 +598,7 @@ function PostCard({
 PostCard.propTypes = {
   post: PropTypes.shape({
     id: PropTypes.string.isRequired,
+    authorId: PropTypes.string,
     title: PropTypes.string.isRequired,
     content: PropTypes.string.isRequired,
     author: PropTypes.string.isRequired,
@@ -369,10 +610,13 @@ PostCard.propTypes = {
     comments: PropTypes.number,
     isLiked: PropTypes.bool
   }).isRequired,
+  currentUserId: PropTypes.string,
   onLike: PropTypes.func.isRequired,
   onComment: PropTypes.func.isRequired,
   onShowLikes: PropTypes.func.isRequired,
-  onOpenGallery: PropTypes.func.isRequired
+  onOpenGallery: PropTypes.func.isRequired,
+  onEditPost: PropTypes.func,
+  onDeletePost: PropTypes.func
 };
 
 export default PostCard;

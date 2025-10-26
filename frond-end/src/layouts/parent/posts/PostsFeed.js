@@ -30,7 +30,10 @@ function PostsFeed({
   activeTab, 
   tabs, 
   posts: propPosts,
-  onUpdateCommentCount 
+  onUpdateCommentCount,
+  currentUserId,
+  onEditPost,
+  onDeletePost
 }) {
   const [posts, setPosts] = useState(propPosts || []);
   const [loading, setLoading] = useState(false);
@@ -113,6 +116,10 @@ function PostsFeed({
     );
   };
 
+  const handleDeletePost = (postId) => {
+    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+  };
+
   const handleCloseCommentModal = () => {
     setCommentModalOpen(false);
     setSelectedPost(null);
@@ -132,8 +139,7 @@ function PostsFeed({
   return (
     <>
       <ArgonBox 
-        maxWidth={{ xs: '100%', sm: '600px', md: '700px' }} 
-        mx="auto"
+        width="100%"
         px={{ xs: 1, sm: 2 }}
       >
         {/* Loading State */}
@@ -195,10 +201,13 @@ function PostsFeed({
           <PostCard
             key={post.id}
             post={post}
+            currentUserId={currentUserId}
             onLike={handleLike}
             onComment={handleComment}
             onShowLikes={handleShowLikes}
             onOpenGallery={handleOpenGallery}
+            onEditPost={onEditPost}
+            onDeletePost={onDeletePost || handleDeletePost}
           />
         ))}
 
@@ -263,7 +272,10 @@ PostsFeed.propTypes = {
   activeTab: PropTypes.number.isRequired,
   tabs: PropTypes.array.isRequired,
   posts: PropTypes.array,
-  onUpdateCommentCount: PropTypes.func.isRequired
+  onUpdateCommentCount: PropTypes.func.isRequired,
+  currentUserId: PropTypes.string,
+  onEditPost: PropTypes.func,
+  onDeletePost: PropTypes.func
 };
 
 export default PostsFeed;

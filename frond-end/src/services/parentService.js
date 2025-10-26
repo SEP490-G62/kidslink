@@ -4,11 +4,15 @@ class ParentService {
   /**
    * Lấy tất cả bài post cho phụ huynh
    * Backend sẽ tự động lấy lớp con đang học và trạng thái published
+   * @param {string} studentId - ID của học sinh (optional, để filter posts by child)
    * @returns {Promise<Object>} - Kết quả API call
    */
-  async getAllPosts() {
+  async getAllPosts(studentId = null) {
     try {
-      const data = await apiService.get('/parent/posts');
+      const url = studentId 
+        ? `/parent/posts?student_id=${studentId}` 
+        : '/parent/posts';
+      const data = await apiService.get(url);
       
       return {
         success: true,
@@ -139,6 +143,86 @@ class ParentService {
       return {
         success: false,
         error: error.message || 'Có lỗi xảy ra khi xóa comment'
+      };
+    }
+  }
+
+  /**
+   * Tạo bài post mới
+   * @param {string} content - Nội dung bài post
+   * @param {Array} images - Mảng các base64 images hoặc URLs
+   * @param {string} student_id - ID của học sinh (optional, để xác định lớp học)
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async createPost(content, images = [], student_id = null) {
+    try {
+      const data = { content, images };
+      if (student_id) {
+        data.student_id = student_id;
+      }
+      const response = await apiService.post('/parent/posts', data, true);
+      return response;
+    } catch (error) {
+      console.error('ParentService.createPost Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi tạo bài đăng'
+      };
+    }
+  }
+
+  /**
+   * Cập nhật bài post
+   * @param {string} postId - ID của bài post
+   * @param {string} content - Nội dung bài post mới
+   * @param {Array} images - Mảng các base64 images hoặc URLs
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async updatePost(postId, content, images = []) {
+    try {
+      const data = { content, images };
+      const response = await apiService.put(`/parent/posts/${postId}`, data);
+      return response;
+    } catch (error) {
+      console.error('ParentService.updatePost Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi cập nhật bài đăng'
+      };
+    }
+  }
+
+  /**
+   * Xóa bài post
+   * @param {string} postId - ID của bài post
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async deletePost(postId) {
+    try {
+      const response = await apiService.delete(`/parent/posts/${postId}`);
+      return response;
+    } catch (error) {
+      console.error('ParentService.deletePost Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi xóa bài đăng'
+      };
+    }
+  }
+
+  /**
+   * Lấy danh sách con của phụ huynh
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getChildren() {
+    try {
+      const response = await apiService.get('/parent/children');
+      return response;
+    } catch (error) {
+      console.error('ParentService.getChildren Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy danh sách con'
       };
     }
   }

@@ -16,6 +16,7 @@ import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import CircularProgress from "@mui/material/CircularProgress";
+import IconButton from "@mui/material/IconButton";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -23,6 +24,9 @@ import ArgonTypography from "components/ArgonTypography";
 
 // Services
 import parentService from "services/parentService";
+
+// Auth context
+import { useAuth } from "context/AuthContext";
 
 // Components
 import CommentItem from "./CommentItem";
@@ -33,6 +37,7 @@ function CommentModal({
   selectedPost, 
   onUpdateCommentCount 
 }) {
+  const { user } = useAuth();
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
@@ -207,6 +212,52 @@ function CommentModal({
     }
   };
 
+  const handleCommentUpdate = (commentId, newContent) => {
+    setComments(prevComments => 
+      prevComments.map(comment => {
+        if (comment._id === commentId) {
+          return { ...comment, contents: newContent };
+        }
+        // Update nested replies
+        if (comment.replies) {
+          const updateReplies = (replies) => {
+            return replies.map(reply => {
+              if (reply._id === commentId) {
+                return { ...reply, contents: newContent };
+              }
+              if (reply.replies) {
+                return { ...reply, replies: updateReplies(reply.replies) };
+              }
+              return reply;
+            });
+          };
+          return { ...comment, replies: updateReplies(comment.replies) };
+        }
+        return comment;
+      })
+    );
+  };
+
+  const handleCommentDelete = (commentId) => {
+    setComments(prevComments => {
+      const deleteComment = (comments) => {
+        return comments.filter(comment => {
+          if (comment._id === commentId) {
+            return false;
+          }
+          if (comment.replies) {
+            comment.replies = deleteComment(comment.replies);
+          }
+          return true;
+        });
+      };
+      return deleteComment(prevComments);
+    });
+    
+    // Update comment count in parent component
+    onUpdateCommentCount(selectedPost?.id, -1);
+  };
+
   // Don't render if selectedPost is null
   if (!selectedPost) {
     return null;
@@ -222,8 +273,8 @@ function CommentModal({
         sx: {
           height: '80vh',
           maxHeight: '800px',
-          borderRadius: '16px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.15)'
+          borderRadius: 3,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
         }
       }}
     >
@@ -233,19 +284,44 @@ function CommentModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: 'linear-gradient(135deg, #4c63d2 0%, #5a4fcf 100%)',
+        background: 'linear-gradient(135deg, #5e72e4 0%, #4c63d2 100%)',
         color: 'white'
       }}>
-        <ArgonTypography 
-          variant="h6" 
-          fontWeight="bold" 
+        <ArgonBox display="flex" alignItems="center" gap={2}>
+          <ArgonBox
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <i className="ni ni-chat-round" style={{ fontSize: '20px', color: 'white' }} />
+          </ArgonBox>
+          <ArgonTypography 
+            variant="h6" 
+            fontWeight="bold" 
+            sx={{
+              color: 'white !important'
+            }}
+          >
+            Bình luận
+          </ArgonTypography>
+        </ArgonBox>
+        <IconButton
+          onClick={onClose}
           sx={{
-            color: 'white !important'
+            color: 'white',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)'
+            }
           }}
         >
-          <i className="ni ni-chat-round" style={{ marginRight: '8px', color: 'white' }} />
-          Bình luận
-        </ArgonTypography>
+          <i className="ni ni-fat-remove" style={{ fontSize: '20px' }} />
+        </IconButton>
       </DialogTitle>
       
       <DialogContent sx={{ 
@@ -345,6 +421,9 @@ function CommentModal({
                   replyLoading={replyLoading}
                   setReplyLoading={setReplyLoading}
                   postId={selectedPost?.id}
+                  currentUserId={user?.id}
+                  onCommentUpdate={handleCommentUpdate}
+                  onCommentDelete={handleCommentDelete}
                 />
               ))}
                                   </ArgonBox>
@@ -407,19 +486,19 @@ function CommentModal({
               py: 1.5,
               textTransform: 'none',
               fontWeight: 'bold',
-                fontSize: '14px',
+              fontSize: '14px',
               color: 'white !important',
-              background: 'linear-gradient(135deg, #4c63d2 0%, #5a4fcf 100%)',
-              boxShadow: '0 4px 12px rgba(76, 99, 210, 0.3)',
-                borderRadius: '25px',
+              background: 'linear-gradient(135deg, #5e72e4 0%, #4c63d2 100%)',
+              boxShadow: '0 4px 12px rgba(94, 114, 228, 0.3)',
+              borderRadius: '25px',
               '&:hover': {
-                background: 'linear-gradient(135deg, #3d52c4 0%, #4a3fc7 100%)',
+                background: 'linear-gradient(135deg, #4c63d2 0%, #3f51b5 100%)',
                 color: 'white !important',
-                boxShadow: '0 6px 16px rgba(76, 99, 210, 0.4)'
+                boxShadow: '0 6px 16px rgba(94, 114, 228, 0.4)'
               },
               '&:disabled': {
-                background: '#e0e0e0',
-                color: '#9e9e9e !important',
+                background: 'rgba(94, 114, 228, 0.3)',
+                color: 'rgba(255, 255, 255, 0.7) !important',
                 boxShadow: 'none'
               },
               '& .MuiSvgIcon-root': {
@@ -430,7 +509,7 @@ function CommentModal({
               },
               '& .MuiButton-startIcon': {
                 color: 'white !important'
-                }
+              }
             }}
           >
             {commentLoading ? 'Đang gửi...' : 'Gửi'}
