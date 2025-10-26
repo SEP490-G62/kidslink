@@ -53,12 +53,6 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
 
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
-    const maxImages = 4 - images.length;
-
-    if (files.length > maxImages) {
-      setError(`Chỉ được tải tối đa ${maxImages} ảnh nữa`);
-      return;
-    }
 
     const fileReaders = files.map((file) => {
       return new Promise((resolve) => {
@@ -92,10 +86,7 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
       return;
     }
 
-    if (images.length > 4) {
-      setError("Chỉ được tải tối đa 4 ảnh");
-      return;
-    }
+    // Removed image limit - allow unlimited images
 
     setLoading(true);
 
@@ -303,13 +294,12 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
             {/* Image Upload */}
             <ArgonBox mb={2}>
               <ArgonTypography variant="body2" fontWeight="bold" mb={1}>
-                Thêm ảnh ({images.length}/4)
+                Thêm ảnh ({images.length})
               </ArgonTypography>
               <Button
                 variant="outlined"
                 component="label"
                 fullWidth
-                disabled={images.length >= 4}
                 startIcon={<i className="ni ni-image" />}
                 sx={{ 
                   borderRadius: 2, 
