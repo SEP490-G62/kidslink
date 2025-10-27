@@ -13,6 +13,7 @@ import ArgonBox from "components/ArgonBox";
 
 // Argon Dashboard 2 MUI example components
 import Sidenav from "examples/Sidenav";
+import ParentSidenav from "examples/Sidenav/parent";
 import Configurator from "examples/Configurator";
 
 // Argon Dashboard 2 MUI themes
@@ -107,6 +108,7 @@ export default function App() {
   const isTeacherPath = pathname.startsWith("/teacher");
   const isParentPath = pathname.startsWith("/parent");
   const activeRoutes = isTeacherPath ? teacherRoutes : isParentPath ? parentRoutes : routes;
+  const SidenavComponent = isParentPath ? ParentSidenav : Sidenav;
 
   const configsButton = (
     <ArgonBox
@@ -140,7 +142,7 @@ export default function App() {
             <CssBaseline />
             {layout === "dashboard" && (
               <>
-                <Sidenav
+                <SidenavComponent
                   color={sidenavColor}
                   brand={darkSidenav || darkMode ? brand : brandDark}
                   brandName="KidsLink"
@@ -164,7 +166,7 @@ export default function App() {
           <CssBaseline />
           {layout === "dashboard" && (
             <>
-              <Sidenav
+              <SidenavComponent
                 color={sidenavColor}
                 brand={darkSidenav || darkMode ? brand : brandDark}
                 brandName="KidsLink"
