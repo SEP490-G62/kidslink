@@ -11,6 +11,6 @@ const parentRouter = require('./parent');
 router.use('/auth', authRouter);
 router.use('/users', userRouter);
 router.use('/teachers', teacherRouter);
-router.use('/parents', parentRouter);
+router.use('/parent', parentRouter);
 
 module.exports = router;
