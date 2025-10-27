@@ -226,6 +226,41 @@ class ParentService {
       };
     }
   }
+
+  /**
+   * Lấy thông tin cá nhân của phụ huynh
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getPersonalInfo() {
+    try {
+      const response = await apiService.get('/parent/personal-info');
+      return response;
+    } catch (error) {
+      console.error('ParentService.getPersonalInfo Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy thông tin cá nhân'
+      };
+    }
+  }
+
+  /**
+   * Cập nhật thông tin cá nhân của phụ huynh
+   * @param {Object} userData - Dữ liệu cập nhật (full_name, email, phone_number, avatar_url, password)
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async updatePersonalInfo(userData) {
+    try {
+      const response = await apiService.put('/parent/personal-info', userData);
+      return response;
+    } catch (error) {
+      console.error('ParentService.updatePersonalInfo Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi cập nhật thông tin cá nhân'
+      };
+    }
+  }
 }
 
 const parentService = new ParentService();
