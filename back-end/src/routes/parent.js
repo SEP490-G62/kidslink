@@ -14,7 +14,9 @@ const {
   getComments,
   updateComment,
   deleteComment,
-  createCommentValidators
+  createCommentValidators,
+  getPersonalInfo,
+  updatePersonalInfo
 } = require('../controllers/parentController');
 
 // Áp dụng authentication và authorization cho tất cả routes
@@ -39,5 +41,9 @@ router.post('/posts/:postId/comments', createCommentValidators, createComment);
 router.get('/posts/:postId/comments', getComments);
 router.put('/comments/:commentId', updateComment);
 router.delete('/comments/:commentId', deleteComment);
+
+// Routes cho personal info
+router.get('/personal-info', getPersonalInfo);
+router.put('/personal-info', updatePersonalInfo);
 
 module.exports = router;
