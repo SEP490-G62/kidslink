@@ -49,7 +49,7 @@ const teacherRoutes = [
     name: "Học sinh",
     key: "teacher-students",
     route: "/teacher/students",
-    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-circle-08" />,
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-single-02" />,
     component: <ProtectedRoute requiredRoles={['teacher']}><TeacherStudents /></ProtectedRoute>,
   },
   {
@@ -57,7 +57,7 @@ const teacherRoutes = [
     name: "Báo cáo",
     key: "teacher-reports",
     route: "/teacher/reports",
-    icon: <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-single-copy-04" />,
+    icon: <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-chart-bar-32" />,
     component: <ProtectedRoute requiredRoles={['teacher']}><TeacherReports /></ProtectedRoute>,
   },
   {
@@ -65,7 +65,7 @@ const teacherRoutes = [
     name: "Điểm danh",
     key: "teacher-attendance",
     route: "/teacher/attendance",
-    icon: <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-single-copy-04" />,
+    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-check-bold" />,
     component: <ProtectedRoute requiredRoles={['teacher']}><TeacherAttendance /></ProtectedRoute>,
   },
   {
@@ -82,7 +82,7 @@ const teacherRoutes = [
     name: "Hồ sơ",
     key: "teacher-profile",
     route: "/teacher/profile",
-    icon: <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-single-02" />,
+    icon: <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-circle-08" />,
     component: <ProtectedRoute requiredRoles={['teacher']}><TeacherProfile /></ProtectedRoute>,
   },
   {
