@@ -15,6 +15,10 @@ const classAgeMealSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'WeekDay',
     required: true
+  },
+  date: {
+    type: Date,
+    required: true
   }
 }, {
   timestamps: true
