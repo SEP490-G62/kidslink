@@ -25,6 +25,26 @@ import ParentComplaintsFeedback from "layouts/parent/complaints-feedback/index";
 import ParentChat from "layouts/parent/chat/index";
 import ChatDetail from "layouts/parent/chat/detail";
 
+// Logout component
+import { useEffect } from "react";
+import { useAuth } from "context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+const Logout = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleLogout = async () => {
+      await logout();
+      navigate("/authentication/sign-in");
+    };
+    handleLogout();
+  }, [logout, navigate]);
+
+  return null;
+};
+
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
 import ProtectedRoute from "components/ProtectedRoute";
@@ -108,11 +128,11 @@ const parentRoutes = [
   },
   {
     type: "route",
-    name: "Chi tiết tin nhắn",
-    key: "parent-chat-detail",
-    route: "/parent/chat/:conversationId",
-    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
-    component: <ProtectedRoute requiredRoles={['parent']}><ChatDetail /></ProtectedRoute>,
+    name: "Đăng xuất",
+    key: "parent-logout",
+    route: "/logout",
+    icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-user-run" />,
+    component: <ProtectedRoute requiredRoles={['parent']}><Logout /></ProtectedRoute>,
   },
 ];
 
