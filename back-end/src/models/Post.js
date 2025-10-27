@@ -14,8 +14,8 @@ const postSchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    enum: ['draft', 'published', 'archived'],
-    default: 'published'
+    enum: ['pending', 'approved'],
+    default: 'pending'
   },
   user_id: {
     type: mongoose.Schema.Types.ObjectId,

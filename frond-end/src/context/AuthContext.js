@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedChild, setSelectedChild] = useState(null);
 
   // Khởi tạo auth state từ localStorage
   useEffect(() => {
@@ -87,6 +88,8 @@ export const AuthProvider = ({ children }) => {
     user,
     token,
     loading,
+    selectedChild,
+    setSelectedChild,
     login,
     logout,
     isAuthenticated,
