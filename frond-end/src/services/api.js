@@ -31,22 +31,42 @@ class ApiService {
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      // Handle authentication errors
+      if (response.status === 401) {
+        // Clear invalid token
+        localStorage.removeItem('token');
+        // Redirect to login if not already there
+        if (window.location.pathname !== '/auth/login') {
+          window.location.href = '/auth/login';
+        }
+        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      }
+      
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: data
+      });
+      
+      throw new Error(data.error || data.details || `HTTP error! status: ${response.status}`);
     }
     
     return data;
   }
 
   // POST request
-  async post(endpoint, data, includeAuth = false) {
+  async post(endpoint, data, includeAuth = true) {
     try {
+      console.log('API POST:', endpoint, 'Data:', data);
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         method: 'POST',
         headers: this.getHeaders(includeAuth),
         body: JSON.stringify(data),
       });
 
-      return await this.handleResponse(response);
+      const result = await this.handleResponse(response);
+      console.log('API POST Response:', result);
+      return result;
     } catch (error) {
       console.error(`API POST Error (${endpoint}):`, error);
       throw error;

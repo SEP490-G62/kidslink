@@ -18,6 +18,7 @@ import TeacherHome from "layouts/teacher";
 import TeacherClasses from "layouts/teacher/pages/Classes/index";
 import TeacherStudents from "layouts/teacher/pages/Students/index";
 import TeacherReports from "layouts/teacher/pages/Reports/index";
+import TeacherAttendance from "layouts/teacher/pages/Attendance/index";
 import TeacherSchedule from "layouts/teacher/pages/Schedule/index";
 import TeacherProfile from "layouts/teacher/pages/Profile/index";
 import TeacherSettings from "layouts/teacher/pages/Settings/index";
@@ -58,6 +59,14 @@ const teacherRoutes = [
     route: "/teacher/reports",
     icon: <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-single-copy-04" />,
     component: <ProtectedRoute requiredRoles={['teacher']}><TeacherReports /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Điểm danh",
+    key: "teacher-attendance",
+    route: "/teacher/attendance",
+    icon: <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-single-copy-04" />,
+    component: <ProtectedRoute requiredRoles={['teacher']}><TeacherAttendance /></ProtectedRoute>,
   },
   {
     type: "route",

@@ -11,8 +11,8 @@ Coded by KidsLink Team
  =========================================================
 */
 
-import React from 'react';
-import { Grid, Card, CardContent, CardActions, Button, Chip, Box, Typography } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Grid, Card, CardContent, CardActions, Button, Chip, Box, Typography, Avatar, CircularProgress, Alert } from '@mui/material';
 import ArgonBox from 'components/ArgonBox';
 import ArgonTypography from 'components/ArgonTypography';
 import ArgonButton from 'components/ArgonButton';
@@ -22,76 +22,111 @@ import TeacherNavbar from 'examples/Navbars/TeacherNavbar';
 import DashboardLayout from 'examples/LayoutContainers/DashboardLayout';
 import Footer from 'examples/Footer';
 
-const TeacherClasses = () => {
-  // Mock data - trong thực tế sẽ lấy từ API
-  const classes = [
-    {
-      id: 1,
-      name: 'Lớp Mầm Non A1',
-      ageGroup: '3-4 tuổi',
-      studentCount: 25,
-      maxStudents: 30,
-      status: 'active',
-      teacher: 'Nguyễn Thị Lan',
-      room: 'Phòng 101',
-      schedule: 'Thứ 2-6, 8:00-16:00',
-      nextActivity: 'Hoạt động ngoài trời - 9:00 AM'
-    },
-    {
-      id: 2,
-      name: 'Lớp Mầm Non A2',
-      ageGroup: '4-5 tuổi',
-      studentCount: 22,
-      maxStudents: 30,
-      status: 'active',
-      teacher: 'Trần Văn Minh',
-      room: 'Phòng 102',
-      schedule: 'Thứ 2-6, 8:00-16:00',
-      nextActivity: 'Giờ học vẽ - 10:30 AM'
-    },
-    {
-      id: 3,
-      name: 'Lớp Mầm Non B1',
-      ageGroup: '5-6 tuổi',
-      studentCount: 28,
-      maxStudents: 30,
-      status: 'active',
-      teacher: 'Lê Thị Hoa',
-      room: 'Phòng 103',
-      schedule: 'Thứ 2-6, 8:00-16:00',
-      nextActivity: 'Giờ học toán - 2:00 PM'
-    },
-    {
-      id: 4,
-      name: 'Lớp Mầm Non C1',
-      ageGroup: '2-3 tuổi',
-      studentCount: 18,
-      maxStudents: 25,
-      status: 'inactive',
-      teacher: 'Phạm Văn Đức',
-      room: 'Phòng 104',
-      schedule: 'Thứ 2-6, 8:00-16:00',
-      nextActivity: 'Tạm dừng hoạt động'
-    }
-  ];
+// API service
+import api from 'services/api';
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'success';
-      case 'inactive': return 'error';
-      case 'maintenance': return 'warning';
-      default: return 'info';
+const TeacherClasses = () => {
+  const [classData, setClassData] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchClassData();
+  }, []);
+
+  const fetchClassData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.get('/teachers/class');
+      setClassData(response.data);
+      
+      // Lấy danh sách học sinh
+      const studentsResponse = await api.get('/teachers/class/students');
+      setStudents(studentsResponse.data.students);
+      
+    } catch (err) {
+      console.error('Error fetching class data:', err);
+      setError(err.message || 'Không thể tải thông tin lớp học');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  const calculateAge = (dob) => {
+    if (!dob) return 'N/A';
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const getGenderText = (gender) => {
+    return gender === 0 ? 'Nam' : 'Nữ';
   };
 
   const getStatusText = (status) => {
-    switch (status) {
-      case 'active': return 'Hoạt động';
-      case 'inactive': return 'Tạm dừng';
-      case 'maintenance': return 'Bảo trì';
-      default: return 'Không xác định';
-    }
+    return status === 1 ? 'Hoạt động' : 'Tạm dừng';
   };
+
+  const getStatusColor = (status) => {
+    return status === 1 ? 'success' : 'error';
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <TeacherNavbar />
+        <ArgonBox py={3} display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </ArgonBox>
+        <Footer />
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <TeacherNavbar />
+        <ArgonBox py={3}>
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+          <ArgonButton onClick={fetchClassData} color="info">
+            Thử lại
+          </ArgonButton>
+        </ArgonBox>
+        <Footer />
+      </DashboardLayout>
+    );
+  }
+
+  if (!classData) {
+    return (
+      <DashboardLayout>
+        <TeacherNavbar />
+        <ArgonBox py={3}>
+          <Alert severity="info">
+            Không tìm thấy thông tin lớp học
+          </Alert>
+        </ArgonBox>
+        <Footer />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -100,131 +135,165 @@ const TeacherClasses = () => {
         {/* Header */}
         <ArgonBox mb={3}>
           <ArgonTypography variant="h4" fontWeight="bold" mb={1}>
-            Quản lý lớp học
+            Lớp học của tôi
           </ArgonTypography>
           <ArgonTypography variant="body1" color="text">
-            Quản lý và theo dõi các lớp học được phân công
+            Thông tin chi tiết về lớp học được phân công
           </ArgonTypography>
         </ArgonBox>
 
-        {/* Statistics */}
+        {/* Class Information Card */}
         <Grid container spacing={3} mb={3}>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} md={8}>
             <Card>
               <CardContent>
-                <ArgonTypography variant="h6" color="primary" fontWeight="bold">
-                  {classes.length}
-                </ArgonTypography>
-                <ArgonTypography variant="body2" color="text">
-                  Tổng số lớp
-                </ArgonTypography>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <ArgonTypography variant="h5" fontWeight="bold">
+                    {classData.class_info.class_name}
+                  </ArgonTypography>
+                  <Chip 
+                    label="Hoạt động"
+                    color="success"
+                    size="small"
+                  />
+                </Box>
+                
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <ArgonTypography variant="body2" color="text" mb={1}>
+                      <strong>Năm học:</strong> {classData.class_info.academic_year}
+                    </ArgonTypography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <ArgonTypography variant="body2" color="text" mb={1}>
+                      <strong>Độ tuổi:</strong> {classData.class_info.class_age?.age_name || 'N/A'}
+                    </ArgonTypography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <ArgonTypography variant="body2" color="text" mb={1}>
+                      <strong>Trường:</strong> {classData.class_info.school?.school_name || 'N/A'}
+                    </ArgonTypography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <ArgonTypography variant="body2" color="text" mb={1}>
+                      <strong>Địa chỉ:</strong> {classData.class_info.school?.address || 'N/A'}
+                    </ArgonTypography>
+                  </Grid>
+                  {classData.class_info.assistant_teacher && (
+                    <Grid item xs={12}>
+                      <ArgonTypography variant="body2" color="text" mb={1}>
+                        <strong>Giáo viên phụ:</strong> {classData.class_info.assistant_teacher.user_id?.full_name || 'N/A'}
+                      </ArgonTypography>
+                    </Grid>
+                  )}
+                </Grid>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={3}>
+          
+          <Grid item xs={12} md={4}>
             <Card>
               <CardContent>
-                <ArgonTypography variant="h6" color="success" fontWeight="bold">
-                  {classes.filter(c => c.status === 'active').length}
+                <ArgonTypography variant="h6" fontWeight="bold" mb={2}>
+                  Thống kê lớp học
                 </ArgonTypography>
-                <ArgonTypography variant="body2" color="text">
-                  Lớp hoạt động
-                </ArgonTypography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent>
-                <ArgonTypography variant="h6" color="info" fontWeight="bold">
-                  {classes.reduce((sum, c) => sum + c.studentCount, 0)}
-                </ArgonTypography>
-                <ArgonTypography variant="body2" color="text">
-                  Tổng học sinh
-                </ArgonTypography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent>
-                <ArgonTypography variant="h6" color="warning" fontWeight="bold">
-                  {classes.filter(c => c.studentCount >= c.maxStudents * 0.9).length}
-                </ArgonTypography>
-                <ArgonTypography variant="body2" color="text">
-                  Lớp gần đầy
-                </ArgonTypography>
+                <ArgonBox mb={2}>
+                  <ArgonTypography variant="h4" color="primary" fontWeight="bold">
+                    {classData.statistics.total_students}
+                  </ArgonTypography>
+                  <ArgonTypography variant="body2" color="text">
+                    Tổng số học sinh
+                  </ArgonTypography>
+                </ArgonBox>
+                <ArgonBox mb={2}>
+                  <ArgonTypography variant="h4" color="info" fontWeight="bold">
+                    {classData.statistics.average_age}
+                  </ArgonTypography>
+                  <ArgonTypography variant="body2" color="text">
+                    Tuổi trung bình
+                  </ArgonTypography>
+                </ArgonBox>
+                <ArgonBox>
+                  <ArgonTypography variant="h4" color="success" fontWeight="bold">
+                    {classData.statistics.class_age_range}
+                  </ArgonTypography>
+                  <ArgonTypography variant="body2" color="text">
+                    Nhóm tuổi
+                  </ArgonTypography>
+                </ArgonBox>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
 
-        {/* Classes List */}
-        <Grid container spacing={3}>
-          {classes.map((classItem) => (
-            <Grid item xs={12} md={6} lg={4} key={classItem.id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                    <ArgonTypography variant="h6" fontWeight="bold">
-                      {classItem.name}
-                    </ArgonTypography>
-                    <Chip 
-                      label={getStatusText(classItem.status)}
-                      color={getStatusColor(classItem.status)}
-                      size="small"
-                    />
-                  </Box>
-                  
-                  <ArgonTypography variant="body2" color="text" mb={1}>
-                    <strong>Độ tuổi:</strong> {classItem.ageGroup}
-                  </ArgonTypography>
-                  
-                  <ArgonTypography variant="body2" color="text" mb={1}>
-                    <strong>Học sinh:</strong> {classItem.studentCount}/{classItem.maxStudents}
-                  </ArgonTypography>
-                  
-                  <ArgonTypography variant="body2" color="text" mb={1}>
-                    <strong>Giáo viên:</strong> {classItem.teacher}
-                  </ArgonTypography>
-                  
-                  <ArgonTypography variant="body2" color="text" mb={1}>
-                    <strong>Phòng:</strong> {classItem.room}
-                  </ArgonTypography>
-                  
-                  <ArgonTypography variant="body2" color="text" mb={1}>
-                    <strong>Lịch học:</strong> {classItem.schedule}
-                  </ArgonTypography>
-                  
-                  <ArgonTypography variant="body2" color="text">
-                    <strong>Hoạt động tiếp theo:</strong>
-                  </ArgonTypography>
-                  <ArgonTypography variant="body2" color="primary" sx={{ mt: 0.5 }}>
-                    {classItem.nextActivity}
-                  </ArgonTypography>
-                </CardContent>
-                
-                <CardActions sx={{ p: 2, pt: 0 }}>
-                  <ArgonButton 
-                    variant="outlined" 
-                    color="info" 
-                    size="small"
-                    sx={{ mr: 1 }}
-                  >
-                    Chi tiết
-                  </ArgonButton>
-                  <ArgonButton 
-                    variant="contained" 
-                    color="info" 
-                    size="small"
-                  >
-                    Quản lý
-                  </ArgonButton>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        {/* Students List */}
+        <Card>
+          <CardContent>
+            <ArgonTypography variant="h6" fontWeight="bold" mb={3}>
+              Danh sách học sinh ({students.length} học sinh)
+            </ArgonTypography>
+            
+            {students.length === 0 ? (
+              <ArgonBox textAlign="center" py={4}>
+                <ArgonTypography variant="body1" color="text">
+                  Chưa có học sinh nào trong lớp
+                </ArgonTypography>
+              </ArgonBox>
+            ) : (
+              <Grid container spacing={2}>
+                {students.map((student) => (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={student._id}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                          <Avatar 
+                            src={student.avatar_url} 
+                            alt={student.full_name}
+                            sx={{ width: 40, height: 40, mr: 2 }}
+                          />
+                          <Box>
+                            <ArgonTypography variant="subtitle2" fontWeight="bold">
+                              {student.full_name}
+                            </ArgonTypography>
+                            <ArgonTypography variant="caption" color="text">
+                              {getGenderText(student.gender)} • {calculateAge(student.dob)} tuổi
+                            </ArgonTypography>
+                          </Box>
+                        </Box>
+                        
+                        <ArgonTypography variant="body2" color="text" mb={1}>
+                          <strong>Ngày sinh:</strong> {formatDate(student.dob)}
+                        </ArgonTypography>
+                        
+                        <ArgonTypography variant="body2" color="text" mb={1}>
+                          <strong>Trạng thái:</strong> 
+                          <Chip 
+                            label={getStatusText(student.status)}
+                            color={getStatusColor(student.status)}
+                            size="small"
+                            sx={{ ml: 1 }}
+                          />
+                        </ArgonTypography>
+                        
+                        {student.allergy && student.allergy !== 'Không' && (
+                          <ArgonTypography variant="body2" color="warning" mb={1}>
+                            <strong>Dị ứng:</strong> {student.allergy}
+                          </ArgonTypography>
+                        )}
+                        
+                        {student.discount > 0 && (
+                          <ArgonTypography variant="body2" color="success">
+                            <strong>Giảm giá:</strong> {student.discount}%
+                          </ArgonTypography>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </CardContent>
+        </Card>
       </ArgonBox>
       <Footer />
     </DashboardLayout>
