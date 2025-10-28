@@ -337,6 +337,23 @@ class ParentService {
       };
     }
   }
+
+  /**
+   * Lấy toàn bộ daily reports theo học sinh
+   * @param {string} studentId
+   */
+  async getDailyReports(studentId) {
+    try {
+      const params = new URLSearchParams();
+      if (studentId) params.append('student_id', studentId);
+      const url = `/parent/daily-reports?${params.toString()}`;
+      const response = await apiService.get(url);
+      return response;
+    } catch (error) {
+      console.error('ParentService.getDailyReports Error:', error);
+      return { success: false, error: error.message || 'Lỗi lấy daily reports' };
+    }
+  }
 }
 
 const parentService = new ParentService();
