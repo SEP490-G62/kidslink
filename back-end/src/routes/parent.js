@@ -26,6 +26,8 @@ const {
   deletePickup
 } = require('../controllers/parent/childInfoController');
 
+const { getDailyReports } = require('../controllers/parent/dailyReportController');
+
 // Áp dụng authentication và authorization cho tất cả routes
 router.use(authenticate);
 router.use(authorize(['parent']));
@@ -60,5 +62,8 @@ router.get('/child-info/:studentId', getChildInfo);
 router.post('/pickups/:studentId', addPickup);
 router.put('/pickups/:pickupId/:studentId', updatePickup);
 router.delete('/pickups/:pickupId/:studentId', deletePickup);
+
+// Routes cho daily reports
+router.get('/daily-reports', getDailyReports);
 
 module.exports = router;

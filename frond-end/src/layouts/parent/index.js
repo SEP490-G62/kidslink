@@ -334,7 +334,7 @@ function ParentDashboard() {
               boxShadow: 3,
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               border: '1px solid rgba(255,255,255,0.2)',
-              maxWidth: 900,
+              maxWidth: 1200,
               mx: 'auto'
             }}>
               <ArgonBox display="flex" justifyContent="space-between" alignItems="center" p={3}>
@@ -410,7 +410,7 @@ function ParentDashboard() {
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              maxWidth: 900,
+              maxWidth: 1200,
               mx: 'auto'
             }}>
               <ArgonBox 
