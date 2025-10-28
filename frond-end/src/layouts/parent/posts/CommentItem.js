@@ -332,6 +332,7 @@ function CommentItem({
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     fontSize: '13px',
+                    backgroundColor: '#f8f9fa',
                     '& fieldset': {
                       borderColor: '#e0e0e0',
                     },
@@ -340,13 +341,25 @@ function CommentItem({
                     },
                     '&.Mui-focused fieldset': {
                       borderColor: '#4c63d2',
+                      borderWidth: '2px',
                     },
                   },
                   '& .MuiInputBase-input': {
                     fontSize: '13px',
                     padding: '8px 12px',
                     whiteSpace: 'pre-wrap',
-                    overflowWrap: 'break-word'
+                    overflowWrap: 'break-word',
+                    width: '100% !important',
+                    minWidth: '0 !important',
+                    maxWidth: 'none !important',
+                    overflow: 'visible !important',
+                    textOverflow: 'unset !important',
+                    boxSizing: 'border-box !important',
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    width: '100% !important',
+                    minWidth: '0 !important',
+                    maxWidth: 'none !important',
                   }
                 }}
               />
@@ -440,6 +453,7 @@ function CommentItem({
               sx={{
                 '& .MuiOutlinedInput-root': {
                   fontSize: '12px',
+                  backgroundColor: '#f8f9fa',
                   '& fieldset': {
                     borderColor: '#e0e0e0',
                   },
@@ -448,13 +462,25 @@ function CommentItem({
                   },
                   '&.Mui-focused fieldset': {
                     borderColor: '#4c63d2',
+                    borderWidth: '2px',
                   },
                 },
                 '& .MuiInputBase-input': {
                   fontSize: '12px',
                   padding: '8px 12px',
                   whiteSpace: 'pre-wrap',
-                  overflowWrap: 'break-word'
+                  overflowWrap: 'break-word',
+                  width: '100% !important',
+                  minWidth: '0 !important',
+                  maxWidth: 'none !important',
+                  overflow: 'visible !important',
+                  textOverflow: 'unset !important',
+                  boxSizing: 'border-box !important',
+                },
+                '& .MuiOutlinedInput-input': {
+                  width: '100% !important',
+                  minWidth: '0 !important',
+                  maxWidth: 'none !important',
                 }
               }}
             />

@@ -18,10 +18,15 @@ mongoimport --uri "mongodb://localhost:27017/kidslink" --collection posts --file
 mongoimport --uri "mongodb://localhost:27017/kidslink" --collection postimages --file postImages.json --jsonArray
 mongoimport --uri "mongodb://localhost:27017/kidslink" --collection postlikes --file postLikes.json --jsonArray
 mongoimport --uri "mongodb://localhost:27017/kidslink" --collection postcomments --file postComments.json --jsonArray
+mongoimport --uri "mongodb://localhost:27017/kidslink" --collection healthcares --file healthCareStaff.json --jsonArray
+mongoimport --uri "mongodb://localhost:27017/kidslink" --collection healthrecords --file healthRecords.json --jsonArray
+mongoimport --uri "mongodb://localhost:27017/kidslink" --collection healthnotices --file healthNotices.json --jsonArray
+mongoimport --uri "mongodb://localhost:27017/kidslink" --collection pickups --file pickups.json --jsonArray
+mongoimport --uri "mongodb://localhost:27017/kidslink" --collection pickupstudents --file pickupStudents.json --jsonArray
 ```
 
 3) Thứ tự khuyến nghị:
-- users → schools → classAges → teachers/parents → classes → students → quan hệ (parentStudents, studentClasses) → posts → postImages/postLikes/postComments.
+- users → schools → classAges → teachers/parents/healthcares → classes → students → quan hệ (parentStudents, studentClasses) → posts → postImages/postLikes/postComments → healthrecords → healthnotices → pickups → pickupstudents.
 
 4) Lưu ý:
 - Các khóa ngoại dùng ObjectId phải khớp giữa các file.

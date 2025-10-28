@@ -3,6 +3,7 @@ const postsController = require('./parent/postsController');
 const commentsController = require('./parent/commentsController');
 const likesController = require('./parent/likesController');
 const personalInfoController = require('./parent/personalInfoController');
+const childInfoController = require('./parent/childInfoController');
 
 
 module.exports = {
@@ -26,5 +27,8 @@ module.exports = {
   
   // Export functions from personal info controller
   getPersonalInfo: personalInfoController.getPersonalInfo,
-  updatePersonalInfo: personalInfoController.updatePersonalInfo
+  updatePersonalInfo: personalInfoController.updatePersonalInfo,
+  
+  // Export functions from child info controller
+  getChildInfo: childInfoController.getChildInfo
 };

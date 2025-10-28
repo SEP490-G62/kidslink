@@ -19,6 +19,13 @@ const {
   updatePersonalInfo
 } = require('../controllers/parentController');
 
+const {
+  getChildInfo,
+  addPickup,
+  updatePickup,
+  deletePickup
+} = require('../controllers/parent/childInfoController');
+
 // Áp dụng authentication và authorization cho tất cả routes
 router.use(authenticate);
 router.use(authorize(['parent']));
@@ -45,5 +52,13 @@ router.delete('/comments/:commentId', deleteComment);
 // Routes cho personal info
 router.get('/personal-info', getPersonalInfo);
 router.put('/personal-info', updatePersonalInfo);
+
+// Routes cho child info
+router.get('/child-info/:studentId', getChildInfo);
+
+// Routes cho pickups
+router.post('/pickups/:studentId', addPickup);
+router.put('/pickups/:pickupId/:studentId', updatePickup);
+router.delete('/pickups/:pickupId/:studentId', deletePickup);
 
 module.exports = router;

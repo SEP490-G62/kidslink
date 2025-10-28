@@ -1,0 +1,13 @@
+[
+  {
+    "_id": { "$oid": "6710a0000000000000000B00" },
+    "qualification": "Điều dưỡng Đại học",
+    "major": "Y tế Công cộng",
+    "experience_years": 8,
+    "note": "Y tá phụ trách sức khỏe cho trẻ mầm non, có kinh nghiệm 8 năm",
+    "user_id": { "$oid": "6710a0000000000000000006" },
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  }
+]
+
