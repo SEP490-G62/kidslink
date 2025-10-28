@@ -193,22 +193,11 @@ function CommentItem({
     <ArgonBox 
       mb={depth === 0 ? 2 : 1} 
       p={getPadding(depth)} 
-      bgcolor={comment.isNew ? "rgba(102, 126, 234, 0.1)" : "#f0f2f5"} 
       sx={{
-        borderRadius: '8px',
-        backgroundColor: comment.isNew ? 'rgba(102, 126, 234, 0.1) !important' : '#f0f2f5 !important',
-        animation: comment.isNew ? 'fadeInUp 0.5s ease-out' : 'none',
+        animation: comment.isNew ? 'fadeInUp 0.4s ease-out' : 'none',
         '@keyframes fadeInUp': {
-          '0%': {
-            opacity: 0,
-            transform: 'translateY(10px)',
-            backgroundColor: 'rgba(102, 126, 234, 0.2)'
-          },
-          '100%': {
-            opacity: 1,
-            transform: 'translateY(0)',
-            backgroundColor: comment.isNew ? 'rgba(102, 126, 234, 0.1)' : '#f0f2f5'
-          }
+          '0%': { opacity: 0, transform: 'translateY(6px)' },
+          '100%': { opacity: 1, transform: 'translateY(0)' }
         }
       }}
     >
@@ -223,216 +212,115 @@ function CommentItem({
           }}
         />
         <ArgonBox flex={1}>
-          <ArgonBox display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-            <ArgonBox display="flex" alignItems="center">
-              <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
-                {comment.user_id?.full_name}
+          <ArgonBox
+            sx={{
+              display: 'inline-block',
+              maxWidth: '100%',
+              backgroundColor: '#f0f2f5',
+              borderRadius: '18px',
+              padding: '8px 12px',
+            }}
+          >
+            <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
+              {comment.user_id?.full_name}
+            </ArgonTypography>
+            {isEditing ? (
+              <ArgonBox mt={0.5}>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  maxRows={4}
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    mt: 0.5,
+                    '& .MuiOutlinedInput-root': {
+                      fontSize: '13px',
+                      backgroundColor: 'white',
+                    }
+                  }}
+                />
+                <ArgonBox display="flex" gap={1} mt={1}>
+                  <Button 
+                    onClick={handleEditSave}
+                    variant="contained"
+                    disabled={!editText.trim() || isUpdating}
+                    startIcon={isUpdating ? <CircularProgress size={14} color="inherit" /> : <i className="ni ni-check-bold" />}
+                    size="small"
+                    sx={{ textTransform: 'none', fontSize: '12px', px: 2, py: 0.5 }}
+                  >
+                    {isUpdating ? 'Đang lưu...' : 'Lưu'}
+                  </Button>
+                  <Button 
+                    onClick={handleEditCancel}
+                    size="small"
+                    sx={{ color: '#65676b', textTransform: 'none', fontSize: '12px', px: 1.5, py: 0.5 }}
+                  >
+                    Hủy
+                  </Button>
+                </ArgonBox>
+              </ArgonBox>
+            ) : (
+              <ArgonTypography variant="body2" color="text" sx={{ lineHeight: 1.5, fontSize: '13px', fontWeight: 400, mt: 0.25 }}>
+                {comment.contents}
               </ArgonTypography>
-              <ArgonTypography variant="caption" color="text.secondary" fontSize="11px" ml={1}>
-                {new Date(comment.create_at).toLocaleString('vi-VN')}
-              </ArgonTypography>
-            </ArgonBox>
-            
-            {/* Action menu for own comments */}
+            )}
+          </ArgonBox>
+
+          {/* Actions row: like, reply, timestamp, menu */}
+          <ArgonBox display="flex" alignItems="center" gap={1.5} mt={0.75} ml={0.5}>
+            {!isEditing && (
+              <Button
+                size="small"
+                onClick={() => handleStartReply(comment)}
+                sx={{
+                  color: '#65676b',
+                  textTransform: 'none',
+                  fontSize: '12px',
+                  minWidth: 'auto',
+                  px: 0,
+                  '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' }
+                }}
+              >
+                Trả lời
+              </Button>
+            )}
+            <ArgonTypography variant="caption" color="text.secondary" fontSize="11px">
+              {new Date(comment.create_at).toLocaleString('vi-VN')}
+            </ArgonTypography>
             {isOwnComment && (
               <>
-                <IconButton
-                  size="small"
-                  onClick={handleMenuOpen}
-                  sx={{
-                    color: 'text.secondary',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                      color: 'primary.main'
-                    },
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                >
+                <IconButton size="small" onClick={handleMenuOpen} sx={{ color: 'text.secondary' }}>
                   <i className="ni ni-settings-gear-65" style={{ fontSize: '14px' }} />
                 </IconButton>
-                
                 <Menu
                   anchorEl={anchorEl}
                   open={Boolean(anchorEl)}
                   onClose={handleMenuClose}
-                  PaperProps={{
-                    sx: {
-                      minWidth: 140,
-                      mt: 1,
-                      borderRadius: 2,
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                      border: '1px solid rgba(0,0,0,0.05)'
-                    }
-                  }}
+                  PaperProps={{ sx: { minWidth: 140, mt: 1, borderRadius: 2 } }}
                   transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                   anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 >
-                  <MenuItem 
-                    onClick={handleEditClick}
-                    sx={{
-                      py: 1,
-                      px: 2,
-                      '&:hover': {
-                        backgroundColor: 'rgba(94, 114, 228, 0.08)'
-                      }
-                    }}
-                  >
+                  <MenuItem onClick={handleEditClick} sx={{ py: 1, px: 2 }}>
                     <ListItemIcon sx={{ minWidth: 32 }}>
                       <i className="ni ni-settings-gear-65" style={{ fontSize: '16px', color: '#5e72e4' }} />
                     </ListItemIcon>
-                    <ListItemText 
-                      primary="Chỉnh sửa"
-                      primaryTypographyProps={{
-                        fontSize: '13px',
-                        fontWeight: 500
-                      }}
-                    />
+                    <ListItemText primary="Chỉnh sửa" primaryTypographyProps={{ fontSize: '13px', fontWeight: 500 }} />
                   </MenuItem>
-                  
                   <Divider sx={{ my: 0.5 }} />
-                  <MenuItem 
-                    onClick={handleDeleteClick}
-                    sx={{
-                      py: 1,
-                      px: 2,
-                      '&:hover': {
-                        backgroundColor: 'rgba(244, 67, 54, 0.08)'
-                      }
-                    }}
-                  >
+                  <MenuItem onClick={handleDeleteClick} sx={{ py: 1, px: 2 }}>
                     <ListItemIcon sx={{ minWidth: 32 }}>
                       <i className="ni ni-fat-remove" style={{ fontSize: '16px', color: '#f44336' }} />
                     </ListItemIcon>
-                    <ListItemText 
-                      primary="Xóa"
-                      primaryTypographyProps={{
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        color: '#f44336'
-                      }}
-                    />
+                    <ListItemText primary="Xóa" primaryTypographyProps={{ fontSize: '13px', fontWeight: 500, color: '#f44336' }} />
                   </MenuItem>
                 </Menu>
               </>
             )}
           </ArgonBox>
-          
-          {/* Comment content or edit form */}
-          {isEditing ? (
-            <ArgonBox mb={1}>
-              <TextField
-                fullWidth
-                multiline
-                minRows={2}
-                maxRows={4}
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                variant="outlined"
-                size="small"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    fontSize: '13px',
-                    backgroundColor: '#f8f9fa',
-                    '& fieldset': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#4c63d2',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#4c63d2',
-                      borderWidth: '2px',
-                    },
-                  },
-                  '& .MuiInputBase-input': {
-                    fontSize: '13px',
-                    padding: '8px 12px',
-                    whiteSpace: 'pre-wrap',
-                    overflowWrap: 'break-word',
-                    width: '100% !important',
-                    minWidth: '0 !important',
-                    maxWidth: 'none !important',
-                    overflow: 'visible !important',
-                    textOverflow: 'unset !important',
-                    boxSizing: 'border-box !important',
-                  },
-                  '& .MuiOutlinedInput-input': {
-                    width: '100% !important',
-                    minWidth: '0 !important',
-                    maxWidth: 'none !important',
-                  }
-                }}
-              />
-              <ArgonBox display="flex" gap={1} mt={1}>
-                <Button 
-                  onClick={handleEditSave}
-                  variant="contained"
-                  disabled={!editText.trim() || isUpdating}
-                  startIcon={isUpdating ? <CircularProgress size={14} color="inherit" /> : <i className="ni ni-check-bold" />}
-                  size="small"
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 'bold',
-                    fontSize: '12px',
-                    px: 2,
-                    py: 0.5,
-                    background: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #388e3c 0%, #2e7d32 100%)',
-                    },
-                    '&:disabled': {
-                      background: 'rgba(76, 175, 80, 0.3)',
-                      color: 'rgba(255, 255, 255, 0.7)'
-                    }
-                  }}
-                >
-                  {isUpdating ? 'Đang lưu...' : 'Lưu'}
-                </Button>
-                <Button 
-                  onClick={handleEditCancel}
-                  size="small"
-                  sx={{
-                    color: '#6c757d',
-                    textTransform: 'none',
-                    fontSize: '12px',
-                    px: 2,
-                    py: 0.5
-                  }}
-                >
-                  Hủy
-                </Button>
-              </ArgonBox>
-            </ArgonBox>
-          ) : (
-            <ArgonTypography variant="body2" color="text" sx={{ 
-              lineHeight: 1.5, 
-              fontSize: '13px',
-              fontWeight: 400,
-              mb: 0.75
-            }}>
-              {comment.contents}
-            </ArgonTypography>
-          )}
-          
-          {!isEditing && (
-            <Button
-              size="small"
-              onClick={() => handleStartReply(comment)}
-              sx={{
-                color: '#65676b',
-                textTransform: 'none',
-                fontSize: '12px',
-                fontWeight: '600',
-                minWidth: 'auto',
-                px: 1.5,
-                py: 0.5,
-                backgroundColor: '#e4e6ea',
-                borderRadius: '6px'
-              }}
-            >
-              Trả lời
-            </Button>
-          )}
         </ArgonBox>
       </ArgonBox>
 
@@ -532,7 +420,7 @@ function CommentItem({
 
       {/* Recursive Replies */}
       {comment.replies && Array.isArray(comment.replies) && comment.replies.length > 0 && (
-        <ArgonBox ml={getMarginLeft(depth)} mt={1}>
+        <ArgonBox ml={getMarginLeft(depth)} mt={1} sx={{ borderLeft: '1px solid #e4e6eb', pl: 2 }}>
           {visibleReplies.map((reply, replyIndex) => (
             <CommentItem
               key={reply._id || replyIndex}
@@ -546,6 +434,9 @@ function CommentItem({
               replyLoading={replyLoading}
               setReplyLoading={setReplyLoading}
               postId={postId}
+              currentUserId={currentUserId}
+              onCommentUpdate={onCommentUpdate}
+              onCommentDelete={onCommentDelete}
             />
           ))}
           
