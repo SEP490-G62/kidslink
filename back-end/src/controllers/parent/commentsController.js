@@ -174,25 +174,10 @@ const updateComment = async (req, res) => {
   }
 };
 
-// Hàm đệ quy để xóa tất cả replies của một comment
-const deleteRepliesRecursively = async (parentCommentId) => {
-  try {
-    // Lấy tất cả replies trực tiếp
-    const directReplies = await PostComment.find({ parent_comment_id: parentCommentId });
-    
-    // Với mỗi reply, xóa đệ quy tất cả replies của nó
-    for (let reply of directReplies) {
-      await deleteRepliesRecursively(reply._id);
-    }
-    
-    // Xóa tất cả replies trực tiếp
-    await PostComment.deleteMany({ parent_comment_id: parentCommentId });
-  } catch (error) {
-    console.error('Error in deleteRepliesRecursively:', error);
-  }
-};
+// Ghi chú: Trước đây dùng xóa đệ quy toàn bộ replies. Nay chuyển sang "đẩy lên" (re-parent)
+// nên không dùng hàm xóa đệ quy nữa.
 
-// DELETE /api/parent/comments/:commentId - Xóa comment
+// DELETE /api/parent/comments/:commentId - Xóa comment và đẩy các replies lên cấp trên
 const deleteComment = async (req, res) => {
   try {
     const { commentId } = req.params;
@@ -210,15 +195,18 @@ const deleteComment = async (req, res) => {
       });
     }
 
-    // Xóa tất cả replies của comment này (bao gồm tất cả các level)
-    await deleteRepliesRecursively(commentId);
-    
+    // Đẩy tất cả replies trực tiếp của comment này lên comment cha (hoặc top-level nếu không có cha)
+    await PostComment.updateMany(
+      { parent_comment_id: commentId },
+      { $set: { parent_comment_id: comment.parent_comment_id || null } }
+    );
+
     // Xóa comment chính
     await PostComment.findByIdAndDelete(commentId);
 
     res.json({
       success: true,
-      message: 'Xóa comment thành công'
+      message: 'Xóa comment thành công, các trả lời đã được đẩy lên'
     });
   } catch (error) {
     console.error('Error in deleteComment:', error);

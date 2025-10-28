@@ -39,6 +39,13 @@ function PersonalInformation() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
+  const [profileData, setProfileData] = useState({
+    full_name: "",
+    username: "",
+    email: "",
+    phone_number: "",
+    avatar_url: "",
+  });
   const [formData, setFormData] = useState({
     full_name: "",
     username: "",
@@ -65,15 +72,17 @@ function PersonalInformation() {
       const result = await parentService.getPersonalInfo();
       if (result.success) {
         const userData = result.data.user;
-        setFormData({
+        const normalized = {
           full_name: userData.full_name || "",
           username: userData.username || "",
           email: userData.email || "",
           phone_number: userData.phone_number || "",
           avatar_url: userData.avatar_url || "",
-        });
+        };
+        setProfileData(normalized);
+        setFormData(normalized);
         setChildren(result.data.children || []);
-        setAvatarPreview(userData.avatar_url || "");
+        setAvatarPreview("");
       } else {
         setAlert({ open: true, message: result.error || "Không thể tải thông tin", severity: "error" });
       }
@@ -182,6 +191,10 @@ function PersonalInformation() {
   };
 
   const openProfileForm = () => {
+    // Initialize edit state from persisted profile data
+    setFormData(profileData);
+    setAvatarPreview(profileData.avatar_url || "");
+    setAvatarFile(null);
     setActiveForm("profile");
   };
 
@@ -190,6 +203,10 @@ function PersonalInformation() {
   };
 
   const closeForms = () => {
+    // Discard unsaved edits by resetting edit state and preview
+    setFormData(profileData);
+    setAvatarPreview("");
+    setAvatarFile(null);
     setActiveForm(null);
   };
 
@@ -243,13 +260,13 @@ function PersonalInformation() {
               <CardContent>
                 <ArgonBox display="flex" alignItems="center" gap={3} pb={3}>
                   <Avatar
-                    src={avatarPreview || formData.avatar_url}
-                    alt={formData.full_name}
+                    src={profileData.avatar_url}
+                    alt={profileData.full_name}
                     sx={{ width: 120, height: 120, boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                   />
                   <ArgonBox flex={1}>
                     <ArgonTypography variant="h5" fontWeight="bold" color="dark">
-                      {formData.full_name}
+                      {profileData.full_name}
                   </ArgonTypography>
                     <ArgonTypography variant="body2" color="text" mb={2}>
                       Phụ huynh
@@ -258,21 +275,21 @@ function PersonalInformation() {
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-single-02" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
-                        Username: <span style={{ fontWeight: 'bold' }}>{formData.username}</span>
+                        Username: <span style={{ fontWeight: 'bold' }}>{profileData.username}</span>
                   </ArgonTypography>
                 </ArgonBox>
 
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-email-83" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
-                        Email: <span style={{ fontWeight: 'bold' }}>{formData.email}</span>
+                        Email: <span style={{ fontWeight: 'bold' }}>{profileData.email}</span>
                   </ArgonTypography>
                     </ArgonBox>
                     
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-mobile-button" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
-                        SĐT: <span style={{ fontWeight: 'bold' }}>{formData.phone_number}</span>
+                        SĐT: <span style={{ fontWeight: 'bold' }}>{profileData.phone_number}</span>
                   </ArgonTypography>
                 </ArgonBox>
 
@@ -349,11 +366,23 @@ function PersonalInformation() {
           onClose={closeForms}
           maxWidth="md"
           fullWidth
+          PaperProps={{
+            sx: { borderRadius: 3, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }
+          }}
         >
-          <DialogTitle>
-            <ArgonTypography variant="h6" fontWeight="bold" color="dark">
-              Cập nhật thông tin cá nhân
-                </ArgonTypography>
+          <DialogTitle sx={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            py: 2.5
+          }}>
+            <ArgonBox display="flex" justifyContent="space-between" alignItems="center">
+              <ArgonTypography variant="h5" fontWeight="bold" color="white">
+                Cập nhật thông tin cá nhân
+              </ArgonTypography>
+              <IconButton onClick={closeForms} sx={{ color: 'white' }}>
+                <i className="ni ni-fat-remove" style={{ fontSize: '24px' }} />
+              </IconButton>
+            </ArgonBox>
           </DialogTitle>
           <DialogContent>
             <ArgonBox sx={{ mt: 2 }}>
@@ -413,6 +442,15 @@ function PersonalInformation() {
                           '&:hover fieldset': {
                             borderColor: 'primary.main',
                           },
+                          '& .MuiInputBase-input': {
+                          width: '100% !important',
+                          minWidth: '0 !important',
+                          maxWidth: 'none !important',
+                          overflow: 'visible !important',
+                          textOverflow: 'unset !important',
+                          whiteSpace: 'nowrap !important',
+                          boxSizing: 'border-box !important',
+                        },
                           '&.Mui-focused fieldset': {
                             borderColor: 'primary.main',
                             borderWidth: '2px',
@@ -531,21 +569,44 @@ function PersonalInformation() {
               </ArgonBox>
             </ArgonBox>
           </DialogContent>
-          <DialogActions>
-            <Button 
-                      variant="outlined"
-              color="secondary"
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+            <Button
               onClick={closeForms}
-              sx={{ minWidth: 150 }}
+              disabled={saving}
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                py: 1,
+                textTransform: 'none',
+                fontWeight: 'bold',
+                border: '2px solid',
+                borderColor: 'grey.300',
+                '&:hover': { borderWidth: 2 }
+              }}
             >
               Hủy
             </Button>
             <Button 
-              variant="contained" 
-              color="primary"
               onClick={handleSaveAndClose}
+              variant="contained"
+              color="primary"
               disabled={saving}
-              sx={{ minWidth: 150 }}
+              sx={{
+                borderRadius: 2,
+                px: 4,
+                py: 1,
+                textTransform: 'none',
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                boxShadow: 3,
+                color: 'white !important',
+                '&:hover': {
+                  boxShadow: 5,
+                  background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                  color: 'white !important'
+                },
+                '&:disabled': { background: '#ccc', color: 'white !important' }
+              }}
             >
               {saving ? "Đang lưu..." : "Lưu thay đổi"}
             </Button>
@@ -558,11 +619,23 @@ function PersonalInformation() {
           onClose={closeForms}
           maxWidth="sm"
                       fullWidth
+          PaperProps={{
+            sx: { borderRadius: 3, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }
+          }}
         >
-          <DialogTitle>
-            <ArgonTypography variant="h6" fontWeight="bold" color="dark">
-              Đổi mật khẩu
-            </ArgonTypography>
+          <DialogTitle sx={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            py: 2.5
+          }}>
+            <ArgonBox display="flex" justifyContent="space-between" alignItems="center">
+              <ArgonTypography variant="h5" fontWeight="bold" color="white">
+                Đổi mật khẩu
+              </ArgonTypography>
+              <IconButton onClick={closeForms} sx={{ color: 'white' }}>
+                <i className="ni ni-fat-remove" style={{ fontSize: '24px' }} />
+              </IconButton>
+            </ArgonBox>
           </DialogTitle>
           <DialogContent>
             <ArgonBox sx={{ mt: 2 }}>
@@ -631,21 +704,44 @@ function PersonalInformation() {
                 </Grid>
             </ArgonBox>
           </DialogContent>
-          <DialogActions>
-            <Button 
-              variant="outlined" 
-              color="secondary"
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+            <Button
               onClick={closeForms}
-              sx={{ minWidth: 150 }}
+              disabled={saving}
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                py: 1,
+                textTransform: 'none',
+                fontWeight: 'bold',
+                border: '2px solid',
+                borderColor: 'grey.300',
+                '&:hover': { borderWidth: 2 }
+              }}
             >
                     Hủy
                   </Button>
             <Button 
+              onClick={handlePasswordAndClose}
               variant="contained" 
                             color="primary"
-              onClick={handlePasswordAndClose}
               disabled={saving}
-              sx={{ minWidth: 150 }}
+              sx={{
+                borderRadius: 2,
+                px: 4,
+                py: 1,
+                textTransform: 'none',
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                boxShadow: 3,
+                color: 'white !important',
+                '&:hover': {
+                  boxShadow: 5,
+                  background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                  color: 'white !important'
+                },
+                '&:disabled': { background: '#ccc', color: 'white !important' }
+              }}
             >
               {saving ? "Đang lưu..." : "Đổi mật khẩu"}
             </Button>

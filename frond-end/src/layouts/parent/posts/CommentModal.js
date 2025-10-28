@@ -240,18 +240,29 @@ function CommentModal({
 
   const handleCommentDelete = (commentId) => {
     setComments(prevComments => {
-      const deleteComment = (comments) => {
-        return comments.filter(comment => {
-          if (comment._id === commentId) {
-            return false;
+      const promoteAndDelete = (nodes, parentId = null) => {
+        const result = [];
+        for (const node of nodes) {
+          if (node._id === commentId) {
+            // Promote this node's replies to this level
+            if (Array.isArray(node.replies) && node.replies.length > 0) {
+              // Push all children (they become siblings at this level)
+              for (const child of node.replies) {
+                result.push({ ...child });
+              }
+            }
+            // Skip the node itself (deleted)
+            continue;
           }
-          if (comment.replies) {
-            comment.replies = deleteComment(comment.replies);
+          let newNode = { ...node };
+          if (Array.isArray(node.replies) && node.replies.length > 0) {
+            newNode.replies = promoteAndDelete(node.replies, node._id);
           }
-          return true;
-        });
+          result.push(newNode);
+        }
+        return result;
       };
-      return deleteComment(prevComments);
+      return promoteAndDelete(prevComments);
     });
     
     // Update comment count in parent component
@@ -403,8 +414,8 @@ function CommentModal({
             </ArgonBox>
           
             {/* Comments List */}
-            <ArgonBox p={3}>
-            <ArgonTypography variant="h6" fontWeight="bold" mb={3} color="dark">
+            <ArgonBox p={2.5}>
+            <ArgonTypography variant="h6" fontWeight="bold" mb={2} color="dark">
               Bình luận ({getTotalCommentCount(comments)})
             </ArgonTypography>
             
@@ -433,7 +444,7 @@ function CommentModal({
       
       {/* Fixed Comment Input - Luôn cố định ở dưới */}
       <ArgonBox 
-        p={3} 
+        p={2.5} 
         borderTop="1px solid #f0f0f0" 
         bgcolor="rgba(248, 249, 250, 0.95)"
         sx={{ 
