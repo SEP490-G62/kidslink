@@ -265,178 +265,21 @@ function ParentDashboard() {
 
         {/* Two Column Layout: Search/Filter (Left) and Posts (Right) */}
         <Grid container spacing={3} sx={{ minHeight: '70vh' }}>
-          {/* Left Column - Search and Filters */}
-          <Grid item xs={12} md={4} lg={3}>
+          {/* Right Column - Posts Feed (Full width) */}
+          <Grid item xs={12} md={12} lg={12}>
+            {/* Top Toolbar: Search + Category Tabs */}
             <Card sx={{ 
+              mb: 2, 
               borderRadius: 3, 
-              boxShadow: 3, 
-              p: 3, 
-              position: 'sticky', 
-              top: 20,
-              minHeight: '600px',
+              boxShadow: 3,
+              p: 2,
               background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
               border: '1px solid rgba(255,255,255,0.2)'
             }}>
-              <ArgonBox mb={3}>
-                <ArgonTypography 
-                  variant="h6" 
-                  fontWeight="bold" 
-                  color="dark" 
-                  mb={2}
-                  sx={{ 
-                    textAlign: 'center',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    fontSize: '1.2rem'
-                  }}
-                >
-                  🔍 Bộ lọc
-                </ArgonTypography>
-              </ArgonBox>
-
-              {/* Search Input */}
-              <ArgonBox mb={3}>
-                <Paper
-                  component="form"
-                  sx={{
-                    p: '12px 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    borderRadius: 3,
-                    boxShadow: 2,
-                    border: '2px solid',
-                    borderColor: 'rgba(94, 114, 228, 0.2)',
-                    background: 'rgba(255,255,255,0.9)',
-                    backdropFilter: 'blur(10px)',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      borderColor: 'primary.main',
-                      boxShadow: 4,
-                      transform: 'translateY(-2px)'
-                    },
-                    '&:focus-within': {
-                      borderColor: 'primary.main',
-                      boxShadow: '0 0 0 3px rgba(94, 114, 228, 0.1)'
-                    }
-                  }}
-                >
-                  {/* <IconButton sx={{ p: '12px', mr: 1 }} aria-label="search">
-                    <i className="ni ni-zoom-split-in" style={{ fontSize: '22px', color: '#5e72e4' }} />
-                  </IconButton> */}
-                  <InputBase
-                    sx={{ 
-                      ml: 1, 
-                      flex: 1,
-                      fontSize: '15px',
-                      fontWeight: '500',
-                      '& input::placeholder': {
-                        color: 'rgba(0,0,0,0.6)',
-                        fontWeight: '400'
-                      }
-                    }}
-                    placeholder="🔍 Tìm kiếm bài viết..."
-                    value={searchFilters.search}
-                    onChange={(e) => handleSearchChange('search', e.target.value)}
-                    inputProps={{ 'aria-label': 'search' }}
-                  />
-                </Paper>
-              </ArgonBox>
-
-              {/* Tab Filter System */}
-              <ArgonBox mb={3}>
-                <ArgonTypography 
-                  variant="body2" 
-                  fontWeight="bold" 
-                  color="dark" 
-                  mb={2}
-                  sx={{ 
-                    fontSize: '14px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'rgba(0,0,0,0.7)'
-                  }}
-                >
-                  📋 Phân loại bài viết
-                </ArgonTypography>
-                <ArgonBox display="flex" flexDirection="column" gap={1.5}>
-                  {tabs.map((tab, index) => (
-                    <Card
-                      key={tab.value}
-                      sx={{
-                        p: 2,
-                        borderRadius: 3,
-                        cursor: 'pointer',
-                        border: '2px solid',
-                        borderColor: activeTab === index ? 'primary.main' : 'rgba(0,0,0,0.1)',
-                        backgroundColor: activeTab === index 
-                          ? 'linear-gradient(135deg, rgba(94, 114, 228, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)' 
-                          : 'rgba(255,255,255,0.8)',
-                        backdropFilter: 'blur(10px)',
-                        transition: 'all 0.3s ease',
-                        transform: activeTab === index ? 'scale(1.02)' : 'scale(1)',
-                        boxShadow: activeTab === index ? 4 : 1,
-                        '&:hover': {
-                          borderColor: 'primary.main',
-                          backgroundColor: 'rgba(94, 114, 228, 0.08)',
-                          transform: 'scale(1.02)',
-                          boxShadow: 3
-                        }
-                      }}
-                      onClick={() => handleTabChange(null, index)}
-                    >
-                      <ArgonBox display="flex" justifyContent="space-between" alignItems="center">
-                        <ArgonTypography 
-                          variant="body2" 
-                          fontWeight="600" 
-                          color={activeTab === index ? "primary" : "dark"}
-                          sx={{ fontSize: '14px' }}
-                        >
-                          {tab.label}
-                        </ArgonTypography>
-                        <Chip
-                          label={tab.count}
-                          size="small"
-                          color={activeTab === index ? "primary" : "default"}
-                          sx={{ 
-                            minWidth: 28, 
-                            height: 24,
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            borderRadius: 2
-                          }}
-                        />
-                      </ArgonBox>
-                    </Card>
-                  ))}
-                </ArgonBox>
-              </ArgonBox>
-
-              {/* Date Range Section */}
-              <ArgonBox mb={3}>
-                <ArgonTypography 
-                  variant="body2" 
-                  fontWeight="bold" 
-                  color="dark" 
-                  mb={2}
-                  sx={{ 
-                    fontSize: '14px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'rgba(0,0,0,0.7)'
-                  }}
-                >
-                  📅 Lọc theo ngày
-                </ArgonTypography>
-                
-                {/* Date From */}
-                <ArgonBox mb={2}>
-                  <ArgonTypography variant="caption" fontWeight="600" color="dark" mb={1} sx={{ display: 'block', fontSize: '12px' }}>
-                    Từ ngày
-                  </ArgonTypography>
+              <ArgonBox display="flex" flexDirection={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'stretch', md: 'center' }} gap={2}>
+                <ArgonBox sx={{ flexGrow: { xs: 1, md: 0 }, flexBasis: { xs: '100%', md: '33.333%' } }}>
                   <Paper
-                    component="div"
+                    component="form"
                     sx={{
                       p: '10px 14px',
                       display: 'flex',
@@ -444,131 +287,55 @@ function ParentDashboard() {
                       borderRadius: 3,
                       boxShadow: 2,
                       border: '2px solid',
-                      borderColor: 'rgba(0,0,0,0.1)',
+                      borderColor: 'rgba(94, 114, 228, 0.2)',
                       background: 'rgba(255,255,255,0.9)',
-                      backdropFilter: 'blur(10px)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        boxShadow: 3,
-                        transform: 'translateY(-1px)'
-                      },
-                      '&:focus-within': {
-                        borderColor: 'primary.main',
-                        boxShadow: '0 0 0 3px rgba(94, 114, 228, 0.1)'
-                      }
+                      backdropFilter: 'blur(10px)'
                     }}
                   >
-                    <IconButton sx={{ p: '8px', mr: 1 }} aria-label="calendar">
-                      <i className="ni ni-calendar-grid-58" style={{ fontSize: '20px', color: '#5e72e4' }} />
-                    </IconButton>
                     <InputBase
-                      type="date"
-                      value={searchFilters.dateFrom}
-                      onChange={(e) => handleSearchChange('dateFrom', e.target.value)}
                       sx={{ 
+                        ml: 1, 
                         flex: 1,
-                        fontSize: '14px',
+                        fontSize: '15px',
                         fontWeight: '500',
-                        '& input': {
-                          cursor: 'pointer'
+                        '& input::placeholder': {
+                          color: 'rgba(0,0,0,0.6)',
+                          fontWeight: '400'
                         }
                       }}
-                      placeholder="Chọn ngày"
-                      inputProps={{ 'aria-label': 'date from' }}
+                      placeholder="🔍 Tìm kiếm bài viết..."
+                      value={searchFilters.search}
+                      onChange={(e) => handleSearchChange('search', e.target.value)}
+                      inputProps={{ 'aria-label': 'search' }}
                     />
                   </Paper>
                 </ArgonBox>
-
-                {/* Date To */}
-                <ArgonBox mb={2}>
-                  <ArgonTypography variant="caption" fontWeight="600" color="dark" mb={1} sx={{ display: 'block', fontSize: '12px' }}>
-                    Đến ngày
-                  </ArgonTypography>
-                  <Paper
-                    component="div"
+                <ArgonBox sx={{ flexGrow: { xs: 1, md: 0 }, flexBasis: { xs: '100%', md: '66.666%' }, minWidth: 0 }}>
+                  <Tabs
+                    value={activeTab}
+                    onChange={handleTabChange}
+                    variant="fullWidth"
                     sx={{
-                      p: '10px 14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      borderRadius: 3,
-                      boxShadow: 2,
-                      border: '2px solid',
-                      borderColor: 'rgba(0,0,0,0.1)',
-                      background: 'rgba(255,255,255,0.9)',
-                      backdropFilter: 'blur(10px)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        boxShadow: 3,
-                        transform: 'translateY(-1px)'
-                      },
-                      '&:focus-within': {
-                        borderColor: 'primary.main',
-                        boxShadow: '0 0 0 3px rgba(94, 114, 228, 0.1)'
-                      }
+                      minHeight: 44,
+                      '& .MuiTab-root': { textTransform: 'none', fontWeight: 600 },
                     }}
                   >
-                    <IconButton sx={{ p: '8px', mr: 1 }} aria-label="calendar">
-                      <i className="ni ni-calendar-grid-58" style={{ fontSize: '20px', color: '#5e72e4' }} />
-                    </IconButton>
-                    <InputBase
-                      type="date"
-                      value={searchFilters.dateTo}
-                      onChange={(e) => handleSearchChange('dateTo', e.target.value)}
-                      sx={{ 
-                        flex: 1,
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        '& input': {
-                          cursor: 'pointer'
-                        }
-                      }}
-                      placeholder="Chọn ngày"
-                      inputProps={{ 'aria-label': 'date to' }}
-                    />
-                  </Paper>
+                    {tabs.map((tab, index) => (
+                      <Tab key={tab.value} label={tab.label} />
+                    ))}
+                  </Tabs>
                 </ArgonBox>
               </ArgonBox>
-
-              {/* Clear Button */}
-              <Button
-                onClick={handleClearSearch}
-                fullWidth
-                variant="contained"
-                // startIcon={<i className="ni ni-fat-remove" />}
-                sx={{
-                  borderRadius: 3,
-                  py: 1.5,
-                  px: 2,
-                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  textTransform: 'none',
-                  fontSize: '14px',
-                  boxShadow: 2,
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #ee5a24 0%, #ff6b6b 100%)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: 4
-                  }
-                }}
-              >
-                🗑️ Xóa bộ lọc
-              </Button>
             </Card>
-          </Grid>
-
-          {/* Right Column - Posts Feed */}
-          <Grid item xs={12} md={8} lg={9}>
             {/* Posts Header */}
             <Card sx={{ 
               mb: 2, 
               borderRadius: 3, 
               boxShadow: 3,
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: '1px solid rgba(255,255,255,0.2)'
+              border: '1px solid rgba(255,255,255,0.2)',
+              maxWidth: 900,
+              mx: 'auto'
             }}>
               <ArgonBox display="flex" justifyContent="space-between" alignItems="center" p={3}>
                 <ArgonTypography 
@@ -642,7 +409,9 @@ function ParentDashboard() {
               border: '1px solid rgba(255,255,255,0.2)',
               overflow: 'hidden',
               display: 'flex',
-              flexDirection: 'column'
+              flexDirection: 'column',
+              maxWidth: 900,
+              mx: 'auto'
             }}>
               <ArgonBox 
                 sx={{ 
