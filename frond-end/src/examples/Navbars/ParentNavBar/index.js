@@ -89,18 +89,34 @@ function DashboardNavbar({ absolute, light }) {
           const result = await parentService.getChildren();
           if (result.success && result.data) {
             setChildren(result.data);
-            // Set default child (oldest child) if not already set
-            if (!selectedChild && result.data.length > 0) {
-              setSelectedChild(result.data[0]);
+            // Set default child (oldest child) if not already set or if current selectedChild is not in the new children list
+            if (result.data.length > 0) {
+              const isCurrentChildValid = selectedChild && result.data.some(child => child._id === selectedChild._id);
+              if (!selectedChild || !isCurrentChildValid) {
+                setSelectedChild(result.data[0]);
+              }
+            } else {
+              setSelectedChild(null);
             }
           }
         } catch (error) {
           console.error('Error fetching children:', error);
         }
+      } else {
+        // Clear children and selectedChild when user is not a parent or not logged in
+        setChildren([]);
+        setSelectedChild(null);
       }
     };
     
     fetchChildren();
+  }, [user, setSelectedChild]); // Only depend on user, not selectedChild
+
+  // Clear selected child when user changes (for example, logout or switch user)
+  useEffect(() => {
+    if (!user && selectedChild) {
+      setSelectedChild(null);
+    }
   }, [user, selectedChild, setSelectedChild]);
 
   useEffect(() => {

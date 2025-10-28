@@ -112,8 +112,8 @@ function PostCard({
           style={{
             width: '100%',
             height: 'auto',
-            maxHeight: window.innerWidth < 600 ? '300px' : '450px',
-            objectFit: 'cover',
+            maxHeight: 'none',
+            objectFit: 'contain',
             borderRadius: '12px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             cursor: 'pointer'
@@ -134,8 +134,8 @@ function PostCard({
               style={{
                 width: '50%',
                 height: 'auto',
-                maxHeight: window.innerWidth < 600 ? '200px' : '300px',
-                objectFit: 'cover',
+                maxHeight: 'none',
+                objectFit: 'contain',
                 borderRadius: '12px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                 cursor: 'pointer'
@@ -159,7 +159,7 @@ function PostCard({
                 style={{
                   width: '50%',
                   height: 'auto',
-                  maxHeight: window.innerWidth < 600 ? '150px' : '200px',
+                  maxHeight: window.innerWidth < 600 ? '300px' : '400px',
                   objectFit: 'cover',
                   borderRadius: '12px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -175,7 +175,7 @@ function PostCard({
             style={{
               width: '100%',
               height: 'auto',
-              maxHeight: window.innerWidth < 600 ? '150px' : '200px',
+              maxHeight: window.innerWidth < 600 ? '300px' : '400px',
               objectFit: 'cover',
               borderRadius: '12px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -199,7 +199,7 @@ function PostCard({
               style={{
                 width: '50%',
                 height: 'auto',
-                maxHeight: window.innerWidth < 600 ? '150px' : '200px',
+                maxHeight: window.innerWidth < 600 ? '300px' : '400px',
                 objectFit: 'cover',
                 borderRadius: '12px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -218,7 +218,7 @@ function PostCard({
                 style={{
                   width: '100%',
                   height: 'auto',
-                  maxHeight: window.innerWidth < 600 ? '150px' : '200px',
+                  maxHeight: window.innerWidth < 600 ? '300px' : '400px',
                   objectFit: 'cover',
                   borderRadius: '12px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',

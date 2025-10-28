@@ -1,0 +1,43 @@
+[
+  {
+    "_id": { "$oid": "6710a0000000000000000E00" },
+    "full_name": "Trần Văn Bố",
+    "relationship": "Bố",
+    "id_card_number": "001234567890",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-pickup1.png",
+    "phone": "+84 900 123 456",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000E01" },
+    "full_name": "Trần Thị Bà Nội",
+    "relationship": "Bà Nội",
+    "id_card_number": "001234567891",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-pickup2.png",
+    "phone": "+84 900 123 457",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000E02" },
+    "full_name": "Nguyễn Văn Ông",
+    "relationship": "Ông Nội",
+    "id_card_number": "001234567892",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-pickup3.png",
+    "phone": "+84 900 123 458",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000E03" },
+    "full_name": "Nguyễn Thị Cô",
+    "relationship": "Cô",
+    "id_card_number": "001234567893",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-pickup4.png",
+    "phone": "+84 900 123 459",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  }
+]
+
