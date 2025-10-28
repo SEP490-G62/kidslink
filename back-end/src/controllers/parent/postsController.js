@@ -50,9 +50,24 @@ const getAllPosts = async (req, res) => {
       }
     }
     
-    // Tự động lấy danh sách lớp học của các học sinh
-    const studentClasses = await StudentClass.find({ student_id: { $in: filterStudentIds } });
-    const childrenClassIds = studentClasses.map(sc => sc.class_id);
+    // Tự động lấy danh sách lớp học của các học sinh (chỉ lớp có năm học lớn nhất)
+    const studentClasses = await StudentClass.find({ student_id: { $in: filterStudentIds } })
+      .populate({
+        path: 'class_id',
+        select: 'class_name class_age_id academic_year'
+      });
+    
+    // Nhóm theo student_id và lấy lớp có năm học lớn nhất cho mỗi học sinh
+    const studentClassMap = {};
+    studentClasses.forEach(sc => {
+      const studentId = sc.student_id.toString();
+      if (!studentClassMap[studentId] || 
+          sc.class_id.academic_year > studentClassMap[studentId].class_id.academic_year) {
+        studentClassMap[studentId] = sc;
+      }
+    });
+    
+    const childrenClassIds = Object.values(studentClassMap).map(sc => sc.class_id._id);
     
     // Tạo điều kiện OR để cho phép xem:
     const orConditions = [];
@@ -69,7 +84,7 @@ const getAllPosts = async (req, res) => {
       'user_id': { $in: parentUserIds }
     });
     
-    // Điều kiện 3: Bài viết của giáo viên - CHỈ trong phạm vi lớp con học
+    // Điều kiện 3: Bài viết của giáo viên - CHỈ trong phạm vi lớp con học và lớp có năm học lớn nhất
     const teacherUserIds = await User.find({ role: 'teacher' }).distinct('_id');
     if (childrenClassIds.length > 0) {
       orConditions.push({
@@ -190,10 +205,20 @@ const createPost = async (req, res) => {
         });
       }
       
-      // Lấy lớp học của học sinh cụ thể
-      const studentClass = await StudentClass.findOne({ student_id })
-        .populate('class_id')
-        .sort({ createdAt: -1 });
+      // Lấy lớp học của học sinh cụ thể (lớp lớn nhất theo năm học)
+      const studentClasses = await StudentClass.find({ student_id })
+        .populate({
+          path: 'class_id',
+          select: 'class_name class_age_id academic_year'
+        });
+      
+      const studentClass = studentClasses.length > 0 
+        ? studentClasses.sort((a, b) => {
+            const yearA = a.class_id.academic_year;
+            const yearB = b.class_id.academic_year;
+            return yearB.localeCompare(yearA); // Sắp xếp năm học giảm dần
+          })[0]
+        : null;
       
       if (!studentClass) {
         return res.status(400).json({
@@ -204,19 +229,28 @@ const createPost = async (req, res) => {
       
       targetClassId = studentClass.class_id._id;
     } else {
-      // Nếu không có student_id, lấy lớp của con đầu tiên (con lớn nhất)
-      const studentClasses = await StudentClass.find({ student_id: { $in: studentIds } })
-        .populate('class_id')
-        .sort({ createdAt: -1 });
+      // Nếu không có student_id, lấy lớp của con đầu tiên (con lớn nhất theo năm học)
+      const allStudentClasses = await StudentClass.find({ student_id: { $in: studentIds } })
+        .populate({
+          path: 'class_id',
+          select: 'class_name class_age_id academic_year'
+        });
       
-      if (studentClasses.length === 0) {
+      if (allStudentClasses.length === 0) {
         return res.status(400).json({
           success: false,
           message: 'Không có con nào được phân lớp'
         });
       }
       
-      targetClassId = studentClasses[0].class_id._id;
+      // Sắp xếp theo năm học giảm dần và lấy lớp lớn nhất
+      const sortedClasses = allStudentClasses.sort((a, b) => {
+        const yearA = a.class_id.academic_year;
+        const yearB = b.class_id.academic_year;
+        return yearB.localeCompare(yearA); // Sắp xếp năm học giảm dần
+      });
+      
+      targetClassId = sortedClasses[0].class_id._id;
     }
 
     // Kiểm tra lớp học có tồn tại không
@@ -414,10 +448,21 @@ const getChildren = async (req, res) => {
       parentStudents.map(async (ps) => {
         const student = ps.student_id;
         
-        // Lấy lớp học hiện tại của học sinh
-        const studentClass = await StudentClass.findOne({ student_id: student._id })
-          .populate('class_id', 'class_name class_age_id')
-          .sort({ createdAt: -1 });
+        // Lấy lớp học hiện tại của học sinh (lớp lớn nhất theo năm học)
+        const studentClasses = await StudentClass.find({ student_id: student._id })
+          .populate({
+            path: 'class_id',
+            select: 'class_name class_age_id academic_year'
+          });
+        
+        // Sắp xếp theo năm học giảm dần và lấy lớp lớn nhất
+        const studentClass = studentClasses.length > 0 
+          ? studentClasses.sort((a, b) => {
+              const yearA = a.class_id.academic_year;
+              const yearB = b.class_id.academic_year;
+              return yearB.localeCompare(yearA); // Sắp xếp năm học giảm dần
+            })[0]
+          : null;
         
         return {
           _id: student._id,
@@ -431,7 +476,8 @@ const getChildren = async (req, res) => {
           class: studentClass ? {
             _id: studentClass.class_id._id,
             class_name: studentClass.class_id.class_name,
-            class_age_id: studentClass.class_id.class_age_id
+            class_age_id: studentClass.class_id.class_age_id,
+            academic_year: studentClass.class_id.academic_year
           } : null
         };
       })
