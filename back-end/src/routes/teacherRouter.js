@@ -8,7 +8,7 @@ const {
 } = require('../controllers/dailyReportController');
 
 const {
-  getTeacherClass,
+  getTeacherClasses,
   getClassStudents,
   getStudentsAttendanceByDate
 } = require('../controllers/teacherController');
@@ -23,7 +23,7 @@ router.put('/daily-reports/checkout', authorize(['teacher']), studentValidators,
 
 
 // Routes cho thông tin lớp học của teacher
-router.get('/class', authorize(['teacher']), getTeacherClass);
+router.get('/class', authorize(['teacher']), getTeacherClasses);
 router.get('/class/students', authorize(['teacher']), getClassStudents);
 router.get('/class/students/attendance/:date', authorize(['teacher']), getStudentsAttendanceByDate);
 

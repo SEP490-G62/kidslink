@@ -93,9 +93,9 @@ const TeacherAttendance = () => {
       
       const response = await api.get(`/teachers/class/students/attendance/${selectedDate}`);
       
-      setStudents(response.data.students);
-      setStatistics(response.data.statistics);
-      setClassInfo(response.data.class_info);
+      setStudents(response.students || []);
+      setStatistics(response.statistics || null);
+      setClassInfo(response.class_info || null);
       
     } catch (err) {
       console.error('Error fetching attendance data:', err);
