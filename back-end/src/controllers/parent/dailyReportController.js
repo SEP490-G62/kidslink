@@ -25,8 +25,10 @@ async function getDailyReports(req, res) {
     // Attach health notices for the same day for the student
     const HealthNotice = require('../../models/HealthNotice');
     const reportsWithHealth = await Promise.all(reports.map(async (r) => {
-      const dayStart = new Date(new Date(r.report_date).toISOString().split('T')[0] + 'T00:00:00.000Z');
-      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      // Use local day boundaries to avoid UTC date-shift issues
+      const d = new Date(r.report_date);
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+      const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0, 0);
       const notices = await HealthNotice.find({
         student_id: r.student_id,
         createdAt: { $gte: dayStart, $lt: dayEnd }

@@ -93,7 +93,9 @@ async function getClassCalendarLatest(req, res) {
         endTime: slot.end_time,
         activity: slot.activity_id ? {
           id: slot.activity_id._id,
-          name: slot.activity_id.activity_name || slot.activity_id.name || 'Hoạt động'
+          name: slot.activity_id.activity_name || slot.activity_id.name || 'Hoạt động',
+          description: slot.activity_id.description,
+          require_outdoor: typeof slot.activity_id.require_outdoor === 'number' ? slot.activity_id.require_outdoor : 0
         } : null,
         teacher: slot.teacher_id ? {
           id: slot.teacher_id._id,
@@ -109,7 +111,7 @@ async function getClassCalendarLatest(req, res) {
         academicYear: latestClass.academic_year
       },
       calendars: calendars
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
         .map(c => ({
           id: c._id,
           date: c.date,
