@@ -1,356 +1,244 @@
-const Class = require('../models/Class');
-const StudentClass = require('../models/StudentClass');
-const Student = require('../models/Student');
-const Teacher = require('../models/Teacher');
-const ClassAge = require('../models/ClassAge');
-const School = require('../models/School');
-const DailyReport = require('../models/DailyReport');
+const mongoose = require('mongoose');
+const { Class, Teacher, StudentClass, Student, DailyReport } = require('../models');
 
-// Lấy thông tin lớp học của teacher hiện tại
-async function getTeacherClass(req, res) {
+// Helper to get teacher document from authenticated user
+async function getTeacherByReqUser(req) {
+  const userId = req?.user?.id;
+  if (!userId) return null;
+  return await Teacher.findOne({ user_id: userId });
+}
+
+// GET /teacher/class -> return all classes grouped by academic_year for the teacher
+async function getTeacherClasses(req, res) {
   try {
-    const user_id = req.user.id; // Lấy từ middleware auth
-
-    // Tìm teacher từ user_id
-    const teacher = await Teacher.findOne({ user_id });
+    const teacher = await getTeacherByReqUser(req);
     if (!teacher) {
-      return res.status(404).json({ error: 'Không tìm thấy thông tin giáo viên' });
+      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
     }
 
-    // Lấy năm học hiện tại (có thể cần logic phức tạp hơn)
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1; // 1-12
-    
-    // Nếu từ tháng 9 trở đi thì là năm học mới, ngược lại là năm học cũ
-    let academicYear;
-    if (currentMonth >= 9) {
-      academicYear = `${currentYear}-${currentYear + 1}`;
-    } else {
-      academicYear = `${currentYear - 1}-${currentYear}`;
-    }
-
-    // Tìm lớp học của teacher trong năm học hiện tại
-    const teacherClass = await Class.findOne({
-      teacher_id: teacher._id,
-      academic_year: academicYear
+    const classes = await Class.find({
+      $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
     })
-    .populate('class_age_id', 'age age_name')
-    .populate('school_id', 'school_name address')
-    .populate('teacher_id2', 'user_id')
-    .populate({
-      path: 'teacher_id2',
-      populate: {
-        path: 'user_id',
-        select: 'full_name username'
-      }
-    });
+      .populate('school_id')
+      .populate('class_age_id')
+      .sort({ academic_year: -1, class_name: 1 });
 
-    if (!teacherClass) {
-      return res.status(404).json({ 
-        error: 'Không tìm thấy lớp học trong năm học hiện tại',
-        academic_year: academicYear
-      });
-    }
+    // Group by academic_year
+    const grouped = classes.reduce((acc, cls) => {
+      const year = cls.academic_year;
+      if (!acc[year]) acc[year] = [];
+      acc[year].push(cls);
+      return acc;
+    }, {});
 
-    // Lấy danh sách học sinh trong lớp
-    const studentClasses = await StudentClass.find({ class_id: teacherClass._id })
-      .populate('student_id', 'full_name dob gender avatar_url status allergy');
+    const result = Object.keys(grouped)
+      .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+      .map((year) => ({ academic_year: year, classes: grouped[year] }));
 
-    // Đếm số học sinh (chỉ tính những học sinh có thông tin hợp lệ)
-    const validStudentClasses = studentClasses.filter(sc => sc.student_id);
-    const studentCount = validStudentClasses.length;
-
-    // Tính tuổi trung bình của học sinh
-    const today = new Date();
-    let totalAge = 0;
-    let validStudents = 0;
-
-    validStudentClasses.forEach(sc => {
-      if (sc.student_id && sc.student_id.dob) {
-        const age = today.getFullYear() - new Date(sc.student_id.dob).getFullYear();
-        totalAge += age;
-        validStudents++;
-      }
-    });
-
-    const averageAge = validStudents > 0 ? Math.round(totalAge / validStudents) : 0;
-
-    // Chuẩn bị dữ liệu trả về
-    const classData = {
-      class_info: {
-        _id: teacherClass._id,
-        class_name: teacherClass.class_name,
-        academic_year: teacherClass.academic_year,
-        class_age: teacherClass.class_age_id,
-        school: teacherClass.school_id,
-        main_teacher: {
-          _id: teacher._id,
-          user_id: teacher.user_id
-        },
-        assistant_teacher: teacherClass.teacher_id2
-      },
-      statistics: {
-        total_students: studentCount,
-        average_age: averageAge,
-        class_age_range: teacherClass.class_age_id ? teacherClass.class_age_id.age_name : 'N/A'
-      },
-      students: validStudentClasses.map(sc => ({
-          _id: sc.student_id._id,
-          full_name: sc.student_id.full_name,
-          dob: sc.student_id.dob,
-          gender: sc.student_id.gender,
-          avatar_url: sc.student_id.avatar_url,
-          status: sc.student_id.status,
-          allergy: sc.student_id.allergy,
-          discount: sc.discount
-        }))
-    };
-
-    return res.json({
-      message: 'Lấy thông tin lớp học thành công',
-      data: classData
-    });
-
+    return res.json({ teacher_id: teacher._id, data: result });
   } catch (err) {
-    console.error('Error in getTeacherClass:', err);
-    return res.status(500).json({ 
-      error: 'Không thể lấy thông tin lớp học', 
-      message: err.message 
-    });
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
 }
 
-// Lấy danh sách học sinh trong lớp (có phân trang)
+// Backward compatible alias if existing code imports singular name
+async function getTeacherClass(req, res) {
+  return getTeacherClasses(req, res);
+}
+
+// GET /teacher/class/students?class_id=...
 async function getClassStudents(req, res) {
   try {
-    const user_id = req.user.id;
-    const { page = 1, limit = 20 } = req.query;
-
-    // Tìm teacher từ user_id
-    const teacher = await Teacher.findOne({ user_id });
+    let { class_id: classId } = req.query;
+    const teacher = await getTeacherByReqUser(req);
     if (!teacher) {
-      return res.status(404).json({ error: 'Không tìm thấy thông tin giáo viên' });
+      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
     }
 
-    // Lấy năm học hiện tại
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1; // 1-12
-    
-    // Nếu từ tháng 9 trở đi thì là năm học mới, ngược lại là năm học cũ
-    let academicYear;
-    if (currentMonth >= 9) {
-      academicYear = `${currentYear}-${currentYear + 1}`;
+    let cls;
+    // Fallback to latest class if no class_id provided
+    if (!classId || !mongoose.Types.ObjectId.isValid(classId)) {
+      const latest = await Class.find({
+        $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+      })
+        .populate('school_id')
+        .populate('class_age_id')
+        .sort({ academic_year: -1 })
+        .limit(1);
+      cls = Array.isArray(latest) ? latest[0] : latest;
+      if (!cls) {
+        return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
+      }
+      classId = cls._id.toString();
     } else {
-      academicYear = `${currentYear - 1}-${currentYear}`;
+      // Ensure teacher owns this class
+      cls = await Class.findOne({
+        _id: classId,
+        $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+      })
+        .populate('school_id')
+        .populate('class_age_id');
+      if (!cls) {
+        return res.status(403).json({ error: 'Bạn không có quyền truy cập lớp này' });
+      }
     }
 
-    // Tìm lớp học của teacher
-    const teacherClass = await Class.findOne({
-      teacher_id: teacher._id,
-      academic_year: academicYear
-    });
+    const mappings = await StudentClass.find({ class_id: classId })
+      .populate({ path: 'student_id', model: Student });
 
-    if (!teacherClass) {
-      return res.status(404).json({ error: 'Không tìm thấy lớp học' });
-    }
-
-    const skip = (page - 1) * limit;
-
-    // Lấy danh sách học sinh với phân trang
-    const studentClasses = await StudentClass.find({ class_id: teacherClass._id })
-      .populate('student_id', 'full_name dob gender avatar_url status allergy')
-      .sort({ 'student_id.full_name': 1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    const total = await StudentClass.countDocuments({ class_id: teacherClass._id });
-
-    const students = studentClasses
-      .filter(sc => sc.student_id) // Lọc bỏ các record có student_id null
-      .map(sc => ({
-        _id: sc.student_id._id,
-        full_name: sc.student_id.full_name,
-        dob: sc.student_id.dob,
-        gender: sc.student_id.gender,
-        avatar_url: sc.student_id.avatar_url,
-        status: sc.student_id.status,
-        allergy: sc.student_id.allergy,
-        discount: sc.discount
+    const students = mappings
+      .filter((m) => !!m.student_id)
+      .map((m) => ({
+        _id: m.student_id._id,
+        full_name: m.student_id.full_name,
+        avatar_url: m.student_id.avatar_url,
+        dob: m.student_id.dob,
+        gender: m.student_id.gender,
+        status: m.student_id.status,
+        allergy: m.student_id.allergy,
+        discount: m.discount || 0
       }));
 
-    return res.json({
-      message: 'Lấy danh sách học sinh thành công',
-      data: {
-        students,
-        pagination: {
-          current_page: parseInt(page),
-          total_pages: Math.ceil(total / limit),
-          total_records: total,
-          limit: parseInt(limit)
-        }
-      }
-    });
+    const class_info = {
+      _id: cls._id,
+      class_name: cls.class_name,
+      academic_year: cls.academic_year,
+      class_age: cls.class_age_id || null,
+      school: cls.school_id || null
+    };
 
+    return res.json({ class_id: classId, class_info, count: students.length, students });
   } catch (err) {
-    console.error('Error in getClassStudents:', err);
-    return res.status(500).json({ 
-      error: 'Không thể lấy danh sách học sinh', 
-      message: err.message 
-    });
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
 }
 
-// Lấy danh sách học sinh với trạng thái checkin/checkout theo ngày
+// GET /teacher/class/students/attendance/:date?class_id=...
 async function getStudentsAttendanceByDate(req, res) {
   try {
-    const user_id = req.user.id;
+    let { class_id: classId } = req.query;
     const { date } = req.params;
-    
-    // Validate date format yyyy-mm-dd
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(date)) {
-      return res.status(400).json({ 
-        error: 'Định dạng ngày không hợp lệ. Vui lòng sử dụng định dạng yyyy-mm-dd' 
-      });
+
+    if (!date) {
+      return res.status(400).json({ error: 'Thiếu ngày cần tra cứu' });
     }
-    
-    // Parse date và tạo date range cho ngày đó
-    const reportDate = new Date(date + 'T00:00:00.000Z');
-    if (isNaN(reportDate.getTime())) {
-      return res.status(400).json({ error: 'Ngày không hợp lệ' });
-    }
-    
-    // Tạo start và end của ngày để tìm kiếm chính xác
-    const startOfDay = new Date(reportDate);
-    const endOfDay = new Date(reportDate);
-    endOfDay.setDate(endOfDay.getDate() + 1);
-    
-    // Tìm teacher từ user_id
-    const teacher = await Teacher.findOne({ user_id });
+
+    const teacher = await getTeacherByReqUser(req);
     if (!teacher) {
-      return res.status(404).json({ error: 'Không tìm thấy thông tin giáo viên' });
+      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
     }
 
-    // Lấy năm học hiện tại
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1; // 1-12
-    
-    // Nếu từ tháng 9 trở đi thì là năm học mới, ngược lại là năm học cũ
-    let academicYear;
-    if (currentMonth >= 9) {
-      academicYear = `${currentYear}-${currentYear + 1}`;
-    } else {
-      academicYear = `${currentYear - 1}-${currentYear}`;
-    }
-
-    // Tìm lớp học của teacher
-    const teacherClass = await Class.findOne({
-      teacher_id: teacher._id,
-      academic_year: academicYear
-    });
-
-    if (!teacherClass) {
-      return res.status(404).json({ error: 'Không tìm thấy lớp học' });
-    }
-
-    // Lấy danh sách học sinh trong lớp
-    const studentClasses = await StudentClass.find({ class_id: teacherClass._id })
-      .populate('student_id', 'full_name dob gender avatar_url status allergy')
-      .sort({ 'student_id.full_name': 1 });
-
-    // Lấy tất cả báo cáo trong ngày của các học sinh trong lớp
-    const studentIds = studentClasses
-      .filter(sc => sc.student_id)
-      .map(sc => sc.student_id._id);
-
-    const dailyReports = await DailyReport.find({
-      student_id: { $in: studentIds },
-      report_date: {
-        $gte: startOfDay,
-        $lt: endOfDay
+    let cls;
+    // If classId missing or invalid, fallback to teacher's latest academic year class
+    if (!classId || !mongoose.Types.ObjectId.isValid(classId)) {
+      cls = await Class.find({
+        $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+      })
+        .populate('school_id')
+        .populate('class_age_id')
+        .sort({ academic_year: -1 })
+        .limit(1);
+      cls = Array.isArray(cls) ? cls[0] : cls;
+      if (!cls) {
+        return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
       }
-    })
-    .populate('student_id', 'full_name avatar_url')
-    .populate('teacher_checkin_id', 'user_id')
-    .populate('teacher_checkout_id', 'user_id');
+      classId = cls._id.toString();
+    } else {
+      cls = await Class.findOne({
+        _id: classId,
+        $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+      })
+        .populate('school_id')
+        .populate('class_age_id');
+      if (!cls) {
+        return res.status(403).json({ error: 'Bạn không có quyền truy cập lớp này' });
+      }
+    }
 
-    // Tạo map để tra cứu nhanh báo cáo theo student_id
-    const reportMap = {};
-    dailyReports.forEach(report => {
-      reportMap[report.student_id._id.toString()] = report;
+    // Determine students in class
+    const mappings = await StudentClass.find({ class_id: classId });
+    const studentIds = mappings.map((m) => m.student_id);
+
+    // Parse date boundaries
+    const start = new Date(date);
+    if (Number.isNaN(start.getTime())) {
+      return res.status(400).json({ error: 'Định dạng ngày không hợp lệ' });
+    }
+    const end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+
+    const reports = await DailyReport.find({
+      student_id: { $in: studentIds },
+      report_date: { $gte: start, $lte: end }
+    })
+      .populate('student_id')
+      .populate('teacher_checkin_id')
+      .populate('teacher_checkout_id');
+
+    // Build students list with attendance flags for UI compatibility
+    const studentDocs = await Student.find({ _id: { $in: studentIds } });
+    const studentIdToDiscount = mappings.reduce((acc, m) => {
+      acc[m.student_id.toString()] = m.discount || 0;
+      return acc;
+    }, {});
+
+    const reportMap = reports.reduce((acc, r) => {
+      acc[r.student_id._id.toString()] = r;
+      return acc;
+    }, {});
+
+    const students = studentDocs.map((s) => {
+      const r = reportMap[s._id.toString()];
+      return {
+        _id: s._id,
+        full_name: s.full_name,
+        avatar_url: s.avatar_url,
+        dob: s.dob,
+        gender: s.gender,
+        status: s.status,
+        allergy: s.allergy,
+        discount: studentIdToDiscount[s._id.toString()] || 0,
+        attendance: {
+          has_checkin: !!r,
+          has_checkout: !!(r && r.checkout_time),
+          checkin_time: r ? r.checkin_time : null,
+          checkout_time: r ? r.checkout_time : null
+        }
+      };
     });
 
-    // Chuẩn bị dữ liệu trả về
-    const studentsWithAttendance = studentClasses
-      .filter(sc => sc.student_id) // Lọc bỏ các record có student_id null
-      .map(sc => {
-        const student = sc.student_id;
-        const report = reportMap[student._id.toString()];
-        
-        return {
-          _id: student._id,
-          full_name: student.full_name,
-          dob: student.dob,
-          gender: student.gender,
-          avatar_url: student.avatar_url,
-          status: student.status,
-          allergy: student.allergy,
-          discount: sc.discount,
-          attendance: {
-            has_checkin: !!report,
-            checkin_time: report ? report.checkin_time : null,
-            has_checkout: !!(report && report.checkout_time),
-            checkout_time: report ? report.checkout_time : null,
-            teacher_checkin: report ? report.teacher_checkin_id : null,
-            teacher_checkout: report ? report.teacher_checkout_id : null,
-            comments: report ? report.comments : null,
-            report_id: report ? report._id : null
-          }
-        };
-      });
-
-    // Thống kê
-    const totalStudents = studentsWithAttendance.length;
-    const checkedInStudents = studentsWithAttendance.filter(s => s.attendance.has_checkin).length;
-    const checkedOutStudents = studentsWithAttendance.filter(s => s.attendance.has_checkout).length;
-    const absentStudents = totalStudents - checkedInStudents;
+    // Statistics
+    const totalStudents = students.length;
+    const checkedIn = students.filter((s) => s.attendance.has_checkin).length;
+    const checkedOut = students.filter((s) => s.attendance.has_checkout).length;
+    const attendanceRate = totalStudents > 0 ? Math.round((checkedIn / totalStudents) * 100) : 0;
 
     const statistics = {
       total_students: totalStudents,
-      checked_in: checkedInStudents,
-      checked_out: checkedOutStudents,
-      absent: absentStudents,
-      attendance_rate: totalStudents > 0 ? Math.round((checkedInStudents / totalStudents) * 100) : 0
+      checked_in: checkedIn,
+      checked_out: checkedOut,
+      attendance_rate: attendanceRate
     };
 
-    return res.json({
-      message: 'Lấy danh sách học sinh với trạng thái điểm danh thành công',
-      data: {
-        date: date,
-        class_info: {
-          _id: teacherClass._id,
-          class_name: teacherClass.class_name,
-          academic_year: teacherClass.academic_year
-        },
-        statistics: statistics,
-        students: studentsWithAttendance
-      }
-    });
+    const class_info = {
+      _id: cls._id,
+      class_name: cls.class_name,
+      academic_year: cls.academic_year,
+      class_age: cls.class_age_id || null,
+      school: cls.school_id || null
+    };
 
+    return res.json({ class_id: classId, date: start.toISOString().split('T')[0], class_info, statistics, students });
   } catch (err) {
-    console.error('Error in getStudentsAttendanceByDate:', err);
-    return res.status(500).json({ 
-      error: 'Không thể lấy danh sách học sinh với trạng thái điểm danh', 
-      message: err.message 
-    });
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
 }
 
 module.exports = {
+  getTeacherClasses,
   getTeacherClass,
   getClassStudents,
   getStudentsAttendanceByDate
 };
+
+

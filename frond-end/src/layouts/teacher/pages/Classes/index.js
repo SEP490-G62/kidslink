@@ -12,7 +12,7 @@ Coded by KidsLink Team
 */
 
 import React, { useState, useEffect } from 'react';
-import { Grid, Card, CardContent, CardActions, Button, Chip, Box, Typography, Avatar, CircularProgress, Alert } from '@mui/material';
+import { Grid, Card, CardContent, CardActions, Button, Chip, Box, Typography, Avatar, CircularProgress, Alert, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import ArgonBox from 'components/ArgonBox';
 import ArgonTypography from 'components/ArgonTypography';
 import ArgonButton from 'components/ArgonButton';
@@ -26,32 +26,78 @@ import Footer from 'examples/Footer';
 import api from 'services/api';
 
 const TeacherClasses = () => {
-  const [classData, setClassData] = useState(null);
+  const [groupedClasses, setGroupedClasses] = useState([]); // [{ academic_year, classes: [...] }]
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [classInfo, setClassInfo] = useState(null);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchClassData();
+    fetchGroupedClasses();
   }, []);
 
-  const fetchClassData = async () => {
+  const fetchGroupedClasses = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await api.get('/teachers/class');
-      setClassData(response.data);
-      
-      // Lấy danh sách học sinh
-      const studentsResponse = await api.get('/teachers/class/students');
-      setStudents(studentsResponse.data.students);
-      
+      const groups = response?.data || [];
+      setGroupedClasses(groups);
+
+      if (groups.length > 0) {
+        // groups are sorted desc by year from backend
+        const latestYear = groups[0].academic_year;
+        const firstClass = groups[0].classes?.[0] || null;
+        setSelectedYear(latestYear);
+        setSelectedClass(firstClass);
+
+        if (firstClass) {
+          await fetchStudentsForClass(firstClass._id);
+        } else {
+          setStudents([]);
+          setClassInfo(null);
+        }
+      } else {
+        setStudents([]);
+        setClassInfo(null);
+      }
     } catch (err) {
-      console.error('Error fetching class data:', err);
+      console.error('Error fetching grouped classes:', err);
       setError(err.message || 'Không thể tải thông tin lớp học');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStudentsForClass = async (classId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const studentsResponse = await api.get(`/teachers/class/students?class_id=${classId}`);
+      setStudents(studentsResponse.students || []);
+      setClassInfo(studentsResponse.class_info || null);
+    } catch (err) {
+      console.error('Error fetching students:', err);
+      setError(err.message || 'Không thể tải danh sách học sinh');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleYearChange = async (e) => {
+    const year = e.target.value;
+    setSelectedYear(year);
+    const group = groupedClasses.find(g => g.academic_year === year);
+    const cls = group?.classes?.[0] || null;
+    setSelectedClass(cls);
+    if (cls?._id) {
+      await fetchStudentsForClass(cls._id);
+    } else {
+      setStudents([]);
+      setClassInfo(null);
     }
   };
 
@@ -114,7 +160,7 @@ const TeacherClasses = () => {
     );
   }
 
-  if (!classData) {
+  if (!classInfo && !selectedClass) {
     return (
       <DashboardLayout>
         <TeacherNavbar />
@@ -132,14 +178,32 @@ const TeacherClasses = () => {
     <DashboardLayout>
       <TeacherNavbar />
       <ArgonBox py={3}>
-        {/* Header */}
-        <ArgonBox mb={3}>
-          <ArgonTypography variant="h4" fontWeight="bold" mb={1}>
-            Lớp học của tôi
-          </ArgonTypography>
-          <ArgonTypography variant="body1" color="text">
-            Thông tin chi tiết về lớp học được phân công
-          </ArgonTypography>
+        {/* Header and Year Filter */}
+        <ArgonBox mb={3} display="flex" alignItems="center" justifyContent="space-between">
+          <Box>
+            <ArgonTypography variant="h4" fontWeight="bold" mb={1}>
+              Lớp học của tôi
+            </ArgonTypography>
+            <ArgonTypography variant="body1" color="text">
+              Thông tin chi tiết về lớp học được phân công
+            </ArgonTypography>
+          </Box>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel id="year-select-label">Năm học</InputLabel>
+            <Select
+              labelId="year-select-label"
+              id="year-select"
+              value={selectedYear}
+              label="Năm học"
+              onChange={handleYearChange}
+            >
+              {groupedClasses.map(group => (
+                <MenuItem key={group.academic_year} value={group.academic_year}>
+                  {group.academic_year}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </ArgonBox>
 
         {/* Class Information Card */}
@@ -149,7 +213,7 @@ const TeacherClasses = () => {
               <CardContent>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <ArgonTypography variant="h5" fontWeight="bold">
-                    {classData.class_info.class_name}
+                    {classInfo?.class_name || selectedClass?.class_name}
                   </ArgonTypography>
                   <Chip 
                     label="Hoạt động"
@@ -161,28 +225,28 @@ const TeacherClasses = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <ArgonTypography variant="body2" color="text" mb={1}>
-                      <strong>Năm học:</strong> {classData.class_info.academic_year}
+                      <strong>Năm học:</strong> {classInfo?.academic_year || selectedYear}
                     </ArgonTypography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <ArgonTypography variant="body2" color="text" mb={1}>
-                      <strong>Độ tuổi:</strong> {classData.class_info.class_age?.age_name || 'N/A'}
+                      <strong>Độ tuổi:</strong> {classInfo?.class_age?.age_name || 'N/A'}
                     </ArgonTypography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <ArgonTypography variant="body2" color="text" mb={1}>
-                      <strong>Trường:</strong> {classData.class_info.school?.school_name || 'N/A'}
+                      <strong>Trường:</strong> {classInfo?.school?.school_name || 'N/A'}
                     </ArgonTypography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <ArgonTypography variant="body2" color="text" mb={1}>
-                      <strong>Địa chỉ:</strong> {classData.class_info.school?.address || 'N/A'}
+                      <strong>Địa chỉ:</strong> {classInfo?.school?.address || 'N/A'}
                     </ArgonTypography>
                   </Grid>
-                  {classData.class_info.assistant_teacher && (
+                  {classInfo?.assistant_teacher && (
                     <Grid item xs={12}>
                       <ArgonTypography variant="body2" color="text" mb={1}>
-                        <strong>Giáo viên phụ:</strong> {classData.class_info.assistant_teacher.user_id?.full_name || 'N/A'}
+                        <strong>Giáo viên phụ:</strong> {classInfo.assistant_teacher.user_id?.full_name || 'N/A'}
                       </ArgonTypography>
                     </Grid>
                   )}
@@ -199,26 +263,10 @@ const TeacherClasses = () => {
                 </ArgonTypography>
                 <ArgonBox mb={2}>
                   <ArgonTypography variant="h4" color="primary" fontWeight="bold">
-                    {classData.statistics.total_students}
+                    {students.length}
                   </ArgonTypography>
                   <ArgonTypography variant="body2" color="text">
                     Tổng số học sinh
-                  </ArgonTypography>
-                </ArgonBox>
-                <ArgonBox mb={2}>
-                  <ArgonTypography variant="h4" color="info" fontWeight="bold">
-                    {classData.statistics.average_age}
-                  </ArgonTypography>
-                  <ArgonTypography variant="body2" color="text">
-                    Tuổi trung bình
-                  </ArgonTypography>
-                </ArgonBox>
-                <ArgonBox>
-                  <ArgonTypography variant="h4" color="success" fontWeight="bold">
-                    {classData.statistics.class_age_range}
-                  </ArgonTypography>
-                  <ArgonTypography variant="body2" color="text">
-                    Nhóm tuổi
                   </ArgonTypography>
                 </ArgonBox>
               </CardContent>

@@ -14,6 +14,8 @@ class ApiService {
   getHeaders(includeAuth = true) {
     const headers = {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
     };
 
     if (includeAuth) {
@@ -28,7 +30,25 @@ class ApiService {
 
   // Xử lý response
   async handleResponse(response) {
-    const data = await response.json();
+    // Handle no-content or not-modified responses gracefully
+    if (response.status === 204 || response.status === 304) {
+      return {};
+    }
+
+    // Try to parse JSON only when there is a body
+    let data;
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // Fallback: attempt text and wrap
+      const text = await response.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = { raw: text };
+      }
+    }
     
     if (!response.ok) {
       // Handle authentication errors
@@ -48,7 +68,7 @@ class ApiService {
         data: data
       });
       
-      throw new Error(data.error || data.details || `HTTP error! status: ${response.status}`);
+      throw new Error((data && (data.error || data.details)) || `HTTP error! status: ${response.status}`);
     }
     
     return data;
