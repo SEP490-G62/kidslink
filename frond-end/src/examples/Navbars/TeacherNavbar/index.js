@@ -81,7 +81,11 @@ function TeacherNavbar({ absolute, light, isMini }) {
   const [openMenu, setOpenMenu] = useState(false);
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
   const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
-  const route = useLocation().pathname.split("/").slice(1);
+  const location = useLocation();
+  const route = location.pathname.split("/").slice(1);
+  const last = route[route.length - 1];
+  const isMongoId = /^[0-9a-fA-F]{24}$/.test(last || "");
+  const computedTitle = location.state?.title || (isMongoId ? "" : last);
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -188,7 +192,7 @@ function TeacherNavbar({ absolute, light, isMini }) {
         >
           <Breadcrumbs
             icon="home"
-            title={route[route.length - 1]}
+            title={computedTitle}
             route={route}
             light={transparentNavbar ? light : false}
           />

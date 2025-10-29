@@ -16,6 +16,7 @@ Coded by KidsLink Team
 // Teacher Layouts
 import TeacherHome from "layouts/teacher";
 import TeacherClasses from "layouts/teacher/pages/Classes/index";
+import TeacherStudentDetail from "layouts/teacher/pages/StudentDetail/index";
 import TeacherStudents from "layouts/teacher/pages/Students/index";
 import TeacherReports from "layouts/teacher/pages/Reports/index";
 import TeacherAttendance from "layouts/teacher/pages/Attendance/index";
@@ -51,6 +52,13 @@ const teacherRoutes = [
     route: "/teacher/students",
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-single-02" />,
     component: <ProtectedRoute requiredRoles={['teacher']}><TeacherStudents /></ProtectedRoute>,
+  },
+  // Trang chi tiết học sinh (không hiển thị ở menu)
+  {
+    type: "hidden",
+    key: "teacher-student-detail",
+    route: "/teacher/students/:id",
+    component: <ProtectedRoute requiredRoles={['teacher']}><TeacherStudentDetail /></ProtectedRoute>,
   },
   {
     type: "route",
