@@ -12,6 +12,7 @@ const {
   getClassStudents,
   getStudentsAttendanceByDate
 } = require('../controllers/teacherController');
+const { getStudentDetail } = require('../controllers/studentController');
 
 // Middleware xác thực cho tất cả routes
 router.use(authenticate);
@@ -26,6 +27,9 @@ router.put('/daily-reports/checkout', authorize(['teacher']), studentValidators,
 router.get('/class', authorize(['teacher']), getTeacherClasses);
 router.get('/class/students', authorize(['teacher']), getClassStudents);
 router.get('/class/students/attendance/:date', authorize(['teacher']), getStudentsAttendanceByDate);
+
+// Xem thông tin chi tiết học sinh
+router.get('/students/:id', authorize(['teacher']), getStudentDetail);
 
 module.exports = router;
 

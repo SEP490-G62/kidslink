@@ -83,7 +83,9 @@ function Breadcrumbs({ icon, title, route, light }) {
       'settings': 'Cài đặt',
       'notifications': 'Thông báo',
       'help': 'Trợ giúp',
-      'logout': 'Đăng xuất'
+      'logout': 'Đăng xuất',
+      'attendance': 'Điểm danh',
+      'classes': 'Lớp học',
     };
     
     return titleTranslations[titleName] || titleName.replace("-", " ");
@@ -124,25 +126,29 @@ function Breadcrumbs({ icon, title, route, light }) {
             </ArgonTypography>
           </Link>
         ))}
+        {title ? (
+          <ArgonTypography
+            variant="button"
+            fontWeight="regular"
+            textTransform="capitalize"
+            color={light ? "white" : "dark"}
+            sx={{ lineHeight: 0 }}
+          >
+            {translateTitle(title)}
+          </ArgonTypography>
+        ) : null}
+      </MuiBreadcrumbs>
+      {title ? (
         <ArgonTypography
-          variant="button"
-          fontWeight="regular"
+          fontWeight="bold"
           textTransform="capitalize"
+          variant="h6"
           color={light ? "white" : "dark"}
-          sx={{ lineHeight: 0 }}
+          noWrap
         >
           {translateTitle(title)}
         </ArgonTypography>
-      </MuiBreadcrumbs>
-      <ArgonTypography
-        fontWeight="bold"
-        textTransform="capitalize"
-        variant="h6"
-        color={light ? "white" : "dark"}
-        noWrap
-      >
-        {translateTitle(title)}
-      </ArgonTypography>
+      ) : null}
     </ArgonBox>
   );
 }

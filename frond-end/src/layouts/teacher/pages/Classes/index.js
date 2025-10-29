@@ -12,6 +12,7 @@ Coded by KidsLink Team
 */
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Grid, Card, CardContent, CardActions, Button, Chip, Box, Typography, Avatar, CircularProgress, Alert, FormControl, InputLabel, Select, MenuItem, Divider, Stack, Tooltip } from '@mui/material';
 import { CalendarMonth, School as SchoolIcon, LocationOn, Group as GroupIcon } from '@mui/icons-material';
 import ArgonBox from 'components/ArgonBox';
@@ -27,6 +28,7 @@ import Footer from 'examples/Footer';
 import api from 'services/api';
 
 const TeacherClasses = () => {
+  const navigate = useNavigate();
   const [groupedClasses, setGroupedClasses] = useState([]); // [{ academic_year, classes: [...] }]
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedClass, setSelectedClass] = useState(null);
@@ -337,7 +339,18 @@ const TeacherClasses = () => {
               <Grid container spacing={2}>
                 {students.map((student) => (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={student._id}>
-                    <Card variant="outlined" sx={{ height: '100%', transition: 'all .2s ease', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}>
+                    <Card 
+                      variant="outlined"
+                      onClick={() => navigate(`/teacher/students/${student._id}`, { state: { title: student.full_name } })}
+                      role="button"
+                      tabIndex={0}
+                      sx={{
+                        height: '100%',
+                        transition: 'all .2s ease',
+                        cursor: 'pointer',
+                        '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' }
+                      }}
+                    >
                       <CardContent>
                         <Box display="flex" alignItems="center" mb={2}>
                           <Avatar 
