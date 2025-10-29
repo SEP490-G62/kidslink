@@ -235,29 +235,23 @@ const TeacherAttendance = () => {
       <TeacherNavbar />
       <ArgonBox py={3}>
         {/* Header */}
-        <ArgonBox mb={4}>
-          <ArgonBox
-            sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              borderRadius: 3,
-              p: 4,
-              color: 'white',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-            }}
-          >
-            <Box display="flex" alignItems="center" mb={2}>
-              <Schedule sx={{ fontSize: 32, mr: 2 }} />
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
               <Box>
-                <ArgonTypography variant="h3" fontWeight="bold" mb={1}>
-                  Điểm danh học sinh
-                </ArgonTypography>
-                <ArgonTypography variant="h6" opacity={0.9}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Schedule color="primary" />
+                  <ArgonTypography variant="h5" fontWeight="bold">
+                    Điểm danh học sinh
+                  </ArgonTypography>
+                </Box>
+                <ArgonTypography variant="body2" color="text" mt={0.5}>
                   Quản lý điểm danh đến/đi của học sinh trong lớp
                 </ArgonTypography>
               </Box>
             </Box>
-          </ArgonBox>
-        </ArgonBox>
+          </CardContent>
+        </Card>
 
         {/* Success/Error Messages */}
         {successMessage && (

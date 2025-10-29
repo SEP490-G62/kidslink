@@ -12,7 +12,8 @@ Coded by KidsLink Team
 */
 
 import React, { useState, useEffect } from 'react';
-import { Grid, Card, CardContent, CardActions, Button, Chip, Box, Typography, Avatar, CircularProgress, Alert, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Grid, Card, CardContent, CardActions, Button, Chip, Box, Typography, Avatar, CircularProgress, Alert, FormControl, InputLabel, Select, MenuItem, Divider, Stack, Tooltip } from '@mui/material';
+import { CalendarMonth, School as SchoolIcon, LocationOn, Group as GroupIcon } from '@mui/icons-material';
 import ArgonBox from 'components/ArgonBox';
 import ArgonTypography from 'components/ArgonTypography';
 import ArgonButton from 'components/ArgonButton';
@@ -151,7 +152,7 @@ const TeacherClasses = () => {
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>
-          <ArgonButton onClick={fetchClassData} color="info">
+          <ArgonButton onClick={fetchGroupedClasses} color="info">
             Thử lại
           </ArgonButton>
         </ArgonBox>
@@ -179,69 +180,114 @@ const TeacherClasses = () => {
       <TeacherNavbar />
       <ArgonBox py={3}>
         {/* Header and Year Filter */}
-        <ArgonBox mb={3} display="flex" alignItems="center" justifyContent="space-between">
-          <Box>
-            <ArgonTypography variant="h4" fontWeight="bold" mb={1}>
-              Lớp học của tôi
-            </ArgonTypography>
-            <ArgonTypography variant="body1" color="text">
-              Thông tin chi tiết về lớp học được phân công
-            </ArgonTypography>
-          </Box>
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel id="year-select-label">Năm học</InputLabel>
-            <Select
-              labelId="year-select-label"
-              id="year-select"
-              value={selectedYear}
-              label="Năm học"
-              onChange={handleYearChange}
-            >
-              {groupedClasses.map(group => (
-                <MenuItem key={group.academic_year} value={group.academic_year}>
-                  {group.academic_year}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </ArgonBox>
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <SchoolIcon color="primary" />
+                  <ArgonTypography variant="h5" fontWeight="bold" letterSpacing={0.2}>
+                    Lớp học của tôi
+                  </ArgonTypography>
+                </Stack>
+                <ArgonTypography variant="body2" color="text" mt={0.5}>
+                  Thông tin chi tiết về lớp học được phân công
+                </ArgonTypography>
+              </Box>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
+                <Chip icon={<GroupIcon />} color="primary" variant="outlined" label={`${students.length} học sinh`} />
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <CalendarMonth color="action" />
+                  <FormControl size="small" variant="outlined" sx={{
+                    minWidth: 240,
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: '#fff',
+                      borderRadius: 2,
+                      transition: 'box-shadow .2s ease',
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'divider',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.light',
+                    },
+                    '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                      boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+                    }
+                  }}>
+                    <InputLabel id="year-select-label" sx={{ backgroundColor: '#fff', px: 0.5 }}>
+                      Năm học
+                    </InputLabel>
+                    <Select
+                      labelId="year-select-label"
+                      id="year-select"
+                      value={selectedYear}
+                      label="Năm học"
+                      onChange={handleYearChange}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: { borderRadius: 2 }
+                        }
+                      }}
+                    >
+                      {groupedClasses.map(group => (
+                        <MenuItem key={group.academic_year} value={group.academic_year}>
+                          {group.academic_year}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Stack>
+              </Stack>
+            </Box>
+          </CardContent>
+        </Card>
 
         {/* Class Information Card */}
         <Grid container spacing={3} mb={3}>
           <Grid item xs={12} md={8}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <ArgonTypography variant="h5" fontWeight="bold">
                     {classInfo?.class_name || selectedClass?.class_name}
                   </ArgonTypography>
-                  <Chip 
-                    label="Hoạt động"
-                    color="success"
-                    size="small"
-                  />
+                  <Chip label="Hoạt động" color="success" size="small" variant="outlined" />
                 </Box>
-                
+                <Divider sx={{ mb: 2 }} />
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <ArgonTypography variant="body2" color="text" mb={1}>
-                      <strong>Năm học:</strong> {classInfo?.academic_year || selectedYear}
-                    </ArgonTypography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <CalendarMonth color="action" />
+                      <ArgonTypography variant="body2" color="text" mb={1}>
+                        <strong>Năm học:</strong> {classInfo?.academic_year || selectedYear}
+                      </ArgonTypography>
+                    </Stack>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <ArgonTypography variant="body2" color="text" mb={1}>
-                      <strong>Độ tuổi:</strong> {classInfo?.class_age?.age_name || 'N/A'}
-                    </ArgonTypography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <SchoolIcon color="action" />
+                      <ArgonTypography variant="body2" color="text" mb={1}>
+                        <strong>Độ tuổi:</strong> {classInfo?.class_age?.age_name || 'N/A'}
+                      </ArgonTypography>
+                    </Stack>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <ArgonTypography variant="body2" color="text" mb={1}>
-                      <strong>Trường:</strong> {classInfo?.school?.school_name || 'N/A'}
-                    </ArgonTypography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <SchoolIcon color="action" />
+                      <ArgonTypography variant="body2" color="text" mb={1}>
+                        <strong>Trường:</strong> {classInfo?.school?.school_name || 'N/A'}
+                      </ArgonTypography>
+                    </Stack>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <ArgonTypography variant="body2" color="text" mb={1}>
-                      <strong>Địa chỉ:</strong> {classInfo?.school?.address || 'N/A'}
-                    </ArgonTypography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <LocationOn color="action" />
+                      <ArgonTypography variant="body2" color="text" mb={1}>
+                        <strong>Địa chỉ:</strong> {classInfo?.school?.address || 'N/A'}
+                      </ArgonTypography>
+                    </Stack>
                   </Grid>
                   {classInfo?.assistant_teacher && (
                     <Grid item xs={12}>
@@ -256,7 +302,7 @@ const TeacherClasses = () => {
           </Grid>
           
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <ArgonTypography variant="h6" fontWeight="bold" mb={2}>
                   Thống kê lớp học
@@ -291,7 +337,7 @@ const TeacherClasses = () => {
               <Grid container spacing={2}>
                 {students.map((student) => (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={student._id}>
-                    <Card variant="outlined">
+                    <Card variant="outlined" sx={{ height: '100%', transition: 'all .2s ease', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}>
                       <CardContent>
                         <Box display="flex" alignItems="center" mb={2}>
                           <Avatar 
@@ -319,20 +365,25 @@ const TeacherClasses = () => {
                             label={getStatusText(student.status)}
                             color={getStatusColor(student.status)}
                             size="small"
+                            variant="outlined"
                             sx={{ ml: 1 }}
                           />
                         </ArgonTypography>
                         
                         {student.allergy && student.allergy !== 'Không' && (
-                          <ArgonTypography variant="body2" color="warning" mb={1}>
-                            <strong>Dị ứng:</strong> {student.allergy}
-                          </ArgonTypography>
+                          <Tooltip title="Thông tin dị ứng">
+                            <ArgonTypography variant="body2" color="warning" mb={1}>
+                              <strong>Dị ứng:</strong> {student.allergy}
+                            </ArgonTypography>
+                          </Tooltip>
                         )}
                         
                         {student.discount > 0 && (
-                          <ArgonTypography variant="body2" color="success">
-                            <strong>Giảm giá:</strong> {student.discount}%
-                          </ArgonTypography>
+                          <Tooltip title="Ưu đãi học phí">
+                            <ArgonTypography variant="body2" color="success">
+                              <strong>Giảm giá:</strong> {student.discount}%
+                            </ArgonTypography>
+                          </Tooltip>
                         )}
                       </CardContent>
                     </Card>
