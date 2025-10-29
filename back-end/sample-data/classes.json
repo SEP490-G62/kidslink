@@ -31,6 +31,28 @@
     "teacher_id2": null,
     "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
     "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000503" },
+    "class_name": "MGN-1",
+    "academic_year": "2024-2025",
+    "school_id": { "$oid": "6710a0000000000000000100" },
+    "class_age_id": { "$oid": "6710a0000000000000000202" },
+    "teacher_id": { "$oid": "6710a0000000000000000303" },
+    "teacher_id2": null,
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000504" },
+    "class_name": "MGL-1",
+    "academic_year": "2024-2025",
+    "school_id": { "$oid": "6710a0000000000000000100" },
+    "class_age_id": { "$oid": "6710a0000000000000000203" },
+    "teacher_id": { "$oid": "6710a0000000000000000304" },
+    "teacher_id2": null,
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
   }
 ]
 

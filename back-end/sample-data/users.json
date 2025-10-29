@@ -76,6 +76,45 @@
     "phone_number": "+84 900 000 006",
     "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
     "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000007" },
+    "full_name": "Phụ huynh Lê Thị Hoa",
+    "username": "parent.hoa",
+    "password_hash": "$2b$10$examplehashparent3",
+    "role": "parent",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-parent3.png",
+    "status": 1,
+    "email": "ph.hoa@example.com",
+    "phone_number": "+84 900 000 007",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000008" },
+    "full_name": "Giáo viên Phạm Thị Lan",
+    "username": "teacher.lan",
+    "password_hash": "$2b$10$examplehashteacher3",
+    "role": "teacher",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-teacher3.png",
+    "status": 1,
+    "email": "gv.lan@truonga.edu.vn",
+    "phone_number": "+84 900 000 008",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000009" },
+    "full_name": "Giáo viên Võ Văn Nam",
+    "username": "teacher.nam",
+    "password_hash": "$2b$10$examplehashteacher4",
+    "role": "teacher",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-teacher4.png",
+    "status": 1,
+    "email": "gv.nam@truonga.edu.vn",
+    "phone_number": "+84 900 000 009",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
   }
 ]
 

@@ -4,6 +4,7 @@ const commentsController = require('./parent/commentsController');
 const likesController = require('./parent/likesController');
 const personalInfoController = require('./parent/personalInfoController');
 const childInfoController = require('./parent/childInfoController');
+const calendarController = require('./parent/calendarController');
 
 
 module.exports = {
@@ -30,5 +31,8 @@ module.exports = {
   updatePersonalInfo: personalInfoController.updatePersonalInfo,
   
   // Export functions from child info controller
-  getChildInfo: childInfoController.getChildInfo
+  getChildInfo: childInfoController.getChildInfo,
+  
+  // Export functions from calendar controller
+  getClassCalendarLatest: calendarController.getClassCalendarLatest
 };

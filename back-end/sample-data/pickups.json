@@ -38,6 +38,36 @@
     "phone": "+84 900 123 459",
     "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
     "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000E04" },
+    "full_name": "Lê Văn Ông Ngoại",
+    "relationship": "Ông Ngoại",
+    "id_card_number": "001234567894",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-pickup5.png",
+    "phone": "+84 900 123 460",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000E05" },
+    "full_name": "Lê Thị Bà Ngoại",
+    "relationship": "Bà Ngoại",
+    "id_card_number": "001234567895",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-pickup6.png",
+    "phone": "+84 900 123 461",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000E06" },
+    "full_name": "Lê Văn Chú",
+    "relationship": "Chú",
+    "id_card_number": "001234567896",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/avatar-pickup7.png",
+    "phone": "+84 900 123 462",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
   }
 ]
 
