@@ -63,7 +63,9 @@ const StudentDetail = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <TeacherNavbar />
+        <TeacherNavbar
+          breadcrumbOverride={{ route: ['teacher', 'classes'], title: '' }}
+        />
         <ArgonBox py={3} display="flex" justifyContent="center" alignItems="center" minHeight="400px">
           <CircularProgress />
         </ArgonBox>
@@ -75,7 +77,9 @@ const StudentDetail = () => {
   if (error) {
     return (
       <DashboardLayout>
-        <TeacherNavbar />
+        <TeacherNavbar
+          breadcrumbOverride={{ route: ['teacher', 'classes'], title: '' }}
+        />
         <ArgonBox py={3}>
           <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
           <ArgonButton color="info" onClick={() => navigate(-1)}>Quay lại</ArgonButton>
@@ -90,7 +94,9 @@ const StudentDetail = () => {
 
   return (
     <DashboardLayout>
-      <TeacherNavbar />
+      <TeacherNavbar
+        breadcrumbOverride={{ route: ['teacher', 'classes'], title: student?.full_name || '' }}
+      />
       <ArgonBox py={0}>
         <Box display="flex" alignItems="center" mb={2}>
           <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }}>

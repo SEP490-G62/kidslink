@@ -74,7 +74,7 @@ import TeacherNotificationMenu from "./TeacherNotificationMenu";
 import team2 from "assets/images/team-2.jpg";
 import logoSpotify from "assets/images/small-logos/logo-spotify.svg";
 
-function TeacherNavbar({ absolute, light, isMini }) {
+function TeacherNavbar({ absolute, light, isMini, breadcrumbOverride }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useArgonController();
   const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator } = controller;
@@ -86,6 +86,10 @@ function TeacherNavbar({ absolute, light, isMini }) {
   const last = route[route.length - 1];
   const isMongoId = /^[0-9a-fA-F]{24}$/.test(last || "");
   const computedTitle = location.state?.title || (isMongoId ? "" : last);
+  
+  // Allow overriding breadcrumbs (route and title) from specific pages
+  const effectiveRoute = breadcrumbOverride?.route || route;
+  const effectiveTitle = breadcrumbOverride?.title ?? computedTitle;
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -192,8 +196,8 @@ function TeacherNavbar({ absolute, light, isMini }) {
         >
           <Breadcrumbs
             icon="home"
-            title={computedTitle}
-            route={route}
+            title={effectiveTitle}
+            route={effectiveRoute}
             light={transparentNavbar ? light : false}
           />
           <Icon fontSize="medium" sx={navbarDesktopMenu} onClick={handleMiniSidenav}>
@@ -287,6 +291,10 @@ TeacherNavbar.propTypes = {
   absolute: PropTypes.bool,
   light: PropTypes.bool,
   isMini: PropTypes.bool,
+  breadcrumbOverride: PropTypes.shape({
+    route: PropTypes.array,
+    title: PropTypes.string,
+  }),
 };
 
 export default TeacherNavbar;
