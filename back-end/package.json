@@ -2,6 +2,7 @@
   "name": "kidslink-backend",
   "version": "1.0.0",
   "description": "Backend API cho ứng dụng KidsLink",
+   "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

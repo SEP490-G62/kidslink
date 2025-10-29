@@ -37,6 +37,7 @@ Coded by www.creative-tim.com
 import Dashboard from "layouts/dashboard";
 import Landing from "layouts/landing";
 import Tables from "layouts/tables";
+import ManageAccount from "Admin/ManageAccount";
 import Billing from "layouts/billing";
 import VirtualReality from "layouts/virtual-reality";
 import RTL from "layouts/rtl";
@@ -66,13 +67,13 @@ const routes = [
   },
   {
     type: "route",
-    name: "Tables",
-    key: "tables",
-    route: "/tables",
+    name: "Accounts",
+    key: "accounts",
+    route: "/accounts",
     icon: (
       <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-calendar-grid-58" />
     ),
-    component: <Tables />,
+    component: <ManageAccount />,
   },
   {
     type: "route",
