@@ -354,6 +354,23 @@ class ParentService {
       return { success: false, error: error.message || 'Lỗi lấy daily reports' };
     }
   }
+
+  /**
+   * Lấy lịch học lớp theo năm học mới nhất của con
+   * @param {string} studentId - optional, để chọn con cụ thể
+   */
+  async getLatestClassCalendar(studentId) {
+    try {
+      const params = new URLSearchParams();
+      if (studentId) params.append('student_id', studentId);
+      const url = `/parent/class-calendar?${params.toString()}`;
+      const response = await apiService.get(url);
+      return response;
+    } catch (error) {
+      console.error('ParentService.getLatestClassCalendar Error:', error);
+      return { success: false, error: error.message || 'Lỗi lấy lịch lớp' };
+    }
+  }
 }
 
 const parentService = new ParentService();

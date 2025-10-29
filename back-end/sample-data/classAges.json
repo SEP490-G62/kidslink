@@ -12,6 +12,20 @@
     "age_name": "Mẫu giáo bé 4 tuổi",
     "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
     "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000202" },
+    "age": 5,
+    "age_name": "Mẫu giáo nhỡ 5 tuổi",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000203" },
+    "age": 6,
+    "age_name": "Mẫu giáo lớn 6 tuổi",
+    "createdAt": { "$date": "2024-09-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2024-09-01T00:00:00.000Z" }
   }
 ]
 

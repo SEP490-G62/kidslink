@@ -66,4 +66,7 @@ router.delete('/pickups/:pickupId/:studentId', deletePickup);
 // Routes cho daily reports
 router.get('/daily-reports', getDailyReports);
 
+// Routes cho class calendar (năm học mới nhất)
+router.get('/class-calendar', require('../controllers/parentController').getClassCalendarLatest);
+
 module.exports = router;

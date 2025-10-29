@@ -1,0 +1,182 @@
+[
+  {
+    "_id": { "$oid": "6710a0000000000000001000" },
+    "student_id": { "$oid": "6710a0000000000000000602" },
+    "date": { "$date": "2024-12-23T00:00:00.000Z" },
+    "attendance": "present",
+    "mood": "happy",
+    "sleep_time": "12:00",
+    "wake_time": "14:00",
+    "meals": [
+      {
+        "meal_type": "breakfast",
+        "food": "Cháo thịt bằm",
+        "amount": "1 bát",
+        "note": "Ăn hết"
+      },
+      {
+        "meal_type": "lunch",
+        "food": "Cơm, thịt kho, canh chua",
+        "amount": "1 chén cơm",
+        "note": "Ăn ngon miệng"
+      },
+      {
+        "meal_type": "snack",
+        "food": "Sữa chua",
+        "amount": "1 hộp",
+        "note": "Thích ăn"
+      }
+    ],
+    "activities": [
+      {
+        "activity_name": "Học vẽ",
+        "duration": "45 phút",
+        "note": "Vẽ tranh gia đình rất đẹp"
+      },
+      {
+        "activity_name": "Âm nhạc",
+        "duration": "30 phút",
+        "note": "Hát bài hát mới"
+      }
+    ],
+    "health_notes": "Sức khỏe tốt, không có vấn đề gì",
+    "teacher_notes": "Bé Minh Anh rất ngoan và hăng hái tham gia các hoạt động. Bé có khả năng vẽ tốt và thích hát.",
+    "createdAt": { "$date": "2024-12-23T16:00:00.000Z" },
+    "updatedAt": { "$date": "2024-12-23T16:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000001001" },
+    "student_id": { "$oid": "6710a0000000000000000602" },
+    "date": { "$date": "2024-12-25T00:00:00.000Z" },
+    "attendance": "present",
+    "mood": "excited",
+    "sleep_time": "12:30",
+    "wake_time": "14:15",
+    "meals": [
+      {
+        "meal_type": "breakfast",
+        "food": "Bánh mì pate",
+        "amount": "1 ổ",
+        "note": "Ăn hết"
+      },
+      {
+        "meal_type": "lunch",
+        "food": "Cơm, cá chiên, rau muống xào",
+        "amount": "1 chén cơm",
+        "note": "Ăn ngon miệng"
+      },
+      {
+        "meal_type": "snack",
+        "food": "Bánh flan",
+        "amount": "1 cái",
+        "note": "Rất thích"
+      }
+    ],
+    "activities": [
+      {
+        "activity_name": "Học chữ cái",
+        "duration": "45 phút",
+        "note": "Học chữ A, B, C rất tốt"
+      },
+      {
+        "activity_name": "Thể dục",
+        "duration": "30 phút",
+        "note": "Chạy nhảy vui vẻ"
+      }
+    ],
+    "health_notes": "Sức khỏe tốt, năng động",
+    "teacher_notes": "Bé Minh Anh học chữ cái rất nhanh và thích thú. Bé rất năng động trong giờ thể dục.",
+    "createdAt": { "$date": "2024-12-25T16:00:00.000Z" },
+    "updatedAt": { "$date": "2024-12-25T16:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000001002" },
+    "student_id": { "$oid": "6710a0000000000000000603" },
+    "date": { "$date": "2024-12-24T00:00:00.000Z" },
+    "attendance": "present",
+    "mood": "focused",
+    "sleep_time": "12:15",
+    "wake_time": "14:00",
+    "meals": [
+      {
+        "meal_type": "breakfast",
+        "food": "Phở bò",
+        "amount": "1 tô",
+        "note": "Ăn hết, không ăn hải sản"
+      },
+      {
+        "meal_type": "lunch",
+        "food": "Cơm, thịt gà, canh khổ qua",
+        "amount": "1 chén cơm",
+        "note": "Ăn ngon miệng, tránh hải sản"
+      },
+      {
+        "meal_type": "snack",
+        "food": "Trái cây",
+        "amount": "1 quả táo",
+        "note": "Thích ăn"
+      }
+    ],
+    "activities": [
+      {
+        "activity_name": "Học viết",
+        "duration": "45 phút",
+        "note": "Viết chữ đẹp và đúng"
+      },
+      {
+        "activity_name": "Toán học",
+        "duration": "30 phút",
+        "note": "Làm toán cộng trừ tốt"
+      }
+    ],
+    "health_notes": "Sức khỏe tốt, chú ý dị ứng hải sản",
+    "teacher_notes": "Bé Tuấn Anh rất tập trung và chăm chỉ. Bé viết chữ đẹp và làm toán giỏi. Cần chú ý dị ứng hải sản.",
+    "createdAt": { "$date": "2024-12-24T16:00:00.000Z" },
+    "updatedAt": { "$date": "2024-12-24T16:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000001003" },
+    "student_id": { "$oid": "6710a0000000000000000603" },
+    "date": { "$date": "2024-12-26T00:00:00.000Z" },
+    "attendance": "present",
+    "mood": "happy",
+    "sleep_time": "12:00",
+    "wake_time": "14:00",
+    "meals": [
+      {
+        "meal_type": "breakfast",
+        "food": "Cháo gà",
+        "amount": "1 bát",
+        "note": "Ăn hết"
+      },
+      {
+        "meal_type": "lunch",
+        "food": "Cơm, thịt bò xào, canh chua cá",
+        "amount": "1 chén cơm",
+        "note": "Ăn ngon miệng, tránh hải sản"
+      },
+      {
+        "meal_type": "snack",
+        "food": "Bánh quy",
+        "amount": "2 cái",
+        "note": "Thích ăn"
+      }
+    ],
+    "activities": [
+      {
+        "activity_name": "Làm bánh",
+        "duration": "60 phút",
+        "note": "Làm bánh quy rất khéo léo"
+      },
+      {
+        "activity_name": "Vẽ tranh",
+        "duration": "45 phút",
+        "note": "Vẽ tranh gia đình rất đẹp"
+      }
+    ],
+    "health_notes": "Sức khỏe tốt, không có vấn đề gì",
+    "teacher_notes": "Bé Tuấn Anh rất khéo léo trong hoạt động làm bánh và vẽ tranh. Bé có tính sáng tạo cao.",
+    "createdAt": { "$date": "2024-12-26T16:00:00.000Z" },
+    "updatedAt": { "$date": "2024-12-26T16:00:00.000Z" }
+  }
+]

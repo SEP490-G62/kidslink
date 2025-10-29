@@ -78,6 +78,46 @@
     "class_id": { "$oid": "6710a0000000000000000501" },
     "createdAt": { "$date": "2024-12-09T15:20:00.000Z" },
     "updatedAt": { "$date": "2024-12-09T15:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000908" },
+    "content": "Chào mừng các con đến với lớp MGN-1! Tuần đầu tiên của năm học mới, các con đã làm quen với bạn bè và cô giáo. Các con rất ngoan và hăng hái tham gia các hoạt động!",
+    "create_at": { "$date": "2024-12-18T09:00:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000008" },
+    "class_id": { "$oid": "6710a0000000000000000503" },
+    "createdAt": { "$date": "2024-12-18T09:00:00.000Z" },
+    "updatedAt": { "$date": "2024-12-18T09:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a0000000000000000909" },
+    "content": "Hoạt động học tập lớp MGN-1: Hôm nay các con đã học về chữ cái và số đếm. Các con rất thích thú khi được vẽ và tô màu các chữ cái. Phụ huynh có thể hỗ trợ con ôn tập ở nhà nhé!",
+    "create_at": { "$date": "2024-12-17T14:30:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000008" },
+    "class_id": { "$oid": "6710a0000000000000000503" },
+    "createdAt": { "$date": "2024-12-17T14:30:00.000Z" },
+    "updatedAt": { "$date": "2024-12-17T14:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a000000000000000090A" },
+    "content": "Lớp MGL-1 - Chuẩn bị vào lớp 1: Các con lớp MGL-1 đã bắt đầu học các kỹ năng cần thiết để chuẩn bị vào lớp 1. Các con đã học viết chữ, làm toán đơn giản và rèn luyện tính tự lập.",
+    "create_at": { "$date": "2024-12-19T10:15:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000009" },
+    "class_id": { "$oid": "6710a0000000000000000504" },
+    "createdAt": { "$date": "2024-12-19T10:15:00.000Z" },
+    "updatedAt": { "$date": "2024-12-19T10:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6710a000000000000000090B" },
+    "content": "Hoạt động ngoại khóa lớp MGL-1: Tuần này các con đã tham gia hoạt động làm bánh và vẽ tranh. Các con rất sáng tạo và khéo léo. Tôi rất tự hào về các con!",
+    "create_at": { "$date": "2024-12-16T16:45:00.000Z" },
+    "status": "published",
+    "user_id": { "$oid": "6710a0000000000000000009" },
+    "class_id": { "$oid": "6710a0000000000000000504" },
+    "createdAt": { "$date": "2024-12-16T16:45:00.000Z" },
+    "updatedAt": { "$date": "2024-12-16T16:45:00.000Z" }
   }
 ]
 
