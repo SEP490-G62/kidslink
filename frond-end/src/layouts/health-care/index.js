@@ -125,6 +125,12 @@ export default function HealthCareStaffDashboard() {
     setDialogOpen(false);
   };
 
+  // Helper để lấy số từ Decimal128 hoặc number string
+  const getDecimal = (val) =>
+    (val && typeof val === 'object' && val.$numberDecimal)
+      ? Number(val.$numberDecimal)
+      : Number(val);
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -238,17 +244,26 @@ export default function HealthCareStaffDashboard() {
                       <Button variant="contained" color="info" sx={{ mb: 2 }} onClick={() => handleCreate('record')}>Thêm sổ sức khoẻ</Button>
                       {healthRecords.length === 0 && <ArgonTypography>Chưa có sổ sức khoẻ nào.</ArgonTypography>}
                       <List>
-                        {healthRecords.map((r) => (
-                          <ListItem key={r._id} divider>
-                            <ListItemText
-                              primary={<ArgonTypography fontWeight="bold">Ngày khám: {new Date(r.checkup_date).toLocaleDateString()}</ArgonTypography>}
-                              secondary={<>
-                                <ArgonTypography fontSize={14}>Chiều cao: {parseFloat(r.height_cm).toFixed(1)}cm • Cân nặng: {parseFloat(r.weight_kg).toFixed(1)}kg</ArgonTypography>
-                                <ArgonTypography fontSize={13} color="secondary">Ghi chú: {r.note}</ArgonTypography>
-                              </>}
-                            />
-                          </ListItem>
-                        ))}
+                        {healthRecords.map((r) => {
+                          const height = getDecimal(r.height_cm);
+                          const weight = getDecimal(r.weight_kg);
+                          return (
+                            <ListItem key={r._id} divider>
+                              <ListItemText
+                                primary={<ArgonTypography fontWeight="bold">Ngày khám: {new Date(r.checkup_date).toLocaleDateString()}</ArgonTypography>}
+                                secondary={
+                                  <>
+                                    <ArgonTypography fontSize={14}>
+                                      Chiều cao: {height !== null && !isNaN(height) ? height.toFixed(1) : '—'}cm •
+                                      Cân nặng: {weight !== null && !isNaN(weight) ? weight.toFixed(1) : '—'}kg
+                                    </ArgonTypography>
+                                    <ArgonTypography fontSize={13} color="secondary">Ghi chú: {r.note}</ArgonTypography>
+                                  </>
+                                }
+                              />
+                            </ListItem>
+                          );
+                        })}
                       </List>
                     </>
                   )}

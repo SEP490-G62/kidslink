@@ -29,6 +29,7 @@ import createCache from "@emotion/cache";
 
 // Argon Dashboard 2 MUI routes
 import routes from "routes";
+import healthCareStaffRoutes from "routes/healthCareStaffRoutes";
 import teacherRoutes from "routes/teacherRoutes";
 import parentRoutes from "routes/parentRoutes";
 
@@ -107,7 +108,8 @@ export default function App() {
 
   const isTeacherPath = pathname.startsWith("/teacher");
   const isParentPath = pathname.startsWith("/parent");
-  const activeRoutes = isTeacherPath ? teacherRoutes : isParentPath ? parentRoutes : routes;
+  const isHealthCareStaffPath = pathname.startsWith("/health-care");
+  const activeRoutes = isTeacherPath ? teacherRoutes : isParentPath ? parentRoutes : isHealthCareStaffPath ? healthCareStaffRoutes : routes;
   const SidenavComponent = isParentPath ? ParentSidenav : Sidenav;
 
   const configsButton = (
