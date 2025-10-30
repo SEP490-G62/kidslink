@@ -21,6 +21,8 @@ router.use(authenticate);
 router.post('/daily-reports/checkin', authorize(['teacher']), studentValidators, checkIn);
 router.put('/daily-reports/checkout', authorize(['teacher']), studentValidators, checkOut);
 
+// Đánh giá học sinh - cập nhật comments cuối ngày
+router.put('/daily-reports/:id/comment', authorize(['teacher']), require('../controllers/dailyReportController').updateComment);
 
 
 // Routes cho thông tin lớp học của teacher
