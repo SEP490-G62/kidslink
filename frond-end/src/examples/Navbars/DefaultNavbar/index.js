@@ -176,7 +176,9 @@ function DefaultNavbar({ brand, transparent, light, action }) {
 
 // Declaring default props for DefaultNavbar
 DefaultNavbar.defaultProps = {
-  brand: "Argon Dashboard 2",
+
+  brand: "KidsLink",
+
   transparent: false,
   light: false,
   action: false,

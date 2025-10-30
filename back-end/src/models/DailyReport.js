@@ -7,15 +7,15 @@ const dailyReportSchema = new mongoose.Schema({
   },
   checkin_time: {
     type: String,
-    required: true
+    required: false
   },
   checkout_time: {
     type: String,
-    required: true
+    required: false
   },
   comments: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   student_id: {
@@ -31,7 +31,7 @@ const dailyReportSchema = new mongoose.Schema({
   teacher_checkout_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Teacher',
-    required: true
+    required: false
   }
 }, {
   timestamps: true

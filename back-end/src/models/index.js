@@ -44,7 +44,6 @@ module.exports = {
   Payment: require('./Payment'),
   
   // Junction tables
-  TeacherClass: require('./TeacherClass'),
   ParentStudent: require('./ParentStudent'),
   StudentClass: require('./StudentClass'),
   DailyReport: require('./DailyReport'),

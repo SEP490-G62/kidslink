@@ -64,18 +64,7 @@ function SidenavFooter() {
         >
           Documentation
         </ArgonButton>
-        <ArgonButton
-          component={Link}
-          href="https://www.creative-tim.com/product/argon-dashboard-material-ui"
-          target="_blank"
-          rel="noreferrer"
-          color="info"
-          size="small"
-          fullWidth
-          mb={2}
-        >
-          Upgrade to PRO
-        </ArgonButton>
+     
       </ArgonBox>
     </ArgonBox>
   );
