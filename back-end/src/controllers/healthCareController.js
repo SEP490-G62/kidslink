@@ -132,6 +132,24 @@ exports.updateHealthRecord = async (req, res) => {
 };
 
 /**
+ * DELETE /health-staff/health/records/:record_id
+ * Xóa sổ sức khỏe học sinh
+ */
+exports.deleteHealthRecord = async (req, res) => {
+  try {
+    const { record_id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(record_id)) {
+      return res.status(400).json({ error: 'record_id không hợp lệ' });
+    }
+    const deleted = await HealthRecord.findByIdAndDelete(record_id);
+    if (!deleted) return res.status(404).json({ error: 'Không tìm thấy record để xóa' });
+    return res.json({ message: 'Đã xóa sổ sức khoẻ thành công' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+/**
  * GET /health-staff/health/notices?student_id=...
  * Lấy danh sách thông báo y tế của một học sinh
  */
@@ -177,6 +195,49 @@ exports.createHealthNotice = async (req, res) => {
     });
     await newNotice.save();
     return res.status(201).json({ message: 'Tạo thông báo y tế thành công', notice: newNotice });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+/**
+ * PUT /health-staff/health/notices/:notice_id
+ * Cập nhật thông báo y tế
+ */
+exports.updateHealthNotice = async (req, res) => {
+  try {
+    const { notice_id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(notice_id)) {
+      return res.status(400).json({ error: 'notice_id không hợp lệ' });
+    }
+    const { symptoms, actions_taken, medications, notice_time, note } = req.body;
+    const notice = await HealthNotice.findById(notice_id);
+    if (!notice) return res.status(404).json({ error: 'Không tìm thấy notice' });
+    if (symptoms) notice.symptoms = symptoms;
+    if (actions_taken) notice.actions_taken = actions_taken;
+    if (medications) notice.medications = medications;
+    if (notice_time) notice.notice_time = notice_time;
+    if (note) notice.note = note;
+    await notice.save();
+    return res.json({ message: 'Đã cập nhật thông báo y tế thành công', notice });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+/**
+ * DELETE /health-staff/health/notices/:notice_id
+ * Xóa thông báo y tế
+ */
+exports.deleteHealthNotice = async (req, res) => {
+  try {
+    const { notice_id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(notice_id)) {
+      return res.status(400).json({ error: 'notice_id không hợp lệ' });
+    }
+    const deleted = await HealthNotice.findByIdAndDelete(notice_id);
+    if (!deleted) return res.status(404).json({ error: 'Không tìm thấy notice để xóa' });
+    return res.json({ message: 'Đã xóa thông báo y tế thành công' });
   } catch (err) {
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }

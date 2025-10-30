@@ -137,7 +137,7 @@ function Illustration() {
               navigate('/health-care');
               break;
             case 'nutrition_staff':
-              navigate('/nutrition/dashboard');
+              navigate('/nutrition');
               break;
             default:
               navigate('/dashboard');

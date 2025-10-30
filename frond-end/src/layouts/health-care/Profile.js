@@ -19,6 +19,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/ParentNavBar";
 import Footer from "examples/Footer";
 import healthService from "services/healthService";
+import DialogContentText from '@mui/material/DialogContentText';
 
 export default function HealthCareProfile() {
   const [profile, setProfile] = useState({ user: {}, staff: {} });
@@ -29,6 +30,7 @@ export default function HealthCareProfile() {
   const [passwordForm, setPasswordForm] = useState({ password: '', confirm: '' });
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, action: null });
 
   useEffect(() => {
     async function fetchProfile() {
@@ -103,6 +105,19 @@ export default function HealthCareProfile() {
     setSaving(false);
   };
 
+  // Khi bấm nút Lưu ở dialog profile
+  const handleConfirmUpdate = () => setConfirmDialog({ open: true, action: "update" });
+  // Khi bấm nút Lưu ở dialog password
+  const handleConfirmPassword = () => setConfirmDialog({ open: true, action: "password" });
+
+  const handleConfirmYes = async () => {
+    setConfirmDialog({ open: false, action: null });
+    if (confirmDialog.action === 'update') await handleSave();
+    if (confirmDialog.action === 'password') await savePassword();
+  };
+
+  const handleConfirmNo = () => setConfirmDialog({ open: false, action: null });
+
   if (loading) return <ArgonBox textAlign="center" py={8}><CircularProgress /></ArgonBox>;
 
   return (
@@ -165,7 +180,7 @@ export default function HealthCareProfile() {
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setEditOpen(false)} variant="text">Huỷ</Button>
-            <Button onClick={handleSave} variant="contained" disabled={saving}>Lưu lại</Button>
+            <Button onClick={handleConfirmUpdate} variant="contained" disabled={saving}>Lưu lại</Button>
           </DialogActions>
         </Dialog>
         {/* Đổi mật khẩu dialog */}
@@ -178,7 +193,21 @@ export default function HealthCareProfile() {
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setEditPassword(false)} variant="text">Huỷ</Button>
-            <Button onClick={savePassword} variant="contained" disabled={saving}>Lưu</Button>
+            <Button onClick={handleConfirmPassword} variant="contained" disabled={saving}>Lưu</Button>
+          </DialogActions>
+        </Dialog>
+        {/* Xác nhận thay đổi Dialog */}
+        <Dialog open={confirmDialog.open} onClose={handleConfirmNo}>
+          <DialogTitle>Xác nhận thao tác</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              {confirmDialog.action === "update" && "Bạn có chắc chắn muốn lưu thay đổi này không?"}
+              {confirmDialog.action === "password" && "Bạn có chắc chắn muốn đổi mật khẩu không?"}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleConfirmNo}>Hủy</Button>
+            <Button onClick={handleConfirmYes} variant="contained" color="info">Đồng ý</Button>
           </DialogActions>
         </Dialog>
         {/* SNACKBAR */}
