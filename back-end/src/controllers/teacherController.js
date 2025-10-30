@@ -203,7 +203,8 @@ async function getStudentsAttendanceByDate(req, res) {
           has_checkout: !!(r && r.checkout_time),
           checkin_time: r ? r.checkin_time : null,
           checkout_time: r ? r.checkout_time : null
-        }
+        },
+        report: r || null // Thêm trường này cho FE đọc report.comments
       };
     });
 

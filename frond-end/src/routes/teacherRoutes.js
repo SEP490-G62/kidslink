@@ -23,6 +23,7 @@ import TeacherAttendance from "layouts/teacher/pages/Attendance/index";
 import TeacherSchedule from "layouts/teacher/pages/Schedule/index";
 import TeacherProfile from "layouts/teacher/pages/Profile/index";
 import TeacherSettings from "layouts/teacher/pages/Settings/index";
+import DailyReportPage from "layouts/teacher/pages/DailyReport/index";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -63,11 +64,12 @@ const teacherRoutes = [
   {
     type: "route",
     name: "Báo cáo",
-    key: "teacher-reports",
-    route: "/teacher/reports",
-    icon: <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-chart-bar-32" />,
-    component: <ProtectedRoute requiredRoles={['teacher']}><TeacherReports /></ProtectedRoute>,
+    key: "teacher-daily-report",
+    route: "/teacher/daily-report",
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-collection" />,
+    component: <ProtectedRoute requiredRoles={['teacher']}><DailyReportPage /></ProtectedRoute>,
   },
+
   {
     type: "route",
     name: "Điểm danh",

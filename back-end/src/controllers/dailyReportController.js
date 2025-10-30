@@ -190,12 +190,106 @@ const checkOut = async (req, res) => {
   }
 };
 
-
-
+// Cập nhật comments của báo cáo DailyReport (Đánh giá học sinh)
+const updateComment = async (req, res) => {
+  try {
+    const reportId = req.params.id;
+    const { comments, report_date } = req.body;
+    const user_id = req.user.id;
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    let reqDateStr = '';
+    if (report_date) {
+      reqDateStr = new Date(report_date).toISOString().split('T')[0];
+    }
+    console.log('--- [DEBUG updateComment] ---');
+    console.log('reportId:', reportId);
+    console.log('comments:', comments);
+    console.log('report_date (client):', report_date);
+    console.log('reqDateStr:', reqDateStr);
+    console.log('user_id:', user_id);
+    console.log('server today:', todayStr);
+    // Tìm teacher tương ứng với user_id
+    const Teacher = require('../models/Teacher');
+    const teacher = await Teacher.findOne({ user_id });
+    if (!teacher) {
+      console.log('Không tìm thấy teacher với user_id:', user_id);
+      return res.status(404).json({ error: 'Không tìm thấy thông tin giáo viên' });
+    }
+    const teacher_id = teacher._id;
+    console.log('teacher_id:', teacher_id);
+    // Check report today theo student (bất kể student truyền là id report hay id student)
+    const Student = require('../models/Student');
+    let report = null;
+    let student = null;
+    // Nếu truyền vào report id thì tìm thử có report không
+    report = await DailyReport.findById(reportId);
+    if (report) {
+      // Nếu vừa khớp student_id, vừa đúng ngày mới cho sửa
+      const reportDateStr = new Date(report.report_date).toISOString().split('T')[0];
+      if (reportDateStr !== todayStr) {
+        console.log('Chỉ được phép nhận xét ngày hôm nay (reportDateStr !== todayStr)');
+        return res.status(403).json({ error: 'Chỉ được phép nhận xét ngày hôm nay!' });
+      }
+      // Check quyền
+      if (!report.teacher_checkin_id.equals(teacher_id) && (!report.teacher_checkout_id || !report.teacher_checkout_id.equals(teacher_id))) {
+        console.log('Không có quyền cập nhật nhận xét - teacher_checkin_id:', report.teacher_checkin_id, 'teacher_id:', teacher_id);
+        return res.status(403).json({ error: 'Bạn không có quyền cập nhật nhận xét báo cáo này' });
+      }
+      // Cập nhật nhận xét
+      report.comments = comments;
+      const updated = await report.save();
+      console.log('Cập nhật comments thành công cho report:', updated._id);
+      return res.status(200).json({ message: 'Đánh giá học sinh thành công', report: updated });
+    } else {
+      // Nếu id này là student_id:
+      student = await Student.findById(reportId);
+      if (!student) {
+        return res.status(404).json({ error: 'Không tìm thấy học sinh!' });
+      }
+      // kiểm tra đã có report hôm nay chưa
+      let reportToday = await DailyReport.findOne({
+        student_id: student._id,
+        report_date: {
+          $gte: new Date(todayStr + 'T00:00:00.000Z'),
+          $lt: new Date(todayStr + 'T23:59:59.999Z')
+        }
+      });
+      if (reportToday) {
+        // Update comments cho report này
+        if (!reportToday.teacher_checkin_id.equals(teacher_id) && (!reportToday.teacher_checkout_id || !reportToday.teacher_checkout_id.equals(teacher_id))) {
+          return res.status(403).json({ error: 'Bạn không có quyền cập nhật nhận xét báo cáo này' });
+        }
+        reportToday.comments = comments;
+        const updated = await reportToday.save();
+        return res.status(200).json({ message: 'Đánh giá học sinh thành công', report: updated });
+      } else {
+        // Chưa có report, tạo mới cho hôm nay, luôn set comments = 'Nghỉ'
+        let newReport = new DailyReport({
+          report_date: new Date(todayStr + 'T00:00:00.000Z'),
+          checkin_time: undefined,
+          checkout_time: undefined,
+          comments: 'Nghỉ',
+          student_id: student._id,
+          teacher_checkin_id: teacher_id
+        });
+        await newReport.save();
+        return res.status(201).json({ message: 'Tự động tạo báo cáo nghỉ cho học sinh', report: newReport });
+      }
+    }
+  } catch (error) {
+    console.error('[ERROR updateComment]', error);
+    res.status(500).json({
+      error: 'Lỗi server khi đánh giá học sinh',
+      details: error.message
+    });
+  }
+};
 
 
 module.exports = {
   studentValidators,
   checkIn,
   checkOut,
+  updateComment,
 };
