@@ -19,6 +19,8 @@ const {
   updatePersonalInfo
 } = require('../controllers/parentController');
 
+const { getMyPosts } = require('../controllers/parent/postsController');
+
 const {
   getChildInfo,
   addPickup,
@@ -37,6 +39,7 @@ router.get('/children', getChildren);
 
 // Routes cho posts
 router.get('/posts', getAllPosts);
+router.get('/posts/my-posts', getMyPosts); // Lấy posts của user (bao gồm pending và approved)
 router.post('/posts', createPost);
 router.put('/posts/:postId', updatePost);
 router.delete('/posts/:postId', deletePost);
