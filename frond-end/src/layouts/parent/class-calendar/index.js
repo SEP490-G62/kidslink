@@ -146,8 +146,8 @@ function ClassCalendar() {
     const monday = getSelectedWeekMonday();
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    const monStr = `${String(monday.getDate()).padStart(2, '0')}/${String(monday.getMonth() + 1).padStart(2, '0')}`;
-    const sunStr = `${String(sunday.getDate()).padStart(2, '0')}/${String(sunday.getMonth() + 1).padStart(2, '0')}`;
+    const monStr = `${String(monday.getDate()).padStart(2, '0')}/${String(monday.getMonth() + 1).padStart(2, '0')}/${monday.getFullYear()}`;
+    const sunStr = `${String(sunday.getDate()).padStart(2, '0')}/${String(sunday.getMonth() + 1).padStart(2, '0')}/${sunday.getFullYear()}`;
     return `${monStr} - ${sunStr}`;
   };
 
@@ -360,7 +360,7 @@ function ClassCalendar() {
                 }}
               >
                 <Grid container spacing={2} alignItems="flex-end">
-                  <Grid item xs={12} sm={6} md={3}>
+                  {/* <Grid item xs={12} sm={6} md={3}>
                     <ArgonBox>
                       <Typography variant="body2" fontWeight="medium" color="text" sx={{ mb: 1.5 }}>
                         Năm học
@@ -388,7 +388,7 @@ function ClassCalendar() {
                         </Select>
                       </FormControl>
                     </ArgonBox>
-                  </Grid>
+                  </Grid> */}
                   {/* <Grid item xs={12} sm={6} md={4}>
                     <ArgonBox>
                       <Typography variant="body2" fontWeight="medium" color="text" sx={{ mb: 1.5 }}>
