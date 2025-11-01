@@ -47,6 +47,8 @@ import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
 import ForgotPassword from "layouts/authentication/forgot-password";
 import Unauthorized from "layouts/authentication/unauthorized";
+import HealthCareStaffHome from "layouts/health-care";
+import HealthCareProfile from "layouts/health-care/Profile";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -119,6 +121,23 @@ const routes = [
     icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-world-2" />,
     component: <RTL />,
   },
+  {
+    type: "route",
+    name: "Health Care Staff Home",
+    key: "health-care-home",
+    route: "/health-care",
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-favourite-28" />,
+    component: <ProtectedRoute requiredRoles={['health_care_staff']}><HealthCareStaffHome /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Thông tin cá nhân",
+    key: "health-care-profile",
+    route: "/health-care/profile",
+    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-single-02" />,
+    component: <ProtectedRoute requiredRoles={['health_care_staff']}><HealthCareProfile /></ProtectedRoute>
+  },
+
   { type: "title", title: "Account Pages", key: "account-pages" },
   {
     type: "route",

@@ -28,6 +28,39 @@ class ParentService {
   }
 
   /**
+   * Lấy tất cả bài post của user hiện tại (bao gồm pending và approved)
+   * @param {string} userId - ID của user
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getMyPosts(userId) {
+    if (!userId) {
+      return {
+        success: false,
+        error: 'User ID không hợp lệ',
+        data: { data: [] }
+      };
+    }
+    
+    try {
+      const response = await apiService.get(`/parent/posts/my-posts?user_id=${userId}`);
+      
+      // Backend trả về { success: true, data: [...] } hoặc { data: [...] }
+      return {
+        success: response.success !== false,
+        data: response.data ? { data: response.data } : response
+      };
+    } catch (error) {
+      console.error('ParentService.getMyPosts Error:', error);
+      // Nếu API không tồn tại, trả về empty array thay vì error
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy bài viết của bạn',
+        data: { data: [] }
+      };
+    }
+  }
+
+  /**
    * Like/Unlike bài post
    * @param {string} postId - ID của bài post
    * @returns {Promise<Object>} - Kết quả API call
