@@ -37,7 +37,7 @@ const createComment = async (req, res) => {
       }
     }
 
-    // Tạo comment mới
+    // Tạo comment mới (giữ nguyên parent_comment_id: level sau có parent là level trước)
     const comment = await PostComment.create({
       contents,
       post_id: postId,
@@ -45,8 +45,18 @@ const createComment = async (req, res) => {
       parent_comment_id: parent_comment_id || null
     });
 
-    // Populate thông tin user
+    // Populate thông tin user và parent comment (nếu có)
     await comment.populate('user_id', 'full_name username avatar_url role');
+    if (parent_comment_id) {
+      await comment.populate({
+        path: 'parent_comment_id',
+        select: 'user_id contents',
+        populate: {
+          path: 'user_id',
+          select: 'full_name username avatar_url role'
+        }
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -67,6 +77,14 @@ const getRepliesRecursively = async (parentCommentId) => {
     // Lấy tất cả replies trực tiếp của comment này
     const directReplies = await PostComment.find({ parent_comment_id: parentCommentId })
       .populate('user_id', 'full_name username avatar_url role')
+      .populate({
+        path: 'parent_comment_id',
+        select: 'user_id contents',
+        populate: {
+          path: 'user_id',
+          select: 'full_name username avatar_url role'
+        }
+      })
       .sort({ create_at: 1 });
 
     // Với mỗi reply, lấy tiếp các replies của nó (đệ quy)

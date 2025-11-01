@@ -46,6 +46,16 @@ function CommentModal({
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [replyLoading, setReplyLoading] = useState(false);
+  
+  // Track comment IDs that should show replies after reload (vừa được reply vào)
+  const [shouldShowRepliesFor, setShouldShowRepliesFor] = useState(new Set());
+  
+  // Reset shouldShowRepliesFor khi mở modal mới
+  useEffect(() => {
+    if (open) {
+      setShouldShowRepliesFor(new Set());
+    }
+  }, [open]);
 
   // Load comments when modal opens
   useEffect(() => {
@@ -200,9 +210,32 @@ function CommentModal({
     }
   };
 
+  // Hàm đệ quy để tìm tất cả parent comment IDs của một comment
+  const findAllParentIds = (comments, targetId, currentPath = []) => {
+    for (const comment of comments) {
+      if (comment._id === targetId) {
+        // Tìm thấy target, trả về tất cả parents trong path
+        return currentPath;
+      }
+      if (comment.replies && Array.isArray(comment.replies)) {
+        // Thêm comment hiện tại vào path và tìm tiếp trong replies
+        const found = findAllParentIds(comment.replies, targetId, [...currentPath, comment._id]);
+        if (found !== null) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+  
   const handleReplySuccess = async (newReply, parentCommentId) => {
     // Update comment count in parent component
     onUpdateCommentCount(selectedPost?.id, 1);
+    
+    // Tìm tất cả parent comment IDs để tự động hiển thị replies
+    const parentIds = findAllParentIds(comments, parentCommentId);
+    const idsToShow = new Set([parentCommentId, ...(parentIds || [])]);
+    setShouldShowRepliesFor(idsToShow);
     
     // Reload comments from backend to get the correct nested structure
     try {
@@ -435,6 +468,7 @@ function CommentModal({
                   currentUserId={user?.id}
                   onCommentUpdate={handleCommentUpdate}
                   onCommentDelete={handleCommentDelete}
+                  forceShowReplies={shouldShowRepliesFor.has(comment._id)}
                 />
               ))}
                                   </ArgonBox>
