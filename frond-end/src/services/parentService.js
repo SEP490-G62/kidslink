@@ -28,6 +28,39 @@ class ParentService {
   }
 
   /**
+   * Lấy tất cả bài post của user hiện tại (bao gồm pending và approved)
+   * @param {string} userId - ID của user
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getMyPosts(userId) {
+    if (!userId) {
+      return {
+        success: false,
+        error: 'User ID không hợp lệ',
+        data: { data: [] }
+      };
+    }
+    
+    try {
+      const response = await apiService.get(`/parent/posts/my-posts?user_id=${userId}`);
+      
+      // Backend trả về { success: true, data: [...] } hoặc { data: [...] }
+      return {
+        success: response.success !== false,
+        data: response.data ? { data: response.data } : response
+      };
+    } catch (error) {
+      console.error('ParentService.getMyPosts Error:', error);
+      // Nếu API không tồn tại, trả về empty array thay vì error
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy bài viết của bạn',
+        data: { data: [] }
+      };
+    }
+  }
+
+  /**
    * Like/Unlike bài post
    * @param {string} postId - ID của bài post
    * @returns {Promise<Object>} - Kết quả API call
@@ -224,6 +257,151 @@ class ParentService {
         success: false,
         error: error.message || 'Có lỗi xảy ra khi lấy danh sách con'
       };
+    }
+  }
+
+  /**
+   * Lấy thông tin cá nhân của phụ huynh
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getPersonalInfo() {
+    try {
+      const response = await apiService.get('/parent/personal-info');
+      return response;
+    } catch (error) {
+      console.error('ParentService.getPersonalInfo Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy thông tin cá nhân'
+      };
+    }
+  }
+
+  /**
+   * Cập nhật thông tin cá nhân của phụ huynh
+   * @param {Object} userData - Dữ liệu cập nhật (full_name, email, phone_number, avatar_url, password)
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async updatePersonalInfo(userData) {
+    try {
+      const response = await apiService.put('/parent/personal-info', userData);
+      return response;
+    } catch (error) {
+      console.error('ParentService.updatePersonalInfo Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi cập nhật thông tin cá nhân'
+      };
+    }
+  }
+
+  /**
+   * Lấy thông tin chi tiết của học sinh (thông tin cá nhân, sức khỏe, người đón)
+   * @param {string} studentId - ID của học sinh
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getChildInfo(studentId) {
+    try {
+      const response = await apiService.get(`/parent/child-info/${studentId}`);
+      return response;
+    } catch (error) {
+      console.error('ParentService.getChildInfo Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy thông tin học sinh'
+      };
+    }
+  }
+
+  /**
+   * Thêm người đón mới
+   * @param {string} studentId - ID của học sinh
+   * @param {Object} pickupData - Dữ liệu người đón (full_name, relationship, id_card_number, avatar_url, phone)
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async addPickup(studentId, pickupData) {
+    try {
+      const response = await apiService.post(`/parent/pickups/${studentId}`, pickupData);
+      return response;
+    } catch (error) {
+      console.error('ParentService.addPickup Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi thêm người đón'
+      };
+    }
+  }
+
+  /**
+   * Cập nhật người đón
+   * @param {string} pickupId - ID của người đón
+   * @param {string} studentId - ID của học sinh
+   * @param {Object} pickupData - Dữ liệu người đón
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async updatePickup(pickupId, studentId, pickupData) {
+    try {
+      const response = await apiService.put(`/parent/pickups/${pickupId}/${studentId}`, pickupData);
+      return response;
+    } catch (error) {
+      console.error('ParentService.updatePickup Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi cập nhật người đón'
+      };
+    }
+  }
+
+  /**
+   * Xóa người đón
+   * @param {string} pickupId - ID của người đón
+   * @param {string} studentId - ID của học sinh
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async deletePickup(pickupId, studentId) {
+    try {
+      const response = await apiService.delete(`/parent/pickups/${pickupId}/${studentId}`);
+      return response;
+    } catch (error) {
+      console.error('ParentService.deletePickup Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi xóa người đón'
+      };
+    }
+  }
+
+  /**
+   * Lấy toàn bộ daily reports theo học sinh
+   * @param {string} studentId
+   */
+  async getDailyReports(studentId) {
+    try {
+      const params = new URLSearchParams();
+      if (studentId) params.append('student_id', studentId);
+      const url = `/parent/daily-reports?${params.toString()}`;
+      const response = await apiService.get(url);
+      return response;
+    } catch (error) {
+      console.error('ParentService.getDailyReports Error:', error);
+      return { success: false, error: error.message || 'Lỗi lấy daily reports' };
+    }
+  }
+
+  /**
+   * Lấy lịch học lớp theo năm học mới nhất của con
+   * @param {string} studentId - optional, để chọn con cụ thể
+   */
+  async getLatestClassCalendar(studentId) {
+    try {
+      const params = new URLSearchParams();
+      if (studentId) params.append('student_id', studentId);
+      const url = `/parent/class-calendar?${params.toString()}`;
+      const response = await apiService.get(url);
+      return response;
+    } catch (error) {
+      console.error('ParentService.getLatestClassCalendar Error:', error);
+      return { success: false, error: error.message || 'Lỗi lấy lịch lớp' };
     }
   }
 }

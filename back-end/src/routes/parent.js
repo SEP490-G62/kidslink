@@ -14,8 +14,21 @@ const {
   getComments,
   updateComment,
   deleteComment,
-  createCommentValidators
+  createCommentValidators,
+  getPersonalInfo,
+  updatePersonalInfo
 } = require('../controllers/parentController');
+
+const { getMyPosts } = require('../controllers/parent/postsController');
+
+const {
+  getChildInfo,
+  addPickup,
+  updatePickup,
+  deletePickup
+} = require('../controllers/parent/childInfoController');
+
+const { getDailyReports } = require('../controllers/parent/dailyReportController');
 
 // Áp dụng authentication và authorization cho tất cả routes
 router.use(authenticate);
@@ -26,6 +39,7 @@ router.get('/children', getChildren);
 
 // Routes cho posts
 router.get('/posts', getAllPosts);
+router.get('/posts/my-posts', getMyPosts); // Lấy posts của user (bao gồm pending và approved)
 router.post('/posts', createPost);
 router.put('/posts/:postId', updatePost);
 router.delete('/posts/:postId', deletePost);
@@ -39,5 +53,24 @@ router.post('/posts/:postId/comments', createCommentValidators, createComment);
 router.get('/posts/:postId/comments', getComments);
 router.put('/comments/:commentId', updateComment);
 router.delete('/comments/:commentId', deleteComment);
+
+// Routes cho personal info
+router.get('/personal-info', getPersonalInfo);
+router.put('/personal-info', updatePersonalInfo);
+
+// Routes cho child info
+router.get('/child-info/:studentId', getChildInfo);
+
+// Routes cho pickups
+router.post('/pickups/:studentId', addPickup);
+router.put('/pickups/:pickupId/:studentId', updatePickup);
+router.delete('/pickups/:pickupId/:studentId', deletePickup);
+
+// Routes cho daily reports
+router.get('/daily-reports', getDailyReports);
+
+// Routes cho class calendar (năm học mới nhất)
+const { getClassCalendarLatest } = require('../controllers/parent/calendarController');
+router.get('/class-calendar', getClassCalendarLatest);
 
 module.exports = router;

@@ -46,6 +46,16 @@ function CommentModal({
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [replyLoading, setReplyLoading] = useState(false);
+  
+  // Track comment IDs that should show replies after reload (vừa được reply vào)
+  const [shouldShowRepliesFor, setShouldShowRepliesFor] = useState(new Set());
+  
+  // Reset shouldShowRepliesFor khi mở modal mới
+  useEffect(() => {
+    if (open) {
+      setShouldShowRepliesFor(new Set());
+    }
+  }, [open]);
 
   // Load comments when modal opens
   useEffect(() => {
@@ -200,9 +210,32 @@ function CommentModal({
     }
   };
 
+  // Hàm đệ quy để tìm tất cả parent comment IDs của một comment
+  const findAllParentIds = (comments, targetId, currentPath = []) => {
+    for (const comment of comments) {
+      if (comment._id === targetId) {
+        // Tìm thấy target, trả về tất cả parents trong path
+        return currentPath;
+      }
+      if (comment.replies && Array.isArray(comment.replies)) {
+        // Thêm comment hiện tại vào path và tìm tiếp trong replies
+        const found = findAllParentIds(comment.replies, targetId, [...currentPath, comment._id]);
+        if (found !== null) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+  
   const handleReplySuccess = async (newReply, parentCommentId) => {
     // Update comment count in parent component
     onUpdateCommentCount(selectedPost?.id, 1);
+    
+    // Tìm tất cả parent comment IDs để tự động hiển thị replies
+    const parentIds = findAllParentIds(comments, parentCommentId);
+    const idsToShow = new Set([parentCommentId, ...(parentIds || [])]);
+    setShouldShowRepliesFor(idsToShow);
     
     // Reload comments from backend to get the correct nested structure
     try {
@@ -240,18 +273,29 @@ function CommentModal({
 
   const handleCommentDelete = (commentId) => {
     setComments(prevComments => {
-      const deleteComment = (comments) => {
-        return comments.filter(comment => {
-          if (comment._id === commentId) {
-            return false;
+      const promoteAndDelete = (nodes, parentId = null) => {
+        const result = [];
+        for (const node of nodes) {
+          if (node._id === commentId) {
+            // Promote this node's replies to this level
+            if (Array.isArray(node.replies) && node.replies.length > 0) {
+              // Push all children (they become siblings at this level)
+              for (const child of node.replies) {
+                result.push({ ...child });
+              }
+            }
+            // Skip the node itself (deleted)
+            continue;
           }
-          if (comment.replies) {
-            comment.replies = deleteComment(comment.replies);
+          let newNode = { ...node };
+          if (Array.isArray(node.replies) && node.replies.length > 0) {
+            newNode.replies = promoteAndDelete(node.replies, node._id);
           }
-          return true;
-        });
+          result.push(newNode);
+        }
+        return result;
       };
-      return deleteComment(prevComments);
+      return promoteAndDelete(prevComments);
     });
     
     // Update comment count in parent component
@@ -403,8 +447,8 @@ function CommentModal({
             </ArgonBox>
           
             {/* Comments List */}
-            <ArgonBox p={3}>
-            <ArgonTypography variant="h6" fontWeight="bold" mb={3} color="dark">
+            <ArgonBox p={2.5}>
+            <ArgonTypography variant="h6" fontWeight="bold" mb={2} color="dark">
               Bình luận ({getTotalCommentCount(comments)})
             </ArgonTypography>
             
@@ -424,6 +468,7 @@ function CommentModal({
                   currentUserId={user?.id}
                   onCommentUpdate={handleCommentUpdate}
                   onCommentDelete={handleCommentDelete}
+                  forceShowReplies={shouldShowRepliesFor.has(comment._id)}
                 />
               ))}
                                   </ArgonBox>
@@ -433,7 +478,7 @@ function CommentModal({
       
       {/* Fixed Comment Input - Luôn cố định ở dưới */}
       <ArgonBox 
-        p={3} 
+        p={2.5} 
         borderTop="1px solid #f0f0f0" 
         bgcolor="rgba(248, 249, 250, 0.95)"
         sx={{ 

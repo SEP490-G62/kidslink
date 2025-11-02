@@ -2,6 +2,9 @@
 const postsController = require('./parent/postsController');
 const commentsController = require('./parent/commentsController');
 const likesController = require('./parent/likesController');
+const personalInfoController = require('./parent/personalInfoController');
+const childInfoController = require('./parent/childInfoController');
+const calendarController = require('./parent/calendarController');
 
 
 module.exports = {
@@ -21,5 +24,15 @@ module.exports = {
   getComments: commentsController.getComments,
   updateComment: commentsController.updateComment,
   deleteComment: commentsController.deleteComment,
-  createCommentValidators: commentsController.createCommentValidators
+  createCommentValidators: commentsController.createCommentValidators,
+  
+  // Export functions from personal info controller
+  getPersonalInfo: personalInfoController.getPersonalInfo,
+  updatePersonalInfo: personalInfoController.updatePersonalInfo,
+  
+  // Export functions from child info controller
+  getChildInfo: childInfoController.getChildInfo,
+  
+  // Export functions from calendar controller
+  getClassCalendarLatest: calendarController.getClassCalendarLatest
 };

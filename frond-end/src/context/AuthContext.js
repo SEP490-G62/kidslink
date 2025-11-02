@@ -70,6 +70,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
+    setSelectedChild(null); // Clear selected child on logout
   };
 
   const isAuthenticated = () => {

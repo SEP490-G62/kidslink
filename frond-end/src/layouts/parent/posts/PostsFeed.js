@@ -62,8 +62,29 @@ function PostsFeed({
     // Filter by tab
     if (activeTab > 0) {
       const filterValue = tabs[activeTab].value;
-      filtered = filtered.filter(post => post.authorRole === filterValue);
+      if (filterValue === 'mine') {
+        // Filter by current user's posts (bao gồm cả pending và approved)
+        filtered = filtered.filter(post => 
+          post.authorId === currentUserId && 
+          (post.status === 'pending' || post.status === 'approved')
+        );
+      } else {
+        // Filter by author role (chỉ hiển thị approved posts)
+        filtered = filtered.filter(post => 
+          post.authorRole === filterValue && post.status === 'approved'
+        );
+      }
+    } else {
+      // Tab "Tất cả": chỉ hiển thị approved posts
+      filtered = filtered.filter(post => post.status === 'approved');
     }
+    
+    // Sắp xếp theo create_at mới nhất trước
+    filtered.sort((a, b) => {
+      const dateA = a.create_at ? new Date(a.create_at) : new Date(a._raw?.create_at || a.date);
+      const dateB = b.create_at ? new Date(b.create_at) : new Date(b._raw?.create_at || b.date);
+      return dateB - dateA; // Mới nhất trước
+    });
     
     return filtered;
   };

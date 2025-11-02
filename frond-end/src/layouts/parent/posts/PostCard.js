@@ -21,6 +21,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
+import Chip from "@mui/material/Chip";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -104,6 +105,9 @@ function PostCard({
   const renderImages = () => {
     if (!post.images || post.images.length === 0) return null;
 
+    // Kích thước chuẩn cho tất cả ảnh: chiều cao tối đa cố định
+    const standardHeight = window.innerWidth < 600 ? '300px' : '400px';
+
     if (post.images.length === 1) {
       return (
         <img
@@ -111,8 +115,8 @@ function PostCard({
           alt={post.title}
           style={{
             width: '100%',
-            height: 'auto',
-            maxHeight: window.innerWidth < 600 ? '300px' : '450px',
+            height: standardHeight,
+            maxHeight: standardHeight,
             objectFit: 'cover',
             borderRadius: '12px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -133,8 +137,8 @@ function PostCard({
               alt={`${post.title} ${index + 1}`}
               style={{
                 width: '50%',
-                height: 'auto',
-                maxHeight: window.innerWidth < 600 ? '200px' : '300px',
+                height: standardHeight,
+                maxHeight: standardHeight,
                 objectFit: 'cover',
                 borderRadius: '12px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -158,8 +162,8 @@ function PostCard({
                 alt={`${post.title} ${index + 1}`}
                 style={{
                   width: '50%',
-                  height: 'auto',
-                  maxHeight: window.innerWidth < 600 ? '150px' : '200px',
+                  height: standardHeight,
+                  maxHeight: standardHeight,
                   objectFit: 'cover',
                   borderRadius: '12px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -174,8 +178,8 @@ function PostCard({
             alt={`${post.title} 3`}
             style={{
               width: '100%',
-              height: 'auto',
-              maxHeight: window.innerWidth < 600 ? '150px' : '200px',
+              height: standardHeight,
+              maxHeight: standardHeight,
               objectFit: 'cover',
               borderRadius: '12px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -198,8 +202,8 @@ function PostCard({
               alt={`${post.title} ${index + 1}`}
               style={{
                 width: '50%',
-                height: 'auto',
-                maxHeight: window.innerWidth < 600 ? '150px' : '200px',
+                height: standardHeight,
+                maxHeight: standardHeight,
                 objectFit: 'cover',
                 borderRadius: '12px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -217,8 +221,8 @@ function PostCard({
                 alt={`${post.title} ${index + 3}`}
                 style={{
                   width: '100%',
-                  height: 'auto',
-                  maxHeight: window.innerWidth < 600 ? '150px' : '200px',
+                  height: standardHeight,
+                  maxHeight: standardHeight,
                   objectFit: 'cover',
                   borderRadius: '12px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -269,16 +273,28 @@ function PostCard({
     );
   };
 
+  // Kiểm tra trạng thái post
+  const isPending = post.status === 'pending';
+  const isApproved = post.status === 'approved';
+
   return (
     <Card 
       sx={{ 
         mb: 3, 
         borderRadius: 3, 
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: '1px solid rgba(0,0,0,0.05)',
+        boxShadow: isPending 
+          ? '0 4px 20px rgba(255, 152, 0, 0.15)' 
+          : '0 4px 20px rgba(0,0,0,0.08)',
+        border: isPending 
+          ? '2px solid rgba(255, 152, 0, 0.3)' 
+          : '1px solid rgba(0,0,0,0.05)',
         overflow: 'hidden',
+        backgroundColor: isPending ? 'rgba(255, 152, 0, 0.02)' : 'white',
+        opacity: isPending ? 0.95 : 1,
         '&:hover': { 
-          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          boxShadow: isPending
+            ? '0 8px 30px rgba(255, 152, 0, 0.25)'
+            : '0 8px 30px rgba(0,0,0,0.12)',
           transform: 'translateY(-2px)',
           transition: 'all 0.3s ease-in-out'
         }
@@ -287,7 +303,7 @@ function PostCard({
       {/* Post Header */}
       <ArgonBox p={{ xs: 2, sm: 3 }} pb={2}>
         <ArgonBox display="flex" alignItems="center" justifyContent="space-between">
-          <ArgonBox display="flex" alignItems="center">
+          <ArgonBox display="flex" alignItems="center" sx={{ flex: 1 }}>
             <Avatar
               src={post.avatar}
               alt={post.author}
@@ -295,20 +311,70 @@ function PostCard({
                 width: { xs: 40, sm: 48 }, 
                 height: { xs: 40, sm: 48 }, 
                 mr: 2,
-                border: '2px solid #e3f2fd',
+                border: isPending 
+                  ? '2px solid rgba(255, 152, 0, 0.4)' 
+                  : '2px solid #e3f2fd',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
               }}
             />
-            <ArgonBox>
-              <ArgonTypography 
-                variant="h6" 
-                fontWeight="bold" 
-                color="dark" 
-                mb={0.5}
-                sx={{ fontSize: { xs: '14px', sm: '16px' } }}
-              >
-                {post.author}
-              </ArgonTypography>
+            <ArgonBox sx={{ flex: 1 }}>
+              <ArgonBox display="flex" alignItems="center" gap={1} flexWrap="wrap" mb={0.5}>
+                <ArgonTypography 
+                  variant="h6" 
+                  fontWeight="bold" 
+                  color="dark" 
+                  sx={{ fontSize: { xs: '14px', sm: '16px' } }}
+                >
+                  {post.author}
+                </ArgonTypography>
+                {/* Status Badge */}
+                {isPending && (
+                  <Chip
+                    icon={<i className="ni ni-time-alarm" style={{ fontSize: '12px' }} />}
+                    label="Đang chờ duyệt"
+                    size="small"
+                    sx={{
+                      height: 22,
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      backgroundColor: 'rgba(255, 152, 0, 0.15)',
+                      color: '#f57c00',
+                      border: '1px solid rgba(255, 152, 0, 0.4)',
+                      '& .MuiChip-icon': {
+                        color: '#f57c00',
+                        marginLeft: '6px'
+                      },
+                      '& .MuiChip-label': {
+                        paddingLeft: '4px',
+                        paddingRight: '8px'
+                      }
+                    }}
+                  />
+                )}
+                {isApproved && post.authorId === currentUserId && (
+                  <Chip
+                    icon={<i className="ni ni-check-bold" style={{ fontSize: '12px' }} />}
+                    label="Đã duyệt"
+                    size="small"
+                    sx={{
+                      height: 22,
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      backgroundColor: 'rgba(76, 175, 80, 0.15)',
+                      color: '#388e3c',
+                      border: '1px solid rgba(76, 175, 80, 0.4)',
+                      '& .MuiChip-icon': {
+                        color: '#388e3c',
+                        marginLeft: '6px'
+                      },
+                      '& .MuiChip-label': {
+                        paddingLeft: '4px',
+                        paddingRight: '8px'
+                      }
+                    }}
+                  />
+                )}
+              </ArgonBox>
               <ArgonBox display="flex" alignItems="center" gap={1} flexWrap="wrap">
                 <ArgonTypography 
                   variant="caption" 
@@ -624,7 +690,8 @@ PostCard.propTypes = {
     time: PropTypes.string.isRequired,
     likes: PropTypes.number,
     comments: PropTypes.number,
-    isLiked: PropTypes.bool
+    isLiked: PropTypes.bool,
+    status: PropTypes.string
   }).isRequired,
   currentUserId: PropTypes.string,
   onLike: PropTypes.func.isRequired,
