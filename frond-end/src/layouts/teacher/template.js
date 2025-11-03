@@ -63,8 +63,6 @@ function ParentDashboard() {
       try {
         // Pass selectedChild's _id if available
         const result = await parentService.getAllPosts(selectedChild?._id);
-        // Lấy posts của user hiện tại (bao gồm pending và approved)
-        const myPostsResult = user?.id ? await parentService.getMyPosts(user.id) : { success: false, data: { data: [] } };
         
         if (result.success) {
           // Transform API data to match component structure
@@ -86,69 +84,8 @@ function ParentDashboard() {
             class_id: post.class_id,
             likes: post.like_count,
             comments: post.comment_count,
-            isLiked: post.is_liked,
-            status: post.status || 'pending', // Thêm trường status
-            create_at: post.create_at // Thêm create_at để sort
+            isLiked: post.is_liked
           }));
-          
-          // Nếu có posts của user, merge vào danh sách
-          // Backend có thể trả về { success: true, data: [...] } hoặc { data: { data: [...] } }
-          const myPostsData = myPostsResult.data?.data || myPostsResult.data || [];
-          if (myPostsResult.success && Array.isArray(myPostsData) && myPostsData.length > 0) {
-            const myPostsMap = new Map();
-            // Thêm posts của user vào map
-            myPostsData.forEach(post => {
-              const transformedPost = {
-                id: post._id,
-                _id: post._id,
-                _raw: post,
-                title: post.content.substring(0, 50) + (post.content.length > 50 ? '...' : ''),
-                content: post.content,
-                author: post.user_id.full_name,
-                authorRole: post.user_id.role === 'school_admin' ? 'school' : post.user_id.role,
-                authorId: post.user_id._id,
-                avatar: post.user_id.avatar_url,
-                images: post.images || [],
-                image: post.images && post.images.length > 0 ? post.images[0] : null,
-                date: new Date(post.create_at).toLocaleDateString('vi-VN'),
-                time: new Date(post.create_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-                category: post.class_id ? post.class_id.class_name : 'Chung',
-                class_id: post.class_id,
-                likes: post.like_count || 0,
-                comments: post.comment_count || 0,
-                isLiked: post.is_liked || false,
-                status: post.status || 'pending',
-                create_at: post.create_at || post._raw?.create_at || new Date() // Thêm create_at để sort
-              };
-              myPostsMap.set(post._id, transformedPost);
-            });
-            
-            // Merge: nếu post đã có trong transformedPosts thì update, nếu chưa có thì thêm vào
-            transformedPosts.forEach(post => {
-              if (myPostsMap.has(post.id)) {
-                // Update status nếu có trong myPosts
-                const myPost = myPostsMap.get(post.id);
-                post.status = myPost.status;
-                // Update create_at nếu chưa có
-                if (!post.create_at && myPost.create_at) {
-                  post.create_at = myPost.create_at;
-                }
-                myPostsMap.delete(post.id); // Xóa khỏi map vì đã có trong list
-              }
-            });
-            
-            // Thêm các posts chưa có vào danh sách (các posts pending chưa được approve)
-            myPostsMap.forEach(post => {
-              transformedPosts.push(post);
-            });
-          }
-          
-          // Sắp xếp lại tất cả posts theo create_at mới nhất trước
-          transformedPosts.sort((a, b) => {
-            const dateA = a.create_at ? new Date(a.create_at) : new Date(a._raw?.create_at || a.date);
-            const dateB = b.create_at ? new Date(b.create_at) : new Date(b._raw?.create_at || b.date);
-            return dateB - dateA; // Mới nhất trước
-          });
           
           setPosts(transformedPosts);
         }
@@ -158,7 +95,7 @@ function ParentDashboard() {
     };
 
     fetchPosts();
-  }, [selectedChild, user?.id]);
+  }, [selectedChild]);
 
   // Filter posts based on search criteria
   const getFilteredPosts = () => {
@@ -203,15 +140,11 @@ function ParentDashboard() {
 
   const filteredPosts = getFilteredPosts();
 
-  // Filter posts cho tab "Tất cả" (chỉ approved)
-  const approvedPosts = filteredPosts.filter(p => p.status === 'approved');
-  
   const tabs = [
-    { label: "Tất cả", value: "all", count: approvedPosts.length },
-    { label: "Trường", value: "school", count: approvedPosts.filter(p => p.authorRole === "school").length },
-    { label: "Lớp", value: "teacher", count: approvedPosts.filter(p => p.authorRole === "teacher").length },
-    { label: "Phụ huynh", value: "parent", count: approvedPosts.filter(p => p.authorRole === "parent").length },
-    { label: "Của tôi", value: "mine", count: filteredPosts.filter(p => p.authorId === user?.id && (p.status === 'pending' || p.status === 'approved')).length }
+    { label: "Tất cả", value: "all", count: filteredPosts.length },
+    { label: "Trường", value: "school", count: filteredPosts.filter(p => p.authorRole === "school").length },
+    { label: "Lớp", value: "teacher", count: filteredPosts.filter(p => p.authorRole === "teacher").length },
+    { label: "Phụ huynh", value: "parent", count: filteredPosts.filter(p => p.authorRole === "parent").length }
   ];
 
   const handleTabChange = (event, newValue) => {
@@ -234,15 +167,9 @@ function ParentDashboard() {
   };
 
   const handlePostCreated = async () => {
-    // Lưu lại tab hiện tại để giữ nguyên sau khi reload
-    const currentTab = activeTab;
-    
     // Reload posts after create/update
     try {
       const result = await parentService.getAllPosts(selectedChild?._id);
-      // Lấy posts của user hiện tại (bao gồm pending và approved)
-      const myPostsResult = user?.id ? await parentService.getMyPosts(user.id) : { success: false, data: { data: [] } };
-      
       if (result.success) {
         const transformedPosts = result.data.data.map(post => ({
           id: post._id,
@@ -262,79 +189,12 @@ function ParentDashboard() {
           class_id: post.class_id,
           likes: post.like_count,
           comments: post.comment_count,
-          isLiked: post.is_liked,
-          status: post.status || 'pending',
-          create_at: post.create_at // Thêm create_at để sort
+          isLiked: post.is_liked
         }));
-        
-        // Nếu có posts của user, merge vào danh sách
-        // Backend có thể trả về { success: true, data: [...] } hoặc { data: { data: [...] } }
-        const myPostsData = myPostsResult.data?.data || myPostsResult.data || [];
-        if (myPostsResult.success && Array.isArray(myPostsData) && myPostsData.length > 0) {
-          const myPostsMap = new Map();
-          // Thêm posts của user vào map
-          myPostsData.forEach(post => {
-            const transformedPost = {
-              id: post._id,
-              _id: post._id,
-              _raw: post,
-              title: post.content.substring(0, 50) + (post.content.length > 50 ? '...' : ''),
-              content: post.content,
-              author: post.user_id.full_name,
-              authorRole: post.user_id.role === 'school_admin' ? 'school' : post.user_id.role,
-              authorId: post.user_id._id,
-              avatar: post.user_id.avatar_url,
-              images: post.images || [],
-              image: post.images && post.images.length > 0 ? post.images[0] : null,
-              date: new Date(post.create_at).toLocaleDateString('vi-VN'),
-              time: new Date(post.create_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-              category: post.class_id ? post.class_id.class_name : 'Chung',
-              class_id: post.class_id,
-              likes: post.like_count || 0,
-              comments: post.comment_count || 0,
-              isLiked: post.is_liked || false,
-              status: post.status || 'pending',
-              create_at: post.create_at || post._raw?.create_at || new Date() // Thêm create_at để sort
-            };
-            myPostsMap.set(post._id, transformedPost);
-          });
-          
-          // Merge: nếu post đã có trong transformedPosts thì update, nếu chưa có thì thêm vào
-          transformedPosts.forEach(post => {
-            if (myPostsMap.has(post.id)) {
-              // Update status nếu có trong myPosts
-              const myPost = myPostsMap.get(post.id);
-              post.status = myPost.status;
-              // Update create_at nếu chưa có
-              if (!post.create_at && myPost.create_at) {
-                post.create_at = myPost.create_at;
-              }
-              myPostsMap.delete(post.id); // Xóa khỏi map vì đã có trong list
-            }
-          });
-          
-          // Thêm các posts chưa có vào danh sách (các posts pending chưa được approve)
-          myPostsMap.forEach(post => {
-            transformedPosts.push(post);
-          });
-        }
-        
-        // Sắp xếp lại tất cả posts theo create_at mới nhất trước
-        transformedPosts.sort((a, b) => {
-          const dateA = a.create_at ? new Date(a.create_at) : new Date(a._raw?.create_at || a.date);
-          const dateB = b.create_at ? new Date(b.create_at) : new Date(b._raw?.create_at || b.date);
-          return dateB - dateA; // Mới nhất trước
-        });
-        
         setPosts(transformedPosts);
-        
-        // Giữ nguyên tab hiện tại sau khi reload
-        setActiveTab(currentTab);
       }
     } catch (err) {
       console.error('Error refreshing posts:', err);
-      // Vẫn giữ nguyên tab nếu có lỗi
-      setActiveTab(currentTab);
     }
   };
 

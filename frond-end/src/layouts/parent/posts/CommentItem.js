@@ -43,10 +43,11 @@ function CommentItem({
   postId,
   currentUserId,
   onCommentUpdate,
-  onCommentDelete
+  onCommentDelete,
+  forceShowReplies = false 
 }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
-  const [showReplies, setShowReplies] = useState(false);
+  const [showReplies, setShowReplies] = useState(forceShowReplies || false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.contents);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -56,7 +57,24 @@ function CommentItem({
   
   // Số lượng replies hiển thị ban đầu (giống Facebook)
   const INITIAL_REPLIES_COUNT = 0;
-  const hasMoreReplies = comment.replies && comment.replies.length > INITIAL_REPLIES_COUNT;
+  
+  // Hàm đệ quy để đếm tổng số replies (bao gồm nested) từ level 2 trở đi
+  const countAllReplies = (replies) => {
+    if (!replies || !Array.isArray(replies)) return 0;
+    let total = replies.length;
+    replies.forEach(reply => {
+      if (reply.replies && Array.isArray(reply.replies)) {
+        total += countAllReplies(reply.replies);
+      }
+    });
+    return total;
+  };
+  
+  const totalRepliesCount = depth >= 0
+    ? countAllReplies(comment.replies)
+    : (comment.replies ? comment.replies.length : 0);
+  
+  const hasMoreReplies = totalRepliesCount > INITIAL_REPLIES_COUNT;
   const visibleReplies = showReplies 
     ? comment.replies 
     : (comment.replies || []).slice(0, INITIAL_REPLIES_COUNT);
@@ -88,7 +106,11 @@ function CommentItem({
         setShowReplyForm(false);
         setReplyingTo(null);
         
-        // Callback để update parent component
+        // Khi vừa reply xong, tự động hiển thị replies để thấy reply mới
+        if (parentCommentId === comment._id) {
+          setShowReplies(true);
+        }
+        
         if (onReplySuccess) {
           onReplySuccess(response.data, parentCommentId);
         }
@@ -100,7 +122,6 @@ function CommentItem({
     }
   };
 
-  // Check if current user owns this comment
   const isOwnComment = currentUserId && comment.user_id?._id && comment.user_id._id === currentUserId;
 
   const handleMenuOpen = (event) => {
@@ -167,15 +188,12 @@ function CommentItem({
     setDeleteDialogOpen(false);
   };
 
-  // Tính toán margin left dựa trên depth
   const getMarginLeft = (depth) => {
     if (depth === 0) return 0;
     if (depth === 1) return 4;
-    if (depth === 2) return 6;
-    return Math.min(6 + (depth - 2) * 1, 8); // Max margin để tránh quá sâu
+    return 6;
   };
 
-  // Tính toán kích thước avatar dựa trên depth
   const getAvatarSize = (depth) => {
     if (depth === 0) return { width: 32, height: 32 };
     if (depth === 1) return { width: 28, height: 28 };
@@ -183,15 +201,17 @@ function CommentItem({
   };
 
   // Tính toán padding dựa trên depth
+  // Từ depth >= 2, giảm padding để thẳng hàng
   const getPadding = (depth) => {
     if (depth === 0) return 1.5;
     if (depth === 1) return 1.5;
-    return 1;
+    // Từ depth >= 2, padding nhỏ nhất để thẳng hàng
+    return 0.5;
   };
 
   return (
     <ArgonBox 
-      mb={depth === 0 ? 2 : 1} 
+      mb={depth === 0 ? 2 : depth >= 2 ? 0 : 1} // Từ level 2 trở đi không có margin bottom để nút không bị đẩy xa
       p={getPadding(depth)} 
       sx={{
         animation: comment.isNew ? 'fadeInUp 0.4s ease-out' : 'none',
@@ -221,9 +241,33 @@ function CommentItem({
               padding: '8px 12px',
             }}
           >
-            <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
-              {comment.user_id?.full_name}
-            </ArgonTypography>
+            <ArgonBox display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+              <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
+                {comment.user_id?.full_name}
+              </ArgonTypography>
+              {/* Hiển thị tên người được reply (giống Facebook) */}
+              {comment.parent_comment_id && comment.parent_comment_id.user_id && (
+                <>
+                  <ArgonTypography variant="caption" color="text.secondary" fontSize="12px">
+                    Trả lời
+                  </ArgonTypography>
+                  <ArgonTypography 
+                    variant="caption" 
+                    fontWeight="bold" 
+                    color="info" 
+                    fontSize="12px"
+                    sx={{ 
+                      '&:hover': { 
+                        textDecoration: 'underline',
+                        cursor: 'pointer'
+                      } 
+                    }}
+                  >
+                    @{comment.parent_comment_id.user_id.full_name}
+                  </ArgonTypography>
+                </>
+              )}
+            </ArgonBox>
             {isEditing ? (
               <ArgonBox mt={0.5}>
                 <TextField
@@ -264,7 +308,7 @@ function CommentItem({
                 </ArgonBox>
               </ArgonBox>
             ) : (
-              <ArgonTypography variant="body2" color="text" sx={{ lineHeight: 1.5, fontSize: '13px', fontWeight: 400, mt: 0.25 }}>
+              <ArgonTypography variant="body2" color="text" sx={{ lineHeight: 1.5, fontSize: '13px', fontWeight: 400, mt: 0.5 }}>
                 {comment.contents}
               </ArgonTypography>
             )}
@@ -326,14 +370,14 @@ function CommentItem({
 
       {/* Reply Form */}
       {showReplyForm && replyingTo && replyingTo._id === comment._id && (
-        <ArgonBox ml={getMarginLeft(depth) + 3} mt={1}>
+        <ArgonBox ml={depth >= 2 ? 6 : getMarginLeft(depth) + 3} mt={1}>
           <ArgonBox display="flex" alignItems="flex-end" gap={1}>
             <TextField
               fullWidth
               multiline
               minRows={1}
               maxRows={4}
-              placeholder={`Trả lời ${comment.user_id?.full_name}...`}
+              placeholder={`Trả lời @${comment.user_id?.full_name}...`}
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               variant="outlined"
@@ -418,36 +462,57 @@ function CommentItem({
         </ArgonBox>
       )}
 
-      {/* Recursive Replies */}
+      {/* Recursive Replies - Từ level 2 trở đi hiển thị thẳng hàng */}
       {comment.replies && Array.isArray(comment.replies) && comment.replies.length > 0 && (
-        <ArgonBox ml={getMarginLeft(depth)} mt={1} sx={{ borderLeft: '1px solid #e4e6eb', pl: 2 }}>
-          {visibleReplies.map((reply, replyIndex) => (
-            <CommentItem
-              key={reply._id || replyIndex}
-              comment={reply}
-              depth={depth + 1}
-              onReplySuccess={onReplySuccess}
-              replyingTo={replyingTo}
-              setReplyingTo={setReplyingTo}
-              replyText={replyText}
-              setReplyText={setReplyText}
-              replyLoading={replyLoading}
-              setReplyLoading={setReplyLoading}
-              postId={postId}
-              currentUserId={currentUserId}
-              onCommentUpdate={onCommentUpdate}
-              onCommentDelete={onCommentDelete}
-            />
-          ))}
+        <ArgonBox 
+          ml={depth >= 2 ? 0 : getMarginLeft(depth)} // Từ depth >= 2, container không có margin để tránh cộng dồn
+          mt={depth >= 2 ? 0 : 1} // Từ level 2 trở đi không có margin top để nút không bị đẩy xa
+          sx={{ 
+            borderLeft: depth < 2 ? '1px solid #e4e6eb' : 'none', // Không hiển thị border từ level 2 trở đi
+            pl: depth < 2 ? 2 : 0 // Không padding từ level 2 trở đi để thẳng hàng
+          }}
+        >
+          {visibleReplies.map((reply, replyIndex) => {
+            // Tính depth cho reply: từ level 2 trở đi, tất cả đều có depth = 2 để hiển thị cùng cấp
+            // Level 0 → Level 1: depth = 0 + 1 = 1
+            // Level 1 → Level 2: depth = 1 + 1 = 2
+            // Level 2 → Level 3, 4, 5...: depth = 2 (không tăng, tất cả cùng cấp)
+            const replyDepth = depth >= 1 ? 2 : depth + 1;
+            
+            return (
+              <CommentItem
+                key={reply._id || replyIndex}
+                comment={reply}
+                depth={replyDepth}
+                onReplySuccess={onReplySuccess}
+                replyingTo={replyingTo}
+                setReplyingTo={setReplyingTo}
+                replyText={replyText}
+                setReplyText={setReplyText}
+                replyLoading={replyLoading}
+                setReplyLoading={setReplyLoading}
+                postId={postId}
+                currentUserId={currentUserId}
+                onCommentUpdate={onCommentUpdate}
+                onCommentDelete={onCommentDelete}
+                // Từ level 2 trở đi, nếu parent hiển thị replies thì con cũng phải hiển thị
+                // Hoặc nếu comment này nằm trong danh sách cần hiển thị (vừa được reply vào)
+                forceShowReplies={forceShowReplies || (depth >= 1 && showReplies)}
+              />
+            );
+          })}
           
-          {/* Xem thêm replies */}
-          {hasMoreReplies && (
+          {/* Xem thêm replies - Từ level 2 trở đi chỉ hiển thị 1 nút duy nhất */}
+          {/* Ở level 0, 1 (depth = 0, 1): hiển thị nút bình thường */}
+          {/* Ở level 2 (depth = 1 khi render): hiển thị nút để ẩn/hiện tất cả replies (level 3, 4, 5...) */}
+          {/* Từ level 3 trở đi (depth = 2 khi render): không hiển thị nút nữa (vì đã có nút ở level 2) */}
+          {hasMoreReplies && depth <= 1 && (
             <ArgonBox 
-              ml={getMarginLeft(depth + 1)} 
-              mt={1.5}
+              ml={0} // Không có margin riêng, vì đã có margin từ container replies
+              mt={0} // Không có margin top, nút nằm sát replies
               sx={{
                 position: 'relative',
-                '&::before': {
+                '&::before': depth < 2 ? { // Chỉ hiển thị đường line khi depth < 2
                   content: '""',
                   position: 'absolute',
                   left: '-12px',
@@ -456,7 +521,7 @@ function CommentItem({
                   height: '20px',
                   backgroundColor: '#e4e6ea',
                   transform: 'translateY(-50%)'
-                }
+                } : {}
               }}
             >
               <Button
@@ -493,8 +558,8 @@ function CommentItem({
                 }}
               >
                 {showReplies 
-                  ? `Ẩn ${comment.replies.length - INITIAL_REPLIES_COUNT} trả lời` 
-                  : `Xem ${comment.replies.length} trả lời`
+                  ? `Ẩn ${totalRepliesCount - INITIAL_REPLIES_COUNT} trả lời` 
+                  : `Xem ${totalRepliesCount} trả lời`
                 }
               </Button>
             </ArgonBox>
@@ -612,7 +677,8 @@ CommentItem.propTypes = {
   postId: PropTypes.string,
   currentUserId: PropTypes.string,
   onCommentUpdate: PropTypes.func,
-  onCommentDelete: PropTypes.func
+  onCommentDelete: PropTypes.func,
+  forceShowReplies: PropTypes.bool
 };
 
 export default CommentItem;
