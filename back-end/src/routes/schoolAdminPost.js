@@ -11,7 +11,8 @@ const {
 } = require('../controllers/schoolAdminPostController');
 
 const { 
-  getComments, 
+  getComments,
+  createComment,
   deleteComment, 
   getLikes 
 } = require('../controllers/schoolAdminCommentController');
@@ -30,6 +31,7 @@ router.delete('/:postId', deletePost);
 
 // Comment Routes
 router.get('/:postId/comments', getComments);
+router.post('/:postId/comments', createComment);
 router.delete('/comments/:commentId', deleteComment);
 
 // Like Routes

@@ -133,8 +133,61 @@ const getLikes = async (req, res) => {
   }
 };
 
+// CREATE comment (school admin can comment on posts)
+const createComment = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { contents, parent_comment_id } = req.body;
+
+    if (!contents || !contents.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nội dung bình luận không được để trống'
+      });
+    }
+
+    // Check if post exists
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy bài đăng'
+      });
+    }
+
+    // Create comment
+    const comment = await PostComment.create({
+      post_id: postId,
+      user_id: req.user.id,
+      contents: contents.trim(),
+      parent_comment_id: parent_comment_id || null,
+      create_at: new Date()
+    });
+
+    // Populate user info
+    await comment.populate({
+      path: 'user_id',
+      select: 'full_name avatar_url role'
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Đã tạo bình luận thành công',
+      data: comment
+    });
+  } catch (error) {
+    console.error('createComment error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi khi tạo bình luận',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getComments,
+  createComment,
   deleteComment,
   getLikes
 };

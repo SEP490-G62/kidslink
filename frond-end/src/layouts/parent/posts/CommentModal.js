@@ -77,8 +77,10 @@ function CommentModal({
       const service = isAdmin ? schoolAdminService : parentService;
       const response = await service.getComments(selectedPost.id);
       console.log('✅ Comments response:', response);
+      console.log('📝 Comments array:', response.data?.comments);
+      console.log('📊 Comments count:', response.data?.comments?.length);
       if (response.success) {
-        setComments(response.data.comments);
+        setComments(response.data.comments || []);
       }
     } catch (error) {
       console.error('❌ Error loading comments:', error);
@@ -111,7 +113,8 @@ function CommentModal({
     
     try {
       setCommentLoading(true);
-      const response = await parentService.createComment(selectedPost.id, newComment);
+      const service = isAdmin ? schoolAdminService : parentService;
+      const response = await service.createComment(selectedPost.id, newComment);
       if (response.success) {
         setNewComment('');
         
@@ -143,7 +146,8 @@ function CommentModal({
     
     try {
       setReplyLoading(true);
-      const response = await parentService.createComment(selectedPost.id, replyText, parentCommentId);
+      const service = isAdmin ? schoolAdminService : parentService;
+      const response = await service.createComment(selectedPost.id, replyText, parentCommentId);
       
       if (response.success) {
         setReplyText('');

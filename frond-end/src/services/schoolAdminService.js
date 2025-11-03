@@ -31,6 +31,13 @@ const schoolAdminService = {
     return await api.get(`/school-admin/posts/${postId}/comments`, true);
   },
 
+  createComment: async (postId, contents, parentCommentId = null) => {
+    return await api.post(`/school-admin/posts/${postId}/comments`, {
+      contents,
+      parent_comment_id: parentCommentId
+    }, true);
+  },
+
   deleteComment: async (commentId) => {
     return await api.delete(`/school-admin/posts/comments/${commentId}`, true);
   },
