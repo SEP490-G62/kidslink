@@ -122,10 +122,10 @@ function Illustration() {
           const userRole = result.user.role;
           switch (userRole) {
             case 'admin':
-              navigate('/admin/dashboard');
+              navigate('/dashboard');
               break;
             case 'school_admin':
-              navigate('/school-admin/dashboard');
+              navigate('/school-admin/classes');
               break;
             case 'teacher':
               navigate('/teacher');
@@ -136,11 +136,8 @@ function Illustration() {
             case 'health_care_staff':
               navigate('/health-care');
               break;
-            case 'nutrition_staff':
-              navigate('/nutrition/dashboard');
-              break;
             default:
-              navigate('/dashboard');
+              navigate('/');
           }
         }, 1000);
       } else {

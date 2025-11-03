@@ -32,6 +32,12 @@ import routes from "routes";
 import healthCareStaffRoutes from "routes/healthCareStaffRoutes";
 import teacherRoutes from "routes/teacherRoutes";
 import parentRoutes from "routes/parentRoutes";
+import schoolAdminRoutes from "routes/schoolAdminRoutes";
+import Landing from "layouts/landing";
+import SignIn from "layouts/authentication/sign-in";
+import SignUp from "layouts/authentication/sign-up";
+import ForgotPassword from "layouts/authentication/forgot-password";
+import Unauthorized from "layouts/authentication/unauthorized";
 
 // Argon Dashboard 2 MUI contexts
 import { useArgonController, setMiniSidenav, setOpenConfigurator } from "context";
@@ -109,7 +115,33 @@ export default function App() {
   const isTeacherPath = pathname.startsWith("/teacher");
   const isParentPath = pathname.startsWith("/parent");
   const isHealthCareStaffPath = pathname.startsWith("/health-care");
-  const activeRoutes = isTeacherPath ? teacherRoutes : isParentPath ? parentRoutes : isHealthCareStaffPath ? healthCareStaffRoutes : routes;
+  // Determine role from localStorage to support role-based sidenav (school_admin)
+  let userRole = null;
+  try {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      userRole = JSON.parse(storedUser)?.role || null;
+    }
+  } catch (e) {
+    userRole = null;
+  }
+  const isSchoolAdmin = userRole === "school_admin";
+  const activeRoutes = isTeacherPath
+    ? teacherRoutes
+    : isParentPath
+    ? parentRoutes
+    : isHealthCareStaffPath
+    ? healthCareStaffRoutes
+    : isSchoolAdmin
+    ? schoolAdminRoutes
+    : routes;
+
+  // Ensure sidenav is not in mini overlay mode on desktop
+  useEffect(() => {
+    setMiniSidenav(dispatch, window.innerWidth < 1200 ? true : false);
+  }, [dispatch]);
+
+  // Keep root "/" as public Landing regardless of role
   const SidenavComponent = isParentPath ? ParentSidenav : Sidenav;
 
   const configsButton = (
@@ -149,8 +181,6 @@ export default function App() {
                   brand={darkSidenav || darkMode ? brand : brandDark}
                   brandName="KidsLink"
                   routes={activeRoutes}
-                  onMouseEnter={handleOnMouseEnter}
-                  onMouseLeave={handleOnMouseLeave}
                 />
                 <Configurator />
                 {configsButton}
@@ -158,6 +188,13 @@ export default function App() {
             )}
             {layout === "vr" && <Configurator />}
             <Routes>
+              {/* Public landing page at root */}
+              <Route exact path="/" element={<Landing />} />
+              {/* Auth routes always available */}
+              <Route path="/authentication/sign-in" element={<SignIn />} />
+              <Route path="/authentication/sign-up" element={<SignUp />} />
+              <Route path="/authentication/forgot-password" element={<ForgotPassword />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
               {getRoutes(activeRoutes)}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
@@ -173,8 +210,6 @@ export default function App() {
                 brand={darkSidenav || darkMode ? brand : brandDark}
                 brandName="KidsLink"
                 routes={activeRoutes}
-                onMouseEnter={handleOnMouseEnter}
-                onMouseLeave={handleOnMouseLeave}
               />
               <Configurator />
               {configsButton}
@@ -182,6 +217,11 @@ export default function App() {
           )}
           {layout === "vr" && <Configurator />}
           <Routes>
+            <Route exact path="/" element={<Landing />} />
+            <Route path="/authentication/sign-in" element={<SignIn />} />
+            <Route path="/authentication/sign-up" element={<SignUp />} />
+            <Route path="/authentication/forgot-password" element={<ForgotPassword />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
             {getRoutes(activeRoutes)}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

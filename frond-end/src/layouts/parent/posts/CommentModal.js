@@ -24,6 +24,7 @@ import ArgonTypography from "components/ArgonTypography";
 
 // Services
 import parentService from "services/parentService";
+import schoolAdminService from "services/schoolAdminService";
 
 // Auth context
 import { useAuth } from "context/AuthContext";
@@ -35,7 +36,8 @@ function CommentModal({
   open, 
   onClose, 
   selectedPost, 
-  onUpdateCommentCount 
+  onUpdateCommentCount,
+  isAdmin = false
 }) {
   const { user } = useAuth();
   const [comments, setComments] = useState([]);
@@ -65,15 +67,21 @@ function CommentModal({
   }, [open, selectedPost]);
 
   const loadComments = async () => {
-    if (!selectedPost?.id) return;
+    if (!selectedPost?.id) {
+      console.log('❌ No post id:', selectedPost);
+      return;
+    }
     
+    console.log('🔍 Loading comments for post:', selectedPost.id);
     try {
-      const response = await parentService.getComments(selectedPost.id);
+      const service = isAdmin ? schoolAdminService : parentService;
+      const response = await service.getComments(selectedPost.id);
+      console.log('✅ Comments response:', response);
       if (response.success) {
         setComments(response.data.comments);
       }
     } catch (error) {
-      console.error('Error loading comments:', error);
+      console.error('❌ Error loading comments:', error);
     }
   };
 
@@ -469,6 +477,7 @@ function CommentModal({
                   onCommentUpdate={handleCommentUpdate}
                   onCommentDelete={handleCommentDelete}
                   forceShowReplies={shouldShowRepliesFor.has(comment._id)}
+                  isAdmin={isAdmin}
                 />
               ))}
                                   </ArgonBox>
@@ -576,7 +585,8 @@ CommentModal.propTypes = {
     time: PropTypes.string.isRequired,
     content: PropTypes.string.isRequired
   }),
-  onUpdateCommentCount: PropTypes.func.isRequired
+  onUpdateCommentCount: PropTypes.func.isRequired,
+  isAdmin: PropTypes.bool
 };
 
 export default CommentModal;

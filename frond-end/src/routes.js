@@ -49,7 +49,6 @@ import ForgotPassword from "layouts/authentication/forgot-password";
 import Unauthorized from "layouts/authentication/unauthorized";
 import HealthCareStaffHome from "layouts/health-care";
 import HealthCareProfile from "layouts/health-care/Profile";
-
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
 import ProtectedRoute from "components/ProtectedRoute";

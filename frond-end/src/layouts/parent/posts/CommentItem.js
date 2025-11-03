@@ -29,6 +29,7 @@ import ArgonTypography from "components/ArgonTypography";
 
 // Services
 import parentService from "services/parentService";
+import schoolAdminService from "services/schoolAdminService";
 
 function CommentItem({ 
   comment, 
@@ -44,7 +45,8 @@ function CommentItem({
   currentUserId,
   onCommentUpdate,
   onCommentDelete,
-  forceShowReplies = false 
+  forceShowReplies = false,
+  isAdmin = false
 }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [showReplies, setShowReplies] = useState(forceShowReplies || false);
@@ -123,6 +125,7 @@ function CommentItem({
   };
 
   const isOwnComment = currentUserId && comment.user_id?._id && comment.user_id._id === currentUserId;
+  const canDeleteComment = isAdmin || isOwnComment;
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -170,7 +173,8 @@ function CommentItem({
   const handleDeleteConfirm = async () => {
     try {
       setIsDeleting(true);
-      const response = await parentService.deleteComment(comment._id);
+      const service = isAdmin ? schoolAdminService : parentService;
+      const response = await service.deleteComment(comment._id);
       if (response.success) {
         setDeleteDialogOpen(false);
         if (onCommentDelete) {
@@ -335,7 +339,7 @@ function CommentItem({
             <ArgonTypography variant="caption" color="text.secondary" fontSize="11px">
               {new Date(comment.create_at).toLocaleString('vi-VN')}
             </ArgonTypography>
-            {isOwnComment && (
+            {canDeleteComment && (
               <>
                 <IconButton size="small" onClick={handleMenuOpen} sx={{ color: 'text.secondary' }}>
                   <i className="ni ni-settings-gear-65" style={{ fontSize: '14px' }} />
@@ -348,13 +352,17 @@ function CommentItem({
                   transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                   anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 >
-                  <MenuItem onClick={handleEditClick} sx={{ py: 1, px: 2 }}>
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      <i className="ni ni-settings-gear-65" style={{ fontSize: '16px', color: '#5e72e4' }} />
-                    </ListItemIcon>
-                    <ListItemText primary="Chỉnh sửa" primaryTypographyProps={{ fontSize: '13px', fontWeight: 500 }} />
-                  </MenuItem>
-                  <Divider sx={{ my: 0.5 }} />
+                  {isOwnComment && (
+                    <>
+                      <MenuItem onClick={handleEditClick} sx={{ py: 1, px: 2 }}>
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <i className="ni ni-settings-gear-65" style={{ fontSize: '16px', color: '#5e72e4' }} />
+                        </ListItemIcon>
+                        <ListItemText primary="Chỉnh sửa" primaryTypographyProps={{ fontSize: '13px', fontWeight: 500 }} />
+                      </MenuItem>
+                      <Divider sx={{ my: 0.5 }} />
+                    </>
+                  )}
                   <MenuItem onClick={handleDeleteClick} sx={{ py: 1, px: 2 }}>
                     <ListItemIcon sx={{ minWidth: 32 }}>
                       <i className="ni ni-fat-remove" style={{ fontSize: '16px', color: '#f44336' }} />
@@ -498,6 +506,7 @@ function CommentItem({
                 // Từ level 2 trở đi, nếu parent hiển thị replies thì con cũng phải hiển thị
                 // Hoặc nếu comment này nằm trong danh sách cần hiển thị (vừa được reply vào)
                 forceShowReplies={forceShowReplies || (depth >= 1 && showReplies)}
+                isAdmin={isAdmin}
               />
             );
           })}
@@ -678,7 +687,8 @@ CommentItem.propTypes = {
   currentUserId: PropTypes.string,
   onCommentUpdate: PropTypes.func,
   onCommentDelete: PropTypes.func,
-  forceShowReplies: PropTypes.bool
+  forceShowReplies: PropTypes.bool,
+  isAdmin: PropTypes.bool
 };
 
 export default CommentItem;

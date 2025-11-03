@@ -13,10 +13,25 @@ const PORT = process.env.PORT || 5000;
 // Middleware bảo mật
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration with whitelist (supports multiple dev origins)
+const defaultOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+const envOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const allowedOrigins = envOrigins.length ? envOrigins : defaultOrigins;
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow non-browser requests or same-origin without Origin header
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`CORS blocked: origin ${origin} not in whitelist: ${allowedOrigins.join(', ')}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
 }));
 
 // Rate limiting
@@ -83,7 +98,8 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server đang chạy trên port ${PORT}`);
   console.log(`📱 Health check: http://localhost:${PORT}/health`);
-  console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
+  console.log(`🌐 API Base URL: http://localhost:${PORT}`);
+  console.log(`🔐 CORS allowed origins: ${allowedOrigins.join(', ') || 'none'}`);
 });
 
 module.exports = app;
