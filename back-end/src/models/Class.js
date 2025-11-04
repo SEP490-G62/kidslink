@@ -30,6 +30,14 @@ const classSchema = new mongoose.Schema({
   teacher_id2: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Teacher'
+  },
+  start_date: {
+    type: Date,
+    required: true
+  },
+  end_date: {
+    type: Date,
+    required: true
   }
 }, {
   timestamps: true
