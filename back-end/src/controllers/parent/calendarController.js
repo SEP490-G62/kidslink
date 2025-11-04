@@ -48,7 +48,18 @@ async function getClassCalendarLatest(req, res) {
     }
 
     // Lấy tất cả lớp mà học sinh đã/đang học
-    const studentClasses = await StudentClass.find({ student_id: targetStudentId }).populate('class_id');
+    const studentClasses = await StudentClass.find({ student_id: targetStudentId })
+      .populate({
+        path: 'class_id',
+        populate: {
+          path: 'teacher_id',
+          model: 'Teacher',
+          populate: {
+            path: 'user_id',
+            model: 'User'
+          }
+        }
+      });
     if (studentClasses.length === 0) {
       return res.status(404).json({ error: 'Học sinh chưa được xếp lớp' });
     }
@@ -79,7 +90,14 @@ async function getClassCalendarLatest(req, res) {
     // Lấy slots theo calendar
     const slots = await Slot.find({ calendar_id: { $in: calendarIds } })
       .populate('activity_id')
-      .populate('teacher_id');
+      .populate({
+        path: 'teacher_id',
+        model: 'Teacher',
+        populate: {
+          path: 'user_id',
+          model: 'User'
+        }
+      });
 
     // Group slots theo calendar_id
     const calendarIdToSlots = new Map();
@@ -99,16 +117,25 @@ async function getClassCalendarLatest(req, res) {
         } : null,
         teacher: slot.teacher_id ? {
           id: slot.teacher_id._id,
-          fullName: slot.teacher_id.full_name
+          fullName: slot.teacher_id.user_id?.full_name || slot.teacher_id.full_name || 'Giáo viên'
         } : null
       });
     }
+
+    // Lấy teacher của class (teacher_id)
+    const classTeacher = latestClass.teacher_id && latestClass.teacher_id.user_id 
+      ? {
+          id: latestClass.teacher_id._id,
+          fullName: latestClass.teacher_id.user_id.full_name || latestClass.teacher_id.full_name || 'Giáo viên chủ nhiệm'
+        }
+      : null;
 
     const result = {
       class: {
         id: latestClass._id,
         name: latestClass.class_name,
-        academicYear: latestClass.academic_year
+        academicYear: latestClass.academic_year,
+        teacher: classTeacher
       },
       calendars: calendars
         .sort((a, b) => new Date(b.date) - new Date(a.date))

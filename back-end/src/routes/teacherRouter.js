@@ -10,11 +10,16 @@ const {
 const {
   getTeacherClasses,
   getClassStudents,
-  getStudentsAttendanceByDate
+  getStudentsAttendanceByDate,
+  getAllTeachers
+
 } = require('../controllers/teacherController');
 const { getStudentDetail } = require('../controllers/studentController');
 
-// Middleware xác thực cho tất cả routes
+// Get all teachers (public or with auth as needed)
+router.get('/',  getAllTeachers);
+
+// Middleware xác thực cho tất cả routes bên dưới
 router.use(authenticate);
 
 // Chỉ cho phép teacher thực hiện check in/out và cập nhật comments

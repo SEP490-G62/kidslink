@@ -1,19 +1,41 @@
 const mongoose = require('mongoose');
-const { Class, Teacher, StudentClass, Student, DailyReport } = require('../models');
+const { Class, Teacher, StudentClass, Student, DailyReport, User } = require('../models');
 
-// Helper to get teacher document from authenticated user
+// --- Helper để lấy teacher từ request (có thể bỏ qua tạm khi test) ---
 async function getTeacherByReqUser(req) {
+  // Tạm thời hardcode một teacher ID để test
+  // return await Teacher.findOne({ user_id: "671000000000000000000001" });
+
+  // Nếu muốn dùng thực tế, cần authenticate middleware gán req.user
   const userId = req?.user?.id;
   if (!userId) return null;
   return await Teacher.findOne({ user_id: userId });
 }
 
-// GET /teacher/class -> return all classes grouped by academic_year for the teacher
+// --- Lấy tất cả teacher ---
+async function getAllTeachers(req, res) {
+  try {
+    // Lấy từ bảng Teacher và populate user_id
+    const teachers = await Teacher.find()
+      .populate('user_id', '_id full_name email phone_number status')
+      .lean();
+    
+    // Filter out inactive users
+    const activeTeachers = teachers.filter(t => t.user_id && t.user_id.status === 1);
+    
+    return res.json({ count: activeTeachers.length, teachers: activeTeachers });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Lỗi server', details: err.message });
+  }
+}
+
+// --- Lấy class của teacher ---
 async function getTeacherClasses(req, res) {
   try {
     const teacher = await getTeacherByReqUser(req);
     if (!teacher) {
-      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
+      return res.status(404).json({ error: 'Không tìm thấy giáo viên' });
     }
 
     const classes = await Class.find({
@@ -23,7 +45,6 @@ async function getTeacherClasses(req, res) {
       .populate('class_age_id')
       .sort({ academic_year: -1, class_name: 1 });
 
-    // Group by academic_year
     const grouped = classes.reduce((acc, cls) => {
       const year = cls.academic_year;
       if (!acc[year]) acc[year] = [];
@@ -41,22 +62,14 @@ async function getTeacherClasses(req, res) {
   }
 }
 
-// Backward compatible alias if existing code imports singular name
-async function getTeacherClass(req, res) {
-  return getTeacherClasses(req, res);
-}
-
-// GET /teacher/class/students?class_id=...
+// --- Lấy students của class ---
 async function getClassStudents(req, res) {
   try {
     let { class_id: classId } = req.query;
     const teacher = await getTeacherByReqUser(req);
-    if (!teacher) {
-      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
-    }
+    if (!teacher) return res.status(404).json({ error: 'Không tìm thấy giáo viên' });
 
     let cls;
-    // Fallback to latest class if no class_id provided
     if (!classId || !mongoose.Types.ObjectId.isValid(classId)) {
       const latest = await Class.find({
         $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
@@ -66,26 +79,19 @@ async function getClassStudents(req, res) {
         .sort({ academic_year: -1 })
         .limit(1);
       cls = Array.isArray(latest) ? latest[0] : latest;
-      if (!cls) {
-        return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
-      }
+      if (!cls) return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
       classId = cls._id.toString();
     } else {
-      // Ensure teacher owns this class
       cls = await Class.findOne({
         _id: classId,
         $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
       })
         .populate('school_id')
         .populate('class_age_id');
-      if (!cls) {
-        return res.status(403).json({ error: 'Bạn không có quyền truy cập lớp này' });
-      }
+      if (!cls) return res.status(403).json({ error: 'Không có quyền truy cập lớp này' });
     }
 
-    const mappings = await StudentClass.find({ class_id: classId })
-      .populate({ path: 'student_id', model: Student });
-
+    const mappings = await StudentClass.find({ class_id: classId }).populate('student_id');
     const students = mappings
       .filter((m) => !!m.student_id)
       .map((m) => ({
@@ -113,35 +119,27 @@ async function getClassStudents(req, res) {
   }
 }
 
-// GET /teacher/class/students/attendance/:date?class_id=...
+// --- Lấy attendance của students theo date ---
 async function getStudentsAttendanceByDate(req, res) {
   try {
     let { class_id: classId } = req.query;
     const { date } = req.params;
-
-    if (!date) {
-      return res.status(400).json({ error: 'Thiếu ngày cần tra cứu' });
-    }
+    if (!date) return res.status(400).json({ error: 'Thiếu ngày cần tra cứu' });
 
     const teacher = await getTeacherByReqUser(req);
-    if (!teacher) {
-      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
-    }
+    if (!teacher) return res.status(404).json({ error: 'Không tìm thấy giáo viên' });
 
     let cls;
-    // If classId missing or invalid, fallback to teacher's latest academic year class
     if (!classId || !mongoose.Types.ObjectId.isValid(classId)) {
-      cls = await Class.find({
+      const latest = await Class.find({
         $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
       })
         .populate('school_id')
         .populate('class_age_id')
         .sort({ academic_year: -1 })
         .limit(1);
-      cls = Array.isArray(cls) ? cls[0] : cls;
-      if (!cls) {
-        return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
-      }
+      cls = Array.isArray(latest) ? latest[0] : latest;
+      if (!cls) return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
       classId = cls._id.toString();
     } else {
       cls = await Class.findOne({
@@ -150,20 +148,14 @@ async function getStudentsAttendanceByDate(req, res) {
       })
         .populate('school_id')
         .populate('class_age_id');
-      if (!cls) {
-        return res.status(403).json({ error: 'Bạn không có quyền truy cập lớp này' });
-      }
+      if (!cls) return res.status(403).json({ error: 'Không có quyền truy cập lớp này' });
     }
 
-    // Determine students in class
     const mappings = await StudentClass.find({ class_id: classId });
     const studentIds = mappings.map((m) => m.student_id);
 
-    // Parse date boundaries
     const start = new Date(date);
-    if (Number.isNaN(start.getTime())) {
-      return res.status(400).json({ error: 'Định dạng ngày không hợp lệ' });
-    }
+    if (Number.isNaN(start.getTime())) return res.status(400).json({ error: 'Ngày không hợp lệ' });
     const end = new Date(start);
     end.setHours(23, 59, 59, 999);
 
@@ -175,7 +167,6 @@ async function getStudentsAttendanceByDate(req, res) {
       .populate('teacher_checkin_id')
       .populate('teacher_checkout_id');
 
-    // Build students list with attendance flags for UI compatibility
     const studentDocs = await Student.find({ _id: { $in: studentIds } });
     const studentIdToDiscount = mappings.reduce((acc, m) => {
       acc[m.student_id.toString()] = m.discount || 0;
@@ -204,11 +195,10 @@ async function getStudentsAttendanceByDate(req, res) {
           checkin_time: r ? r.checkin_time : null,
           checkout_time: r ? r.checkout_time : null
         },
-        report: r || null // Thêm trường này cho FE đọc report.comments
+        report: r || null
       };
     });
 
-    // Statistics
     const totalStudents = students.length;
     const checkedIn = students.filter((s) => s.attendance.has_checkin).length;
     const checkedOut = students.filter((s) => s.attendance.has_checkout).length;
@@ -236,10 +226,9 @@ async function getStudentsAttendanceByDate(req, res) {
 }
 
 module.exports = {
+  getAllTeachers,
   getTeacherClasses,
-  getTeacherClass,
+  getTeacherClass: getTeacherClasses,
   getClassStudents,
   getStudentsAttendanceByDate
 };
-
-

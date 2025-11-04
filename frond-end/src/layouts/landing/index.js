@@ -8,12 +8,13 @@ import PageLayout from "examples/LayoutContainers/PageLayout";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Stack from "@mui/material/Stack";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import Icon from "@mui/material/Icon";
 import { useRef } from "react";
+import { useAuth } from "context/AuthContext";
 
 // Import images
 import kidslinkLogo from "assets/images/kll3.png";
@@ -26,12 +27,42 @@ import logoAtlassian from "assets/images/small-logos/logo-atlassian.svg";
 import logoInvision from "assets/images/small-logos/logo-invision.svg";
 
 function Landing() {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const aboutRef = useRef(null);
   const newsRef = useRef(null);
   const contactRef = useRef(null);
 
   const scrollToSection = (ref) => {
     ref.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const goLogin = () => {
+    try {
+      if (typeof isAuthenticated === 'function' && isAuthenticated() && user) {
+        const role = user.role;
+        switch (role) {
+          case 'school_admin':
+            navigate('/school-admin/classes');
+            return;
+          case 'teacher':
+            navigate('/teacher');
+            return;
+          case 'parent':
+            navigate('/parent');
+            return;
+          case 'health_care_staff':
+            navigate('/health-care');
+            return;
+          default:
+            navigate('/');
+            return;
+        }
+      }
+    } catch (e) {
+      // fall-through to sign-in
+    }
+    navigate('/authentication/sign-in');
   };
 
   return (
@@ -81,7 +112,7 @@ function Landing() {
               >
                 Liên hệ
               </ArgonButton>
-              <ArgonButton component={Link} to="/authentication/sign-in" color="info" size="small">
+              <ArgonButton color="info" size="small" onClick={goLogin}>
                 Đăng nhập
               </ArgonButton>
             </Stack>
@@ -112,7 +143,7 @@ function Landing() {
             Nền tảng quản lý vận hành mầm non an toàn, tiết kiệm, kết nối nhà trường – giáo viên – phụ huynh theo thời gian thực.
           </ArgonTypography>
           <ArgonBox display="flex" justifyContent="center" gap={2}>
-            <ArgonButton component={Link} to="/authentication/sign-in" color="info" size="large">
+            <ArgonButton color="info" size="large" onClick={goLogin}>
               Đăng nhập
             </ArgonButton>
 
@@ -459,7 +490,7 @@ function Landing() {
             Đăng nhập để bắt đầu
           </ArgonTypography>
           <ArgonBox display="flex" justifyContent="center" gap={2}>
-            <ArgonButton component={Link} to="/authentication/sign-in" color="info">
+            <ArgonButton color="info" onClick={goLogin}>
               Đăng nhập
             </ArgonButton>
 

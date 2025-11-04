@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedChild, setSelectedChild] = useState(null);
+  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   // Khởi tạo auth state từ localStorage
   useEffect(() => {
@@ -37,7 +38,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const response = await fetch('http://localhost:5000/auth/login', {
+      const url = `${API_BASE}/auth/login`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,6 +47,12 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ username, password }),
       });
 
+      // Ensure we got JSON, not an HTML fallback
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Unexpected response from server: ${text.slice(0, 120)}...`);
+      }
       const data = await response.json();
 
       if (!response.ok) {
@@ -61,6 +69,14 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: data.user };
     } catch (error) {
       console.error('Lỗi đăng nhập:', error);
+      // Enhance network error message for clarity
+      const isNetworkErr = error && error.message && /Failed to fetch|NetworkError|TypeError/i.test(error.message);
+      if (isNetworkErr) {
+        return {
+          success: false,
+          error: `Không thể kết nối tới API (${API_BASE}). Hãy kiểm tra backend đang chạy, CORS và REACT_APP_API_URL. Gốc gọi: ${API_BASE}`
+        };
+      }
       return { success: false, error: error.message };
     }
   };
