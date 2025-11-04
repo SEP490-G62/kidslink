@@ -5,6 +5,7 @@ import ProtectedRoute from "components/ProtectedRoute";
 import ClassesPage from "layouts/school-admin/pages/Classes";
 import ChildrenPage from "layouts/school-admin/pages/Children";
 import ManagePost from "layouts/school-admin/pages/ManagePost";
+import ManageAccountPage from "layouts/school-admin/pages/ManageAccount";
 
 const schoolAdminRoutes = [
   {
@@ -36,6 +37,16 @@ const schoolAdminRoutes = [
       <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-notification-70" />
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ManagePost /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Quản lý tài khoản",
+    key: "manage-accounts",
+    route: "/school-admin/accounts",
+    icon: (
+      <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-single-02" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageAccountPage /></ProtectedRoute>,
   },
 ];
 
