@@ -13,6 +13,7 @@ const {
   getStudentsAttendanceByDate
 } = require('../controllers/teacherController');
 const { getStudentDetail } = require('../controllers/studentController');
+const { createClassChatGroup } = require('../controllers/messagingController');
 
 // Middleware xác thực cho tất cả routes
 router.use(authenticate);
@@ -32,6 +33,8 @@ router.get('/class/students/attendance/:date', authorize(['teacher']), getStuden
 
 // Xem thông tin chi tiết học sinh
 router.get('/students/:id', authorize(['teacher']), getStudentDetail);
+
+router.post('/class/chat-group', authorize(['teacher']), createClassChatGroup);
 
 module.exports = router;
 
