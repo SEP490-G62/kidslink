@@ -30,7 +30,7 @@ import ArgonTypography from "components/ArgonTypography";
 // Argon Dashboard 2 MUI example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/ParentNavBar";
-import Footer from "examples/Footer";
+// import Footer from "examples/Footer";
 
 // Services
 import parentService from "services/parentService";
@@ -227,7 +227,7 @@ function PersonalInformation() {
         <ArgonBox display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
           <CircularProgress />
         </ArgonBox>
-        <Footer />
+        {/* <Footer /> */}
       </DashboardLayout>
     );
   }
