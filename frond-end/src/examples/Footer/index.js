@@ -27,12 +27,20 @@ import ArgonTypography from "components/ArgonTypography";
 // Argon Dashboard 2 MUI base styles
 import typography from "assets/theme/base/typography";
 
-function Footer({ company, links }) {
+function Footer({
+  company = { href: "https://github.com/SEP490-G62/kidslink/tree/develop", name: "SEP490-G62" },
+  links = [
+    { href: "https://github.com/SEP490-G62/kidslink/tree/develop", name: "SEP490-G62" },
+    { href: "", name: "About Us" },
+    { href: "", name: "Blog" },
+    { href: "", name: "License" },
+  ],
+}) {
   const { href, name } = company;
   const { size } = typography;
 
   const renderLinks = () =>
-    links.map((link) => (
+    (links || []).map((link) => (
       <ArgonBox key={link.name} component="li" px={2} lineHeight={1}>
         <Link href={link.href} target="_blank">
           <ArgonTypography variant="button" fontWeight="regular" color="text">
@@ -98,15 +106,7 @@ function Footer({ company, links }) {
 }
 
 // Setting default values for the props of Footer
-Footer.defaultProps = {
-  company: { href: "https://github.com/SEP490-G62/kidslink/tree/develop", name: "SEP490-G62" },
-  links: [
-    { href: "https://github.com/SEP490-G62/kidslink/tree/develop", name: "SEP490-G62" },
-    { href: "", name: "About Us" },
-    { href: "", name: "Blog" },
-    { href: "", name: "License" },
-  ],
-};
+Footer.defaultProps = {};
 
 // Typechecking props for the Footer
 Footer.propTypes = {
