@@ -73,4 +73,8 @@ router.get('/daily-reports', getDailyReports);
 const { getClassCalendarLatest } = require('../controllers/parent/calendarController');
 router.get('/class-calendar', getClassCalendarLatest);
 
+// Routes cho weekly menu
+const { getWeeklyMenuLatest } = require('../controllers/parent/menuController');
+router.get('/menu', getWeeklyMenuLatest);
+
 module.exports = router;
