@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const messagingRouter = require('./messaging');
 
 // Import các router con
 const authRouter = require('./auth');
@@ -14,5 +15,7 @@ router.use('/users', userRouter);
 router.use('/teachers', teacherRouter);
 router.use('/parent', parentRouter);
 router.use('/health-staff', healthStaffRouter);
+
+router.use('/api/messaging', messagingRouter);
 
 module.exports = router;
