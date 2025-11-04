@@ -27,353 +27,338 @@ import ArgonTypography from "components/ArgonTypography";
 
 // Argon Dashboard 2 MUI example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+import DashboardNavbar from "examples/Navbars/ParentNavBar";
 import Footer from "examples/Footer";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "context/AuthContext";
+import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import IconButton from "@mui/material/IconButton";
+import parentService from "services/parentService";
 
 function Menu() {
-  const weeklyMenu = [
-    {
-      day: "Thứ 2",
-      date: "16/12/2024",
-      meals: {
-        breakfast: {
-          name: "Cháo thịt bằm",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "250 cal"
-        },
-        lunch: {
-          name: "Cơm, thịt kho, canh chua",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "400 cal"
-        },
-        snack: {
-          name: "Sữa chua, bánh quy",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "150 cal"
-        }
-      }
-    },
-    {
-      day: "Thứ 3",
-      date: "17/12/2024",
-      meals: {
-        breakfast: {
-          name: "Bánh mì pate",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "280 cal"
-        },
-        lunch: {
-          name: "Cơm, cá chiên, rau xào",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "420 cal"
-        },
-        snack: {
-          name: "Trái cây, sữa",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "120 cal"
-        }
-      }
-    },
-    {
-      day: "Thứ 4",
-      date: "18/12/2024",
-      meals: {
-        breakfast: {
-          name: "Phở gà",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "300 cal"
-        },
-        lunch: {
-          name: "Cơm, thịt nướng, canh khổ qua",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "450 cal"
-        },
-        snack: {
-          name: "Chè đậu đỏ",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "180 cal"
-        }
-      }
-    },
-    {
-      day: "Thứ 5",
-      date: "19/12/2024",
-      meals: {
-        breakfast: {
-          name: "Bún bò Huế",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "320 cal"
-        },
-        lunch: {
-          name: "Cơm, tôm rang, canh chua cá",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "380 cal"
-        },
-        snack: {
-          name: "Bánh flan",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "160 cal"
-        }
-      }
-    },
-    {
-      day: "Thứ 6",
-      date: "20/12/2024",
-      meals: {
-        breakfast: {
-          name: "Xôi đậu xanh",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "280 cal"
-        },
-        lunch: {
-          name: "Cơm, gà nướng, rau luộc",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "400 cal"
-        },
-        snack: {
-          name: "Kem, bánh ngọt",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          calories: "200 cal"
-        }
-      }
-    }
-  ];
+  const { selectedChild } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [menuData, setMenuData] = useState(null);
+  const [selectedWeek, setSelectedWeek] = useState(0); // 0: this week, -1 prev, +1 next
 
-  const nutritionInfo = {
-    totalCalories: "1800-2000 cal/ngày",
-    protein: "15-20%",
-    carbs: "50-60%",
-    fat: "25-30%",
-    fiber: "20-25g",
-    vitamins: "Đầy đủ A, B, C, D"
+  const getMonday = (date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - diff);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  };
+
+  const getCurrentWeekMonday = () => getMonday(new Date());
+  const getSelectedWeekMonday = () => {
+    const currentMonday = getCurrentWeekMonday();
+    const selectedMonday = new Date(currentMonday);
+    selectedMonday.setDate(currentMonday.getDate() + (selectedWeek * 7));
+    return selectedMonday;
+  };
+
+  const weekDays = useMemo(() => {
+    const monday = getSelectedWeekMonday();
+    const days = [];
+    const dayNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+    const dayShortNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      const isToday = day.toDateString() === new Date().toDateString();
+      const localISO = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+      days.push({
+        name: dayNames[i],
+        shortName: dayShortNames[i],
+        date: day,
+        dateStr: `${String(day.getDate()).padStart(2, '0')}/${String(day.getMonth() + 1).padStart(2, '0')}`,
+        isoDate: day.toISOString().split('T')[0],
+        localISO,
+        isToday,
+      });
+    }
+    return days;
+  }, [selectedWeek]);
+
+  const fetchMenu = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await parentService.getWeeklyMenu(selectedChild?._id);
+      setMenuData(data);
+    } catch (e) {
+      setError(e.message || 'Không thể tải thực đơn tuần');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMenu();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChild, selectedWeek]);
+
+  const handleWeekChange = (direction) => {
+    setSelectedWeek((prev) => prev + (direction === 'prev' ? -1 : 1));
+  };
+
+  const formatWeekRange = () => {
+    const monday = getSelectedWeekMonday();
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const monStr = `${String(monday.getDate()).padStart(2, '0')}/${String(monday.getMonth() + 1).padStart(2, '0')}`;
+    const sunStr = `${String(sunday.getDate()).padStart(2, '0')}/${String(sunday.getMonth() + 1).padStart(2, '0')}`;
+    return `${monStr} - ${sunStr}`;
+  };
+
+  const mealsOrder = ['Breakfast', 'Lunch', 'Snack'];
+
+  const mealMeta = {
+    Breakfast: { color: '#1976d2' },
+    Lunch: { color: '#2e7d32' },
+    Snack: { color: '#ed6c02' }
+  };
+
+  const renderDayMenu = (day, index) => {
+    // Only Mon-Fri
+    const dayIndex = day.date.getDay();
+    if (dayIndex === 0 || dayIndex === 6) {
+      return (
+        <ArgonBox 
+          display="flex" 
+          alignItems="center" 
+          justifyContent="center"
+          sx={{ py: 6, color: '#999' }}
+        >
+          Không có thực đơn
+        </ArgonBox>
+      );
+    }
+
+    // Map by index to avoid timezone mismatch (server days are Mon..Fri in order)
+    // Helper: local yyyy-mm-dd
+    const toLocalISO = (d) => {
+      const dt = new Date(d);
+      return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+    };
+    // Match by local date string to avoid timezone drift
+    const serverDay = menuData?.menus?.find(d => toLocalISO(d.date) === day.localISO || d.dateISO === day.isoDate) || null;
+    if (!serverDay) {
+      return (
+        <ArgonBox display="flex" alignItems="center" justifyContent="center" sx={{ py: 6, color: '#999' }}>
+          Chưa có thực đơn
+        </ArgonBox>
+      );
+    }
+
+    return (
+      <ArgonBox sx={{ p: 1.5 }}>
+        {mealsOrder.map((mealName) => {
+          const dishes = serverDay.meals?.[mealName] || [];
+          const meta = mealMeta[mealName];
+          return (
+            <Card
+              key={`${day.isoDate}-${mealName}`}
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
+                border: `1px solid ${meta.color}22`,
+                background: 'linear-gradient(180deg, #ffffff 0%, #fafafa 100%)'
+              }}
+            >
+              <CardContent sx={{ p: 2.25, '&:last-child': { pb: 2.25 } }}>
+                <ArgonBox display="flex" alignItems="center" justifyContent="space-between" mb={1.25}>
+                  <ArgonTypography variant="body2" fontWeight="bold" sx={{ color: meta.color }}>
+                    {mealName}
+                  </ArgonTypography>
+                </ArgonBox>
+
+                {dishes.length === 0 ? (
+                  <ArgonTypography variant="caption" color="text.secondary">Chưa có món</ArgonTypography>
+                ) : (
+                  <ArgonBox display="flex" flexDirection="column" gap={1}>
+                    {dishes.map((dish) => (
+                      <ArgonBox key={dish.id} display="flex" alignItems="center" justifyContent="space-between">
+                        <ArgonTypography variant="body2" fontWeight="medium" color="dark" sx={{ pr: 1 }}>
+                          {dish.name}
+                        </ArgonTypography>
+                        {/* {dish.description && (
+                          <Chip
+                            label={dish.description}
+                            size="small"
+                            sx={{ height: 20, fontSize: '0.7rem', backgroundColor: `${meta.color}0f`, color: meta.color, fontWeight: 600 }}
+                          />
+                        )} */}
+                      </ArgonBox>
+                    ))}
+                  </ArgonBox>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </ArgonBox>
+    );
   };
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
       <ArgonBox py={3}>
-        {/* Header */}
-        <ArgonBox mb={3}>
-          <ArgonTypography variant="h4" fontWeight="bold" color="dark">
-            Thực đơn tuần
-          </ArgonTypography>
-          <ArgonTypography variant="body2" color="text" fontWeight="regular">
-            Xem thực đơn dinh dưỡng hàng tuần cho con
-          </ArgonTypography>
+        <ArgonBox 
+          mb={4}
+          sx={{
+            background: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)',
+            borderRadius: 3,
+            p: 3,
+            color: '#fff',
+            boxShadow: '0 4px 20px rgba(250, 208, 196, 0.5)'
+          }}
+        >
+          <ArgonBox display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+            <ArgonBox>
+              <ArgonTypography variant="h4" fontWeight="bold" sx={{ color: '#fff', mb: 0.5 }}>
+                Thực Đơn Hàng Tuần
+              </ArgonTypography>
+              <ArgonTypography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                {menuData?.class?.name ? (
+                  <>
+                    <strong>{menuData.class.name}</strong> • {menuData.class.academicYear}
+                  </>
+                ) : (
+                  'Xem thực đơn bữa ăn của bé theo tuần'
+                )}
+              </ArgonTypography>
+            </ArgonBox>
+          </ArgonBox>
         </ArgonBox>
 
-        {/* Filter */}
-        <ArgonBox mb={3}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                type="week"
-                label="Chọn tuần"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Loại bữa ăn</InputLabel>
-                <Select label="Loại bữa ăn">
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="breakfast">Sáng</MenuItem>
-                  <MenuItem value="lunch">Trưa</MenuItem>
-                  <MenuItem value="snack">Chiều</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Button variant="contained" color="primary" fullWidth>
-                Xem thực đơn
-              </Button>
-            </Grid>
-          </Grid>
-        </ArgonBox>
+        {loading && (
+          <ArgonBox display="flex" justifyContent="center" py={5}>
+            <CircularProgress size={40} />
+          </ArgonBox>
+        )}
 
-        {/* Nutrition Summary */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <ArgonTypography variant="h6" fontWeight="bold" color="dark" mb={2}>
-              📊 Thông tin dinh dưỡng
-            </ArgonTypography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={2}>
-                <ArgonBox textAlign="center">
-                  <ArgonTypography variant="h6" fontWeight="bold" color="primary">
-                    {nutritionInfo.totalCalories}
-                  </ArgonTypography>
-                  <ArgonTypography variant="caption" color="text">
-                    Calo/ngày
-                  </ArgonTypography>
-                </ArgonBox>
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <ArgonBox textAlign="center">
-                  <ArgonTypography variant="h6" fontWeight="bold" color="success">
-                    {nutritionInfo.protein}
-                  </ArgonTypography>
-                  <ArgonTypography variant="caption" color="text">
-                    Protein
-                  </ArgonTypography>
-                </ArgonBox>
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <ArgonBox textAlign="center">
-                  <ArgonTypography variant="h6" fontWeight="bold" color="warning">
-                    {nutritionInfo.carbs}
-                  </ArgonTypography>
-                  <ArgonTypography variant="caption" color="text">
-                    Carb
-                  </ArgonTypography>
-                </ArgonBox>
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <ArgonBox textAlign="center">
-                  <ArgonTypography variant="h6" fontWeight="bold" color="error">
-                    {nutritionInfo.fat}
-                  </ArgonTypography>
-                  <ArgonTypography variant="caption" color="text">
-                    Chất béo
-                  </ArgonTypography>
-                </ArgonBox>
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <ArgonBox textAlign="center">
-                  <ArgonTypography variant="h6" fontWeight="bold" color="info">
-                    {nutritionInfo.fiber}
-                  </ArgonTypography>
-                  <ArgonTypography variant="caption" color="text">
-                    Chất xơ
-                  </ArgonTypography>
-                </ArgonBox>
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <ArgonBox textAlign="center">
-                  <ArgonTypography variant="h6" fontWeight="bold" color="secondary">
-                    {nutritionInfo.vitamins}
-                  </ArgonTypography>
-                  <ArgonTypography variant="caption" color="text">
-                    Vitamin
-                  </ArgonTypography>
-                </ArgonBox>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-        {/* Weekly Menu */}
-        <Grid container spacing={3}>
-          {weeklyMenu.map((dayMenu, index) => (
-            <Grid item xs={12} lg={6} key={index}>
-              <Card>
+        {!loading && !error && (
+          <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+            <CardContent sx={{ p: 3 }}>
+              <ArgonBox mb={3} sx={{ p: 2, borderRadius: 2, backgroundColor: '#f8f9fa', border: '1px solid #e9ecef' }}>
+                <Grid container spacing={2} alignItems="center">
+                  <Grid item xs={12} md={5}>
+                    <ArgonBox display="flex" alignItems="center" gap={1}>
+                      <IconButton onClick={() => handleWeekChange('prev')} size="small" sx={{ backgroundColor: '#fff', border: '1px solid #dee2e6', '&:hover': { backgroundColor: '#f8f9fa' } }}>
+                        ‹
+                      </IconButton>
+                      <ArgonBox sx={{ flex: 1, textAlign: 'center', px: 2, py: 1, backgroundColor: '#fff', borderRadius: 1, border: '1px solid #dee2e6' }}>
+                        <ArgonTypography variant="body2" fontWeight="bold" color="primary">
+                          Tuần: {formatWeekRange()}
+                        </ArgonTypography>
+                      </ArgonBox>
+                      <IconButton onClick={() => handleWeekChange('next')} size="small" sx={{ backgroundColor: '#fff', border: '1px solid #dee2e6', '&:hover': { backgroundColor: '#f8f9fa' } }}>
+                        ›
+                      </IconButton>
+                    </ArgonBox>
+                  </Grid>
+                </Grid>
+              </ArgonBox>
+
+              <TableContainer component={Paper} sx={{ overflowX: 'auto', borderRadius: 2, border: '1px solid #e9ecef' }}>
+                <Table sx={{ minWidth: 800, width: '100%', tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: 0, '& .MuiTableCell-root': { padding: '0 !important', border: '1px solid #e9ecef', boxSizing: 'border-box !important', verticalAlign: 'top', width: `${100 / weekDays.length}% !important` } }}>
+                  <TableBody>
+                    <TableRow>
+                      {weekDays.map(day => (
+                        <TableCell key={`header-${day.isoDate}`} align="center" sx={{ p: '16px 12px !important', backgroundColor: day.isToday ? '#e3f2fd' : '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          <ArgonBox>
+                            <ArgonTypography variant="subtitle1" fontWeight="bold" sx={{ color: day.isToday ? '#1976d2' : '#495057', mb: 0.5 }}>
+                              {day.shortName}
+                            </ArgonTypography>
+                            <ArgonTypography variant="body2" sx={{ color: '#6c757d', fontSize: '0.875rem' }}>
+                              {day.dateStr}
+                            </ArgonTypography>
+                            {day.isToday && (
+                              <Chip label="Hôm nay" size="small" sx={{ height: 18, fontSize: '0.65rem', mt: 0.5, backgroundColor: '#1976d2', color: '#fff' }} />
+                            )}
+                          </ArgonBox>
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    <TableRow>
+                      {weekDays.map((day, idx) => (
+                        <TableCell key={day.isoDate} sx={{ minHeight: 250, p: '0 !important', backgroundColor: day.isToday ? '#f8fbff' : '#fff' }}>
+                          {renderDayMenu(day, idx)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {!loading && !error && (
+          <Grid container spacing={3} mt={1}>
+            <Grid item xs={12} md={7}>
+              <Card sx={{ borderRadius: 2 }}>
                 <CardContent>
-                  <ArgonBox display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                    <ArgonTypography variant="h6" fontWeight="bold" color="dark">
-                      {dayMenu.day}
-                    </ArgonTypography>
-                    <ArgonTypography variant="body2" color="text">
-                      {dayMenu.date}
-                    </ArgonTypography>
-                  </ArgonBox>
-
-                  {/* Breakfast */}
-                  <ArgonBox mb={2}>
-                    <ArgonTypography variant="body1" fontWeight="bold" color="primary" mb={1}>
-                      🌅 Sáng
-                    </ArgonTypography>
-                    <CardMedia
-                      component="img"
-                      height="120"
-                      image={dayMenu.meals.breakfast.image}
-                      alt={dayMenu.meals.breakfast.name}
-                      sx={{ borderRadius: 1, mb: 1 }}
-                    />
-                    <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                      {dayMenu.meals.breakfast.name}
-                    </ArgonTypography>
-                    <Chip label={dayMenu.meals.breakfast.calories} size="small" color="primary" />
-                  </ArgonBox>
-
-                  {/* Lunch */}
-                  <ArgonBox mb={2}>
-                    <ArgonTypography variant="body1" fontWeight="bold" color="success" mb={1}>
-                      ☀️ Trưa
-                    </ArgonTypography>
-                    <CardMedia
-                      component="img"
-                      height="120"
-                      image={dayMenu.meals.lunch.image}
-                      alt={dayMenu.meals.lunch.name}
-                      sx={{ borderRadius: 1, mb: 1 }}
-                    />
-                    <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                      {dayMenu.meals.lunch.name}
-                    </ArgonTypography>
-                    <Chip label={dayMenu.meals.lunch.calories} size="small" color="success" />
-                  </ArgonBox>
-
-                  {/* Snack */}
-                  <ArgonBox>
-                    <ArgonTypography variant="body1" fontWeight="bold" color="warning" mb={1}>
-                      🌆 Chiều
-                    </ArgonTypography>
-                    <CardMedia
-                      component="img"
-                      height="120"
-                      image={dayMenu.meals.snack.image}
-                      alt={dayMenu.meals.snack.name}
-                      sx={{ borderRadius: 1, mb: 1 }}
-                    />
-                    <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                      {dayMenu.meals.snack.name}
-                    </ArgonTypography>
-                    <Chip label={dayMenu.meals.snack.calories} size="small" color="warning" />
-                  </ArgonBox>
+                  <ArgonTypography variant="body2" fontWeight="bold" color="dark" mb={1}>
+                    Ghi chú dinh dưỡng & dị ứng của bé
+                  </ArgonTypography>
+                  <Grid container spacing={1}>
+                    <Grid item xs={12} sm={6}>
+                      <Chip label="Bữa sáng giàu năng lượng" size="small" sx={{ mr: 1, mb: 1 }} color="primary" variant="outlined" />
+                      <Chip label="Bổ sung rau củ mỗi bữa" size="small" sx={{ mr: 1, mb: 1 }} color="success" variant="outlined" />
+                      <Chip label="Hạn chế đồ ngọt" size="small" sx={{ mr: 1, mb: 1 }} color="warning" variant="outlined" />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <ArgonTypography variant="caption" color="text">
+                        Dị ứng của bé: {selectedChild?.allergy ? selectedChild.allergy : 'Không có'}
+                      </ArgonTypography>
+                    </Grid>
+                  </Grid>
                 </CardContent>
               </Card>
             </Grid>
-          ))}
-        </Grid>
-
-        {/* Special Notes */}
-        <Card sx={{ mt: 3 }}>
-          <CardContent>
-            <ArgonTypography variant="h6" fontWeight="bold" color="dark" mb={2}>
-              📝 Lưu ý đặc biệt
-            </ArgonTypography>
-            <List>
-              <ListItem sx={{ px: 0 }}>
-                <ListItemIcon>
-                  <i className="ni ni-notification-70" style={{ color: "#ff9800" }} />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Dị ứng thực phẩm"
-                  secondary="Con có dị ứng với hải sản và đậu phộng. Vui lòng thông báo nếu có thay đổi."
-                />
-              </ListItem>
-              <ListItem sx={{ px: 0 }}>
-                <ListItemIcon>
-                  <i className="ni ni-heart-2" style={{ color: "#f44336" }} />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Sở thích ăn uống"
-                  secondary="Con thích ăn rau xanh và trái cây. Không thích ăn cay."
-                />
-              </ListItem>
-              <ListItem sx={{ px: 0 }}>
-                <ListItemIcon>
-                  <i className="ni ni-bulb-61" style={{ color: "#4caf50" }} />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Gợi ý dinh dưỡng"
-                  secondary="Nên bổ sung thêm canxi và vitamin D cho sự phát triển xương."
-                />
-              </ListItem>
-            </List>
-          </CardContent>
-        </Card>
+            <Grid item xs={12} md={5}>
+              <Card sx={{ borderRadius: 2 }}>
+                <CardContent>
+                  <ArgonTypography variant="body2" fontWeight="bold" color="dark" mb={1}>
+                    Chú thích
+                  </ArgonTypography>
+                  <Grid container spacing={1}>
+                    <Grid item xs={12}>
+                      <Chip label="Breakfast" size="small" sx={{ mr: 1, mb: 1, color: mealMeta.Breakfast.color }} variant="outlined" />
+                      <Chip label="Lunch" size="small" sx={{ mr: 1, mb: 1, color: mealMeta.Lunch.color }} variant="outlined" />
+                      <Chip label="Snack" size="small" sx={{ mr: 1, mb: 1, color: mealMeta.Snack.color }} variant="outlined" />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <ArgonTypography variant="caption" color="text">
+                        Mỗi mục hiển thị danh sách món và mô tả nhanh (chip bên phải).
+                      </ArgonTypography>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        )}
       </ArgonBox>
       <Footer />
     </DashboardLayout>
