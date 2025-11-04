@@ -1,0 +1,507 @@
+const mongoose = require('mongoose');
+const Conversation = require('../models/Conversation');
+const ConversationParticipant = require('../models/ConversationParticipant');
+const Message = require('../models/Message');
+const User = require('../models/User');
+const Class = require('../models/Class');
+const Teacher = require('../models/Teacher');
+const StudentClass = require('../models/StudentClass');
+const ParentStudent = require('../models/ParentStudent');
+const Parent = require('../models/Parent');
+
+// Tạo cuộc trò chuyện mới
+exports.createConversation = async (req, res) => {
+  try {
+    const { class_id, title } = req.body;
+    const user_id = req.user.id;
+
+    // Kiểm tra class có tồn tại không
+    const classExists = await Class.findById(class_id);
+    if (!classExists) {
+      return res.status(404).json({ error: 'Lớp học không tồn tại' });
+    }
+
+    // Tạo conversation
+    const conversation = new Conversation({
+      title: title || `${classExists.class_name} - Chat`,
+      class_id: class_id,
+      create_at: new Date(),
+      last_message_at: new Date()
+    });
+    await conversation.save();
+
+    // Thêm user hiện tại vào conversation
+    const participant = new ConversationParticipant({
+      user_id: user_id,
+      conversation_id: conversation._id
+    });
+    await participant.save();
+
+    // Populate thông tin
+    await conversation.populate('class_id', 'class_name');
+
+    res.status(201).json({
+      message: 'Tạo cuộc trò chuyện thành công',
+      conversation
+    });
+  } catch (error) {
+    console.error('Error creating conversation:', error);
+    res.status(500).json({ error: 'Lỗi khi tạo cuộc trò chuyện', details: error.message });
+  }
+};
+
+// Thêm người tham gia vào conversation
+exports.addParticipant = async (req, res) => {
+  try {
+    const { conversation_id, user_id } = req.body;
+    const current_user_id = req.user.id;
+
+    // Kiểm tra conversation có tồn tại không
+    const conversation = await Conversation.findById(conversation_id);
+    if (!conversation) {
+      return res.status(404).json({ error: 'Cuộc trò chuyện không tồn tại' });
+    }
+
+    // Kiểm tra user hiện tại có trong conversation không
+    const currentParticipant = await ConversationParticipant.findOne({
+      conversation_id: conversation_id,
+      user_id: current_user_id
+    });
+    if (!currentParticipant) {
+      return res.status(403).json({ error: 'Bạn không có quyền thêm người tham gia' });
+    }
+
+    // Kiểm tra user cần thêm có tồn tại không
+    const userExists = await User.findById(user_id);
+    if (!userExists) {
+      return res.status(404).json({ error: 'Người dùng không tồn tại' });
+    }
+
+    // Kiểm tra đã tham gia chưa
+    const existingParticipant = await ConversationParticipant.findOne({
+      conversation_id: conversation_id,
+      user_id: user_id
+    });
+    if (existingParticipant) {
+      return res.status(400).json({ error: 'Người dùng đã tham gia cuộc trò chuyện này' });
+    }
+
+    // Thêm participant
+    const participant = new ConversationParticipant({
+      user_id: user_id,
+      conversation_id: conversation_id
+    });
+    await participant.save();
+
+    res.status(201).json({
+      message: 'Thêm người tham gia thành công',
+      participant
+    });
+  } catch (error) {
+    console.error('Error adding participant:', error);
+    res.status(500).json({ error: 'Lỗi khi thêm người tham gia', details: error.message });
+  }
+};
+
+// Lấy danh sách conversations của user
+exports.getConversations = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Lấy danh sách conversation_ids mà user tham gia
+    const participants = await ConversationParticipant.find({ user_id })
+      .select('conversation_id')
+      .skip(skip)
+      .limit(limit)
+      .sort({ updatedAt: -1 });
+
+    const conversationIds = participants.map(p => p.conversation_id);
+
+    // Lấy thông tin conversations
+    const conversations = await Conversation.find({
+      _id: { $in: conversationIds }
+    })
+      .populate('class_id', 'class_name')
+      .sort({ last_message_at: -1 });
+
+    // Lấy tin nhắn cuối cùng của mỗi conversation
+    const conversationsWithLastMessage = await Promise.all(
+      conversations.map(async (conv) => {
+        const lastMessage = await Message.findOne({
+          conversation_id: conv._id
+        })
+          .populate('sender_id', 'full_name avatar_url')
+          .sort({ send_at: -1 })
+          .limit(1);
+
+        const participants_count = await ConversationParticipant.countDocuments({
+          conversation_id: conv._id
+        });
+
+        return {
+          ...conv.toObject(),
+          lastMessage: lastMessage || null,
+          participants_count
+        };
+      })
+    );
+
+    const total = await ConversationParticipant.countDocuments({ user_id });
+
+    res.json({
+      conversations: conversationsWithLastMessage,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error getting conversations:', error);
+    res.status(500).json({ error: 'Lỗi khi lấy danh sách cuộc trò chuyện', details: error.message });
+  }
+};
+
+// Lấy thông tin chi tiết conversation
+exports.getConversation = async (req, res) => {
+  try {
+    const { conversation_id } = req.params;
+    const user_id = req.user.id;
+
+    // Kiểm tra user có tham gia conversation không
+    const participant = await ConversationParticipant.findOne({
+      conversation_id,
+      user_id
+    });
+    if (!participant) {
+      return res.status(403).json({ error: 'Bạn không có quyền truy cập cuộc trò chuyện này' });
+    }
+
+    // Lấy thông tin conversation
+    const conversation = await Conversation.findById(conversation_id)
+      .populate('class_id', 'class_name');
+
+    // Lấy danh sách participants
+    const participants = await ConversationParticipant.find({ conversation_id })
+      .populate('user_id', 'full_name avatar_url role');
+
+    res.json({
+      conversation,
+      participants
+    });
+  } catch (error) {
+    console.error('Error getting conversation:', error);
+    res.status(500).json({ error: 'Lỗi khi lấy thông tin cuộc trò chuyện', details: error.message });
+  }
+};
+
+// Lấy danh sách messages trong conversation
+exports.getMessages = async (req, res) => {
+  try {
+    const { conversation_id } = req.params;
+    const user_id = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    // Kiểm tra user có tham gia conversation không
+    const participant = await ConversationParticipant.findOne({
+      conversation_id,
+      user_id
+    });
+    if (!participant) {
+      return res.status(403).json({ error: 'Bạn không có quyền truy cập cuộc trò chuyện này' });
+    }
+
+    // Lấy messages
+    const messages = await Message.find({ conversation_id })
+      .populate('sender_id', 'full_name avatar_url role')
+      .sort({ send_at: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Đảo ngược để hiển thị từ cũ đến mới
+    messages.reverse();
+
+    const total = await Message.countDocuments({ conversation_id });
+
+    res.json({
+      messages,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error getting messages:', error);
+    res.status(500).json({ error: 'Lỗi khi lấy danh sách tin nhắn', details: error.message });
+  }
+};
+
+// Gửi message (REST API - dùng khi cần fallback)
+exports.sendMessage = async (req, res) => {
+  try {
+    const { conversation_id, content } = req.body;
+    const sender_id = req.user.id;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'Nội dung tin nhắn không được để trống' });
+    }
+
+    // Kiểm tra user có tham gia conversation không
+    const participant = await ConversationParticipant.findOne({
+      conversation_id,
+      user_id: sender_id
+    });
+    if (!participant) {
+      return res.status(403).json({ error: 'Bạn không có quyền gửi tin nhắn trong cuộc trò chuyện này' });
+    }
+
+    // Tạo message
+    const message = new Message({
+      content: content.trim(),
+      conversation_id,
+      sender_id,
+      send_at: new Date(),
+      read_status: 0
+    });
+    await message.save();
+
+    // Cập nhật last_message_at của conversation
+    await Conversation.findByIdAndUpdate(conversation_id, {
+      last_message_at: new Date()
+    });
+
+    // Populate sender info
+    await message.populate('sender_id', 'full_name avatar_url role');
+
+    res.status(201).json({
+      message: 'Gửi tin nhắn thành công',
+      data: message
+    });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ error: 'Lỗi khi gửi tin nhắn', details: error.message });
+  }
+};
+
+// Đánh dấu tin nhắn đã đọc
+exports.markAsRead = async (req, res) => {
+  try {
+    const { conversation_id } = req.params;
+    const user_id = req.user.id;
+
+    // Kiểm tra user có tham gia conversation không
+    const participant = await ConversationParticipant.findOne({
+      conversation_id,
+      user_id
+    });
+    if (!participant) {
+      return res.status(403).json({ error: 'Bạn không có quyền truy cập cuộc trò chuyện này' });
+    }
+
+    // Đánh dấu tất cả messages chưa đọc của conversation là đã đọc (trừ của chính người gửi)
+    await Message.updateMany(
+      {
+        conversation_id,
+        sender_id: { $ne: user_id },
+        read_status: 0
+      },
+      {
+        read_status: 1
+      }
+    );
+
+    res.json({ message: 'Đánh dấu đã đọc thành công' });
+  } catch (error) {
+    console.error('Error marking as read:', error);
+    res.status(500).json({ error: 'Lỗi khi đánh dấu đã đọc', details: error.message });
+  }
+};
+
+// Lấy số lượng tin nhắn chưa đọc
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+
+    // Lấy tất cả conversations mà user tham gia
+    const participants = await ConversationParticipant.find({ user_id });
+    const conversationIds = participants.map(p => p.conversation_id);
+
+    // Đếm số tin nhắn chưa đọc (không phải của chính user)
+    const unreadCount = await Message.countDocuments({
+      conversation_id: { $in: conversationIds },
+      sender_id: { $ne: user_id },
+      read_status: 0
+    });
+
+    // Đếm theo từng conversation
+    const unreadByConversation = await Message.aggregate([
+      {
+        $match: {
+          conversation_id: { $in: conversationIds },
+          sender_id: { $ne: new mongoose.Types.ObjectId(user_id) },
+          read_status: 0
+        }
+      },
+      {
+        $group: {
+          _id: '$conversation_id',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    res.json({
+      total: unreadCount,
+      byConversation: unreadByConversation
+    });
+  } catch (error) {
+    console.error('Error getting unread count:', error);
+    res.status(500).json({ error: 'Lỗi khi lấy số lượng tin nhắn chưa đọc', details: error.message });
+  }
+};
+
+// Tạo nhóm chat cho lớp (chỉ dành cho giáo viên)
+exports.createClassChatGroup = async (req, res) => {
+  try {
+    const { class_id, title } = req.body;
+    const user_id = req.user.id;
+
+    // Kiểm tra user là giáo viên
+    if (req.user.role !== 'teacher') {
+      return res.status(403).json({ error: 'Chỉ giáo viên mới có quyền tạo nhóm chat cho lớp' });
+    }
+
+    // Lấy thông tin giáo viên
+    const teacher = await Teacher.findOne({ user_id });
+    if (!teacher) {
+      return res.status(404).json({ error: 'Không tìm thấy thông tin giáo viên' });
+    }
+
+    // Kiểm tra lớp học có tồn tại và giáo viên có quyền với lớp không
+    const classExists = await Class.findOne({
+      _id: class_id,
+      $or: [
+        { teacher_id: teacher._id },
+        { teacher_id2: teacher._id }
+      ]
+    }).populate('teacher_id').populate('teacher_id2');
+
+    if (!classExists) {
+      return res.status(404).json({ error: 'Lớp học không tồn tại hoặc bạn không có quyền truy cập' });
+    }
+
+    // Kiểm tra lớp đã có nhóm chat chưa
+    const existingConversation = await Conversation.findOne({ class_id });
+    if (existingConversation) {
+      // Nếu đã có, kiểm tra user đã tham gia chưa
+      const existingParticipant = await ConversationParticipant.findOne({
+        conversation_id: existingConversation._id,
+        user_id
+      });
+
+      if (!existingParticipant) {
+        // Nếu chưa tham gia, thêm vào
+        await ConversationParticipant.create({
+          user_id,
+          conversation_id: existingConversation._id
+        });
+      }
+
+      await existingConversation.populate('class_id', 'class_name');
+      return res.status(200).json({
+        message: 'Lớp học đã có nhóm chat. Bạn đã được thêm vào nhóm.',
+        conversation: existingConversation
+      });
+    }
+
+    // Tạo conversation mới
+    const conversation = new Conversation({
+      title: title || `Nhóm chat - ${classExists.class_name}`,
+      class_id: class_id,
+      create_at: new Date(),
+      last_message_at: new Date()
+    });
+    await conversation.save();
+
+    // Danh sách user_ids cần thêm vào conversation
+    const participantUserIds = new Set();
+
+    // 1. Thêm giáo viên chính
+    if (classExists.teacher_id && classExists.teacher_id.user_id) {
+      participantUserIds.add(classExists.teacher_id.user_id.toString());
+    }
+
+    // 2. Thêm giáo viên phụ (nếu có)
+    if (classExists.teacher_id2 && classExists.teacher_id2.user_id) {
+      participantUserIds.add(classExists.teacher_id2.user_id.toString());
+    }
+
+    // 3. Lấy tất cả học sinh trong lớp
+    const studentClasses = await StudentClass.find({ class_id }).populate('student_id');
+    const studentIds = studentClasses
+      .filter(sc => sc.student_id)
+      .map(sc => sc.student_id._id);
+
+    // 4. Lấy tất cả phụ huynh của các học sinh trong lớp
+    if (studentIds.length > 0) {
+      const parentStudents = await ParentStudent.find({
+        student_id: { $in: studentIds }
+      }).populate('parent_id');
+
+      // Lấy user_id của các phụ huynh
+      parentStudents.forEach(ps => {
+        if (ps.parent_id && ps.parent_id.user_id) {
+          participantUserIds.add(ps.parent_id.user_id.toString());
+        }
+      });
+    }
+
+    // Thêm tất cả participants vào conversation
+    const participantPromises = Array.from(participantUserIds).map(user_id_str => {
+      return ConversationParticipant.create({
+        user_id: user_id_str,
+        conversation_id: conversation._id
+      }).catch(err => {
+        // Bỏ qua lỗi duplicate (có thể xảy ra nếu user_id trùng lặp)
+        if (err.code !== 11000) {
+          console.error('Error creating participant:', err);
+        }
+      });
+    });
+
+    await Promise.all(participantPromises);
+
+    // Populate thông tin conversation
+    await conversation.populate('class_id', 'class_name');
+
+    // Lấy số lượng participants
+    const participantsCount = await ConversationParticipant.countDocuments({
+      conversation_id: conversation._id
+    });
+
+    // Thông báo qua socket cho tất cả participants về nhóm chat mới
+    // (Có thể implement sau nếu cần)
+
+    res.status(201).json({
+      message: 'Tạo nhóm chat cho lớp thành công',
+      conversation: {
+        ...conversation.toObject(),
+        participants_count: participantsCount
+      }
+    });
+  } catch (error) {
+    console.error('Error creating class chat group:', error);
+    res.status(500).json({
+      error: 'Lỗi khi tạo nhóm chat cho lớp',
+      details: error.message
+    });
+  }
+};
