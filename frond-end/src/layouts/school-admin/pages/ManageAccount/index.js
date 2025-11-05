@@ -228,7 +228,7 @@ function ManageAccountPage() {
         <ArgonBox mb={2} display="flex" gap={2} flexWrap="wrap" alignItems="center">
           <TextField
             size="small"
-            placeholder="Tìm kiếm (tên, username, email, sđt)"
+            placeholder="Tìm kiếm"
             value={qSearch}
             onChange={(e) => setQSearch(e.target.value)}
             sx={{
@@ -236,6 +236,13 @@ function ManageAccountPage() {
               width: "100%",
               backgroundColor: "white",
               borderRadius: 1,
+              '& .MuiInputBase-input': {
+                color: 'text.primary',
+                paddingRight: '14px',
+                overflow: 'visible',
+                textOverflow: 'clip',
+                '::placeholder': { color: 'text.secondary', opacity: 0.6, fontSize: '0.95rem' },
+              },
             }}
             InputProps={{
               startAdornment: (
