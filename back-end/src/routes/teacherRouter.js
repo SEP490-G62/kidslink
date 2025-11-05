@@ -5,6 +5,7 @@ const {
   studentValidators,
   checkIn,
   checkOut,
+  getStudentWeeklyReports,
 } = require('../controllers/dailyReportController');
 
 const {
@@ -26,6 +27,9 @@ router.put('/daily-reports/checkout', authorize(['teacher']), studentValidators,
 
 // Đánh giá học sinh - cập nhật comments cuối ngày
 router.put('/daily-reports/:id/comment', authorize(['teacher']), require('../controllers/dailyReportController').updateComment);
+
+// Lấy lịch sử daily reports của học sinh theo tuần
+router.get('/students/:student_id/daily-reports/weekly', authorize(['teacher']), getStudentWeeklyReports);
 
 
 // Routes cho thông tin lớp học của teacher
