@@ -20,7 +20,9 @@ const io = new Server(server, {
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST'],
     credentials: true
-  }
+  },
+  // Tăng giới hạn kích thước gói để nhận ảnh lớn hơn (mặc định ~1MB)
+  maxHttpBufferSize: 20 * 1024 * 1024 // 20MB
 });
 
 // Khởi tạo socket handlers

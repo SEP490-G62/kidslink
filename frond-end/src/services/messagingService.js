@@ -143,7 +143,10 @@ class MessagingService {
    */
   async createClassChatGroup(classId, title = null) {
     try {
-      const body = { class_id: classId };
+      const body = {};
+      if (classId) {
+        body.class_id = classId;
+      }
       if (title) {
         body.title = title;
       }
@@ -158,6 +161,36 @@ class MessagingService {
         success: false,
         error: error.message || 'Có lỗi xảy ra khi tạo nhóm chat cho lớp'
       };
+    }
+  }
+
+  /**
+   * Tạo trò chuyện riêng giữa parent và teacher
+   * Nếu không truyền teacherUserId, server sẽ tự tìm giáo viên chủ nhiệm mới nhất
+   */
+  async createDirectConversation(teacherUserId = null, studentId = null) {
+    try {
+      const body = {};
+      if (teacherUserId) body.teacher_user_id = teacherUserId;
+      if (studentId) body.student_id = studentId;
+      const data = await apiService.post('/api/messaging/conversations/direct', body);
+      return { success: true, data };
+    } catch (error) {
+      console.error('MessagingService.createDirectConversation Error:', error);
+      return { success: false, error: error.message || 'Có lỗi xảy ra khi tạo trò chuyện' };
+    }
+  }
+
+  /**
+   * Lấy danh sách giáo viên theo học sinh (lớp mới nhất)
+   */
+  async getTeachersByStudent(studentId) {
+    try {
+      const data = await apiService.get(`/api/messaging/teachers-by-student/${studentId}`);
+      return { success: true, data };
+    } catch (error) {
+      console.error('MessagingService.getTeachersByStudent Error:', error);
+      return { success: false, error: error.message || 'Có lỗi xảy ra khi lấy danh sách giáo viên' };
     }
   }
 }
