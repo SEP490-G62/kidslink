@@ -18,9 +18,15 @@ import {
   MenuItem,
   Stack,
   Tooltip,
+  TextField,
+  InputAdornment,
+  Select,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import SearchIcon from "@mui/icons-material/Search";
+import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import api from "services/api";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import StudentModal from "./StudentModal";
@@ -67,10 +73,22 @@ const ChildrenPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuStudent, setMenuStudent] = useState(null);
 
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterClass, setFilterClass] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [classes, setClasses] = useState([]);
+  const [classSelectOpen, setClassSelectOpen] = useState(false);
+  const [statusSelectOpen, setStatusSelectOpen] = useState(false);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const cid = params.get("classId");
     setClassId(cid);
+    
+    // Fetch classes for filter
+    fetchClasses();
+    
     // Fetch tất cả học sinh nếu không có classId, hoặc fetch theo classId
     if (cid) {
       fetchStudents(cid);
@@ -78,6 +96,16 @@ const ChildrenPage = () => {
       fetchAllStudents();
     }
   }, []);
+
+  const fetchClasses = async () => {
+    try {
+      const res = await api.get('/classes', true);
+      const classList = Array.isArray(res) ? res : (res.data || []);
+      setClasses(classList);
+    } catch (e) {
+      console.error('Error fetching classes:', e);
+    }
+  };
 
   const fetchAllStudents = async () => {
     try {
@@ -190,6 +218,19 @@ const ChildrenPage = () => {
     }
   };
 
+  // Filter students based on search query, class, and status
+  const filteredStudents = students.filter((student) => {
+    const matchesSearch = searchQuery === "" || 
+      (student.full_name && student.full_name.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const studentClass = student.class_name || student.class?.class_name || student.class_id?.class_name || "";
+    const matchesClass = filterClass === "" || studentClass === filterClass;
+    
+    const matchesStatus = filterStatus === "" || student.status === Number(filterStatus);
+    
+    return matchesSearch && matchesClass && matchesStatus;
+  });
+
   return (
     <DashboardLayout>
       <ArgonBox py={3} position="relative" zIndex={3}>
@@ -206,6 +247,59 @@ const ChildrenPage = () => {
             Thêm học sinh
           </ArgonButton>
         </Box>
+
+        {/* Filter Section */}
+        <ArgonBox display="flex" gap={2} mb={2} flexWrap="wrap" alignItems="center">
+          <TextField
+            size="small"
+            placeholder="Tìm kiếm tên học sinh..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ width: 300, bgcolor: 'white', borderRadius: 1 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Select
+            size="small"
+            value={filterClass}
+            onChange={(e) => setFilterClass(e.target.value)}
+            displayEmpty
+            onOpen={() => setClassSelectOpen(true)}
+            onClose={() => setClassSelectOpen(false)}
+            IconComponent={classSelectOpen ? KeyboardArrowUp : KeyboardArrowDown}
+            sx={{ width: 200, bgcolor: 'white', borderRadius: 1 }}
+          >
+            <MenuItem value="">Tất cả lớp</MenuItem>
+            {classes.map((cls) => (
+              <MenuItem key={cls._id} value={cls.class_name}>
+                {cls.class_name}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select
+            size="small"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            displayEmpty
+            onOpen={() => setStatusSelectOpen(true)}
+            onClose={() => setStatusSelectOpen(false)}
+            IconComponent={statusSelectOpen ? KeyboardArrowUp : KeyboardArrowDown}
+            sx={{ width: 180, bgcolor: 'white', borderRadius: 1 }}
+          >
+            <MenuItem value="">Tất cả trạng thái</MenuItem>
+            <MenuItem value="1">Hoạt động</MenuItem>
+            <MenuItem value="0">Không hoạt động</MenuItem>
+          </Select>
+          <ArgonTypography variant="caption" color="white" ml={2}>
+            Tìm thấy: {filteredStudents.length} học sinh
+          </ArgonTypography>
+        </ArgonBox>
+
         {loading ? (
           <ArgonBox p={3} bgcolor="white" borderRadius={2}>
             <ArgonTypography variant="body2">Đang tải…</ArgonTypography>
@@ -253,15 +347,15 @@ const ChildrenPage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {students.map((s) => (
+                {filteredStudents.map((s) => (
                   <TableRow key={s._id || s.id} hover>
                     <TableCell>
                       <Box display="flex" alignItems="center">
                         <Avatar
-                          src={s?.avatar || ""}
-                          sx={{ width: 32, height: 32, mr: 2 }}
+                          src={s?.avatar_url || s?.avatar || ""}
+                          sx={{ width: 40, height: 40, mr: 2 }}
                         >
-                          {s?.full_name ? s.full_name.charAt(0) : "?"}
+                          {s?.full_name ? s.full_name.charAt(0).toUpperCase() : "?"}
                         </Avatar>
                         <ArgonTypography variant="body2" fontWeight="medium">
                           {s.full_name || "-"}
@@ -328,11 +422,11 @@ const ChildrenPage = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {students.length === 0 && (
+                {filteredStudents.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} align="center">
                       <ArgonTypography variant="body2" color="text">
-                        Không có dữ liệu
+                        {searchQuery || filterClass || filterStatus ? "Không tìm thấy học sinh phù hợp" : "Không có dữ liệu"}
                       </ArgonTypography>
                     </TableCell>
                   </TableRow>

@@ -56,9 +56,23 @@ async function createClass(req, res) {
     const payload = req.body || {};
     if (!payload.class_name) return res.status(400).json({ success: false, message: 'class_name là bắt buộc' });
 
+    // Get school_id - since system has only one school, get the first one
+    let schoolId = payload.school_id;
+    if (!schoolId) {
+      const School = require('../models/School');
+      const school = await School.findOne();
+      if (!school) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Không tìm thấy trường học trong hệ thống. Vui lòng tạo trường trước.' 
+        });
+      }
+      schoolId = school._id;
+    }
+
     const doc = await ClassModel.create({
       class_name: payload.class_name,
-      school_id: payload.school_id || null,
+      school_id: schoolId,
       class_age_id: payload.class_age_id || null,
       teacher_id: payload.teacher_id || null,
       teacher_id2: payload.teacher_id2 || null,
@@ -74,7 +88,7 @@ async function createClass(req, res) {
     res.status(201).json({ success: true, message: 'Tạo lớp thành công', data: created });
   } catch (err) {
     console.error('classController.createClass Error:', err);
-    res.status(500).json({ success: false, message: 'Lỗi server', error: err.message });
+    res.status(500).json({ success: false, message: 'Lỗi tạo lớp: ' + err.message, error: err.message });
   }
 }
 

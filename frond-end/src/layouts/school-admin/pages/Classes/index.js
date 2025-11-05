@@ -10,10 +10,16 @@ import {
   IconButton,
   TextField,
   Chip,
+  Select,
+  MenuItem,
+  InputAdornment,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import SearchIcon from "@mui/icons-material/Search";
+import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import ArgonButton from "components/ArgonButton";
@@ -26,6 +32,10 @@ const ClassesPage = () => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [filterYear, setFilterYear] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [yearSelectOpen, setYearSelectOpen] = useState(false);
+  const [statusSelectOpen, setStatusSelectOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
   const navigate = useNavigate();
@@ -49,18 +59,29 @@ const ClassesPage = () => {
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    if (!s) return classes;
     return classes.filter((c) => {
       const n = c.class_name || "";
       const t1 = c?.teacher_id?.user_id?.full_name || "";
       const t2 = c?.teacher_id2?.user_id?.full_name || "";
-      return (
+      
+      const matchesSearch = !s || (
         n.toLowerCase().includes(s) ||
         t1.toLowerCase().includes(s) ||
         t2.toLowerCase().includes(s)
       );
+      
+      const matchesYear = filterYear === "" || c.academic_year === filterYear;
+      const matchesStatus = filterStatus === "" || c.status === Number(filterStatus);
+      
+      return matchesSearch && matchesYear && matchesStatus;
     });
-  }, [classes, search]);
+  }, [classes, search, filterYear, filterStatus]);
+
+  // Get unique academic years for filter
+  const academicYears = useMemo(() => {
+    const years = [...new Set(classes.map(c => c.academic_year).filter(Boolean))];
+    return years.sort().reverse();
+  }, [classes]);
 
   const goChildren = (id) => {
     navigate(`/school-admin/children?classId=${id}`);
@@ -118,19 +139,59 @@ const ClassesPage = () => {
           </ArgonButton>
         </ArgonBox>
 
-        <ArgonBox mb={2}>
+        <ArgonBox mb={2} display="flex" gap={2} flexWrap="wrap" alignItems="center">
           <TextField
             size="small"
             placeholder="Tìm kiếm theo tên lớp hoặc giáo viên..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             sx={{
-              maxWidth: 480,
-              width: "100%",
+              width: 360,
               backgroundColor: "white",
               borderRadius: 1,
             }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
           />
+          <Select
+            size="small"
+            value={filterYear}
+            onChange={(e) => setFilterYear(e.target.value)}
+            displayEmpty
+            onOpen={() => setYearSelectOpen(true)}
+            onClose={() => setYearSelectOpen(false)}
+            IconComponent={yearSelectOpen ? KeyboardArrowUp : KeyboardArrowDown}
+            sx={{ width: 200, bgcolor: 'white', borderRadius: 1 }}
+          >
+            <MenuItem value="">Tất cả năm học</MenuItem>
+            {academicYears.map((year) => (
+              <MenuItem key={year} value={year}>
+                {year}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select
+            size="small"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            displayEmpty
+            onOpen={() => setStatusSelectOpen(true)}
+            onClose={() => setStatusSelectOpen(false)}
+            IconComponent={statusSelectOpen ? KeyboardArrowUp : KeyboardArrowDown}
+            sx={{ width: 180, bgcolor: 'white', borderRadius: 1 }}
+          >
+            <MenuItem value="">Tất cả trạng thái</MenuItem>
+            <MenuItem value="1">Hoạt động</MenuItem>
+            <MenuItem value="0">Không hoạt động</MenuItem>
+          </Select>
+          <ArgonTypography variant="caption" color="white" ml={1}>
+            Tìm thấy: {filtered.length} lớp
+          </ArgonTypography>
         </ArgonBox>
 
         {loading ? (
