@@ -3,11 +3,22 @@
 import ArgonBox from "components/ArgonBox";
 import ProtectedRoute from "components/ProtectedRoute";
 import ClassesPage from "layouts/school-admin/pages/Classes";
+import SchoolDashboard from "layouts/school-admin/pages/Dashboard";
 import ChildrenPage from "layouts/school-admin/pages/Children";
 import ManagePost from "layouts/school-admin/pages/ManagePost";
 import ManageAccountPage from "layouts/school-admin/pages/ManageAccount";
 
 const schoolAdminRoutes = [
+  {
+    type: "route",
+    name: "Tổng quan",
+    key: "school-dashboard",
+    route: "/school-admin/dashboard",
+    icon: (
+      <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-chart-bar-32" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><SchoolDashboard /></ProtectedRoute>,
+  },
   {
     type: "route",
     name: "Quản lý lớp học",

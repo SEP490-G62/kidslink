@@ -25,6 +25,19 @@ const UserFormModal = ({ open, onClose, onSuccess, user }) => {
     status: 1,
   });
   const [saving, setSaving] = useState(false);
+  const fieldSx = {
+    '& .MuiInputBase-root': { height: 40, borderRadius: 1 },
+    '& .MuiOutlinedInput-root': { height: 40, borderRadius: 1 },
+    '& .MuiOutlinedInput-input': { padding: '9px 12px', lineHeight: 1.5 },
+    '& .MuiInputBase-input': { padding: '9px 12px' },
+    '& .MuiSelect-select': {
+      padding: '9px 12px !important',
+      minHeight: 'unset !important',
+      display: 'flex',
+      alignItems: 'center',
+    },
+  };
+  const labelSx = { position: 'relative', transform: 'none', mb: 0.5, fontWeight: 600 };
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -129,34 +142,50 @@ const UserFormModal = ({ open, onClose, onSuccess, user }) => {
           <Grid item xs={12} md={9}>
             <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
-                <InputLabel shrink sx={{ position: 'relative', transform: 'none', mb: 0.5 }}>Họ tên</InputLabel>
-                <TextField size="small" placeholder="Nguyễn Văn A" inputProps={{ maxLength: 30 }} fullWidth value={form.full_name} onChange={handleChange("full_name")} error={!!errors.full_name} helperText={errors.full_name} />
+                <InputLabel shrink sx={labelSx}>Họ tên</InputLabel>
+                <TextField size="small" placeholder="Nguyễn Văn A" inputProps={{ maxLength: 30 }} fullWidth value={form.full_name} onChange={handleChange("full_name")} error={!!errors.full_name} helperText={errors.full_name} sx={fieldSx} />
               </Grid>
               <Grid item xs={12} md={6}>
-                <InputLabel shrink sx={{ position: 'relative', transform: 'none', mb: 0.5 }}>Username</InputLabel>
-                <TextField size="small" placeholder="username" fullWidth value={form.username} onChange={handleChange("username")} disabled={isEdit} />
+                <InputLabel shrink sx={labelSx}>Username</InputLabel>
+                <TextField size="small" placeholder="username" fullWidth value={form.username} onChange={handleChange("username")} disabled={isEdit} sx={fieldSx} />
               </Grid>
               {!isEdit && (
                 <Grid item xs={12} md={6}>
-                  <InputLabel shrink sx={{ position: 'relative', transform: 'none', mb: 0.5 }}>Mật khẩu</InputLabel>
-                  <TextField size="small" type="password" placeholder="Bắt buộc" fullWidth value={form.password} onChange={handleChange("password")} error={!!errors.password} helperText={errors.password} />
+                  <InputLabel shrink sx={labelSx}>Mật khẩu</InputLabel>
+                  <TextField size="small" type="password" placeholder="Bắt buộc" fullWidth value={form.password} onChange={handleChange("password")} error={!!errors.password} helperText={errors.password} sx={fieldSx} />
                 </Grid>
               )}
               {isEdit && (
                 <Grid item xs={12} md={6}>
-                  <InputLabel shrink sx={{ position: 'relative', transform: 'none', mb: 0.5 }}>Mật khẩu mới</InputLabel>
-                  <TextField size="small" placeholder="Tuỳ chọn" type="password" fullWidth value={form.password} onChange={handleChange("password")} error={!!errors.password} helperText={errors.password} />
+                  <InputLabel shrink sx={labelSx}>Mật khẩu mới</InputLabel>
+                  <TextField size="small" placeholder="Tuỳ chọn" type="password" fullWidth value={form.password} onChange={handleChange("password")} error={!!errors.password} helperText={errors.password} sx={fieldSx} />
                 </Grid>
               )}
               <Grid item xs={12} md={6}>
-                <InputLabel shrink sx={{ position: 'relative', transform: 'none', mb: 0.5 }}>Vai trò</InputLabel>
+                <InputLabel shrink sx={labelSx}>Vai trò</InputLabel>
                 <TextField
                   size="small"
                   select
                   fullWidth
                   value={form.role}
                   onChange={handleChange("role")}
-                  SelectProps={{ displayEmpty: true }}
+                  SelectProps={{
+                    displayEmpty: true,
+                    MenuProps: {
+                      PaperProps: {
+                        style: { maxHeight: 200 },
+                      },
+                    },
+                  }}
+                  sx={{
+                    ...fieldSx,
+                    "& .MuiSelect-select": {
+                      height: "1.4375em", // chiều cao text
+                      padding: "6px 12px", // cho đồng đều với input thường
+                      display: "flex",
+                      alignItems: "center",
+                    },
+                  }}
                 >
                   {ROLES.map((r) => (
                     <MenuItem key={r} value={r}>{r}</MenuItem>
@@ -164,27 +193,39 @@ const UserFormModal = ({ open, onClose, onSuccess, user }) => {
                 </TextField>
               </Grid>
               <Grid item xs={12} md={6}>
-                <InputLabel shrink sx={{ position: 'relative', transform: 'none', mb: 0.5 }}>Email</InputLabel>
-                <TextField size="small" placeholder="example@domain.com" fullWidth value={form.email} onChange={handleChange("email")} error={!!errors.email} helperText={errors.email} />
+                <InputLabel shrink sx={labelSx}>Email</InputLabel>
+                <TextField size="small" placeholder="example@domain.com" fullWidth value={form.email} onChange={handleChange("email")} error={!!errors.email} helperText={errors.email} sx={fieldSx} />
               </Grid>
               <Grid item xs={12} md={6}>
-                <InputLabel shrink sx={{ position: 'relative', transform: 'none', mb: 0.5 }}>Số điện thoại</InputLabel>
-                <TextField size="small" placeholder="0912345678" fullWidth value={form.phone_number} onChange={handleChange("phone_number")} error={!!errors.phone_number} helperText={errors.phone_number} />
+                <InputLabel shrink sx={labelSx}>Số điện thoại</InputLabel>
+                <TextField size="small" placeholder="0912345678" fullWidth value={form.phone_number} onChange={handleChange("phone_number")} error={!!errors.phone_number} helperText={errors.phone_number} sx={fieldSx} />
               </Grid>
-              <Grid item xs={12} md={6}>
-                <InputLabel shrink sx={{ position: 'relative', transform: 'none', mb: 0.5 }}>Trạng thái</InputLabel>
-                <TextField
-                  size="small"
-                  select
-                  fullWidth
-                  value={form.status}
-                  onChange={handleChange("status")}
-                  SelectProps={{ displayEmpty: true }}
-                >
-                  <MenuItem value={1}>Hoạt động</MenuItem>
-                  <MenuItem value={0}>Vô hiệu</MenuItem>
-                </TextField>
-              </Grid>
+              {!isEdit && (
+                <Grid item xs={12} md={6}>
+                  <InputLabel shrink sx={labelSx}>Trạng thái</InputLabel>
+                  <TextField
+                    size="small"
+                    select
+                    fullWidth
+                    value={form.status}
+                    onChange={handleChange("status")}
+                    SelectProps={{ displayEmpty: true }}
+                    sx={{
+                      ...fieldSx,
+                      "& .MuiSelect-select": {
+                        height: "1.4375em",
+                        padding: "7px 14px",
+                        display: "flex",
+                        alignItems: "center",
+                      },
+                    }}
+                  >
+                    <MenuItem value={1}>Hoạt động</MenuItem>
+                    <MenuItem value={0}>Vô hiệu</MenuItem>
+                  </TextField>
+
+                </Grid>
+              )}
             </Grid>
           </Grid>
         </Grid>
