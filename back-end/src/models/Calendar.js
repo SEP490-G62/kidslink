@@ -14,6 +14,21 @@ const calendarSchema = new mongoose.Schema({
   date: {
     type: Date,
     required: true
+  },
+  slot_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Slot',
+    required: true
+  },
+  activity_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Activity',
+    required: true
+  },
+  teacher_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Teacher',
+    required: true
   }
 }, {
   timestamps: true

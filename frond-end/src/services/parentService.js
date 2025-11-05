@@ -404,6 +404,20 @@ class ParentService {
       return { success: false, error: error.message || 'Lỗi lấy lịch lớp' };
     }
   }
+
+  /**
+   * Lấy danh sách khung giờ (slots) chuẩn để render cột thời gian
+   */
+  async getClassTimeSlots() {
+    try {
+      const response = await apiService.get('/parent/class-calendar/slots');
+      // Chuẩn hóa trả về mảng
+      return Array.isArray(response?.data) ? response.data : (response?.data?.data || []);
+    } catch (error) {
+      console.error('ParentService.getClassTimeSlots Error:', error);
+      return [];
+    }
+  }
 }
 
 const parentService = new ParentService();

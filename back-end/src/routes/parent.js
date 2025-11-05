@@ -70,7 +70,8 @@ router.delete('/pickups/:pickupId/:studentId', deletePickup);
 router.get('/daily-reports', getDailyReports);
 
 // Routes cho class calendar (năm học mới nhất)
-const { getClassCalendarLatest } = require('../controllers/parent/calendarController');
+const { getClassCalendarLatest, getClassTimeSlots } = require('../controllers/parent/calendarController');
 router.get('/class-calendar', getClassCalendarLatest);
+router.get('/class-calendar/slots', getClassTimeSlots);
 
 module.exports = router;
