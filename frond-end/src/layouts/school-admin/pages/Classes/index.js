@@ -10,7 +10,10 @@ import {
   IconButton,
   TextField,
   Chip,
+  Box,
+  Switch,
 } from "@mui/material";
+import { styled } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -29,6 +32,41 @@ const ClassesPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
   const navigate = useNavigate();
+
+  const StatusSwitch = React.useMemo(
+    () =>
+      styled(Switch)(({ theme }) => ({
+        width: 44,
+        height: 24,
+        padding: 0,
+        display: "inline-flex",
+        "& .MuiSwitch-switchBase": {
+          padding: 2,
+          top: 0,
+          left: 0,
+          transform: "translateX(2px)",
+          "&.Mui-checked": {
+            transform: "translateX(20px)",
+            "& + .MuiSwitch-track": {
+              backgroundColor: "#22c55e !important",
+              opacity: 1,
+            },
+          },
+        },
+        "& .MuiSwitch-thumb": {
+          width: 20,
+          height: 20,
+          boxShadow: "none",
+          backgroundColor: "#fff",
+        },
+        "& .MuiSwitch-track": {
+          borderRadius: 12,
+          backgroundColor: "#e5e7eb !important",
+          opacity: 1,
+        },
+      })),
+    []
+  );
 
   const fetchClasses = async () => {
     try {
@@ -96,6 +134,17 @@ const ClassesPage = () => {
     }
   };
 
+  const handleToggleStatus = async (classRow) => {
+    const newStatus = classRow.status === 1 ? 0 : 1;
+    setClasses((prev) => prev.map((c) => (c._id === classRow._id ? { ...c, status: newStatus } : c)));
+    try {
+      await api.put(`/classes/${classRow._id}`, { status: newStatus }, true);
+    } catch (e) {
+      console.error("Lỗi khi cập nhật trạng thái lớp:", e);
+      setClasses((prev) => prev.map((c) => (c._id === classRow._id ? { ...c, status: classRow.status } : c)));
+    }
+  };
+
   return (
     <DashboardLayout>
       <ArgonBox py={3} position="relative" zIndex={3}>
@@ -160,8 +209,8 @@ const ClassesPage = () => {
                 <col style={{ width: "12%" }} />
                 <col style={{ width: "12%" }} />
                 <col style={{ width: "20%" }} />
-                <col style={{ width: "20%" }} />
-                <col style={{ width: "12%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "14%" }} />
                 <col style={{ width: "12%" }} />
               </colgroup>
               <TableHead>
@@ -219,13 +268,16 @@ const ClassesPage = () => {
                         </ArgonTypography>
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          label={
-                            c.status === 1 ? "Hoạt động" : "Không hoạt động"
-                          }
-                          color={c.status === 1 ? "success" : "default"}
-                          size="small"
-                        />
+                        <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                          <ArgonTypography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
+                            {c.status === 1 ? "Hoạt động" : "Không hoạt động"}
+                          </ArgonTypography>
+                          <StatusSwitch
+                            size="small"
+                            checked={c.status === 1}
+                            onChange={() => handleToggleStatus(c)}
+                          />
+                        </Box>
                       </TableCell>
                       <TableCell>
                         <IconButton
