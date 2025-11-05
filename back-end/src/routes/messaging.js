@@ -30,5 +30,11 @@ router.put('/conversations/:conversation_id/read', messagingController.markAsRea
 // Lấy số lượng tin nhắn chưa đọc
 router.get('/unread-count', messagingController.getUnreadCount);
 
+// Tạo trò chuyện riêng parent-teacher
+router.post('/conversations/direct', messagingController.createDirectConversationWithTeacher);
+
+// Lấy giáo viên theo học sinh (lớp mới nhất)
+router.get('/teachers-by-student/:student_id', messagingController.getTeachersByStudent);
+
 module.exports = router;
 

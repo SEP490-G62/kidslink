@@ -11,7 +11,7 @@ Coded by KidsLink Team
  =========================================================
 */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Grid,
@@ -35,10 +35,17 @@ import {
   Stack
 } from '@mui/material';
 import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
+} from '@mui/material';
+import {
   Send as SendIcon,
   Search as SearchIcon,
   Chat as ChatIcon,
-  Group as GroupIcon
+  Group as GroupIcon,
+  Image as ImageIcon
 } from '@mui/icons-material';
 import { format, formatDistanceToNow } from 'date-fns';
 import io from 'socket.io-client';
@@ -70,9 +77,15 @@ const TeacherChat = () => {
   const [socket, setSocket] = useState(null);
   const [typingUsers, setTypingUsers] = useState({});
   const [isTyping, setIsTyping] = useState(false);
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [classIdInput, setClassIdInput] = useState('');
+  const [titleInput, setTitleInput] = useState('');
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const hasClassGroup = useMemo(() => (conversations || []).some(c => !!c.class_id), [conversations]);
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const fileInputRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const selectedConversationRef = useRef(null);
   const currentUserIdRef = useRef(null);
@@ -184,6 +197,10 @@ const TeacherChat = () => {
     newSocket.on('error', (error) => {
       console.error('❌ Socket error:', error);
       setError(error.message || 'Lỗi kết nối socket');
+      // Nếu lỗi khi gửi tin nhắn kèm tempId, xóa pending theo tempId
+      if (error && error.tempId) {
+        setMessages(prev => prev.filter(m => !(m.isPending && m.tempId === error.tempId)));
+      }
     });
 
     // Lắng nghe xác nhận tin nhắn đã được gửi thành công
@@ -196,6 +213,7 @@ const TeacherChat = () => {
     newSocket.on('new_message', (data) => {
       console.log('📨 Nhận tin nhắn mới:', data);
       const message = data.message || data;
+      const incomingTempId = data.tempId;
       
       // Lấy conversation_id từ message (có thể là object hoặc string)
       let conversationId = message.conversation_id;
@@ -222,15 +240,25 @@ const TeacherChat = () => {
           if (isMyMessage) {
             // Tìm tin nhắn pending gần nhất (tin nhắn cuối cùng có isPending)
             let pendingIndex = -1;
-            for (let i = prev.length - 1; i >= 0; i--) {
-              if (prev[i].isPending) {
-                // Kiểm tra nội dung có khớp không (so sánh sau khi trim)
-                const pendingContent = (prev[i].content || '').trim();
-                const newContent = (message.content || '').trim();
-                
-                if (pendingContent === newContent || prev[i].tempId) {
+            // Ưu tiên khớp theo tempId
+            if (incomingTempId) {
+              for (let i = prev.length - 1; i >= 0; i--) {
+                if (prev[i].isPending && prev[i].tempId === incomingTempId) {
                   pendingIndex = i;
                   break;
+                }
+              }
+            }
+            // Fallback theo nội dung text
+            if (pendingIndex === -1) {
+              for (let i = prev.length - 1; i >= 0; i--) {
+                if (prev[i].isPending) {
+                  const pendingContent = (prev[i].content || '').trim();
+                  const newContent = (message.content || '').trim();
+                  if (pendingContent === newContent) {
+                    pendingIndex = i;
+                    break;
+                  }
                 }
               }
             }
@@ -441,6 +469,78 @@ const TeacherChat = () => {
     sendMessageNow(messageContent);
   };
 
+  const handleOpenFilePicker = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !selectedConversation || !socket) return;
+
+    // Giới hạn 20MB
+    if (file.size > 20 * 1024 * 1024) {
+      setError('Ảnh vượt quá 20MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result;
+
+      // Optimistic: thêm tin nhắn ảnh tạm
+      const tempId = `temp_${Date.now()}_${Math.random()}`;
+      const tempMessage = {
+        _id: tempId,
+        content: '',
+        image_url: null,
+        image_base64: base64,
+        sender_id: {
+          _id: currentUserId,
+          full_name: user?.full_name || 'Bạn',
+          avatar_url: user?.avatar_url || '',
+          role: user?.role || 'teacher'
+        },
+        conversation_id: selectedConversation._id,
+        send_at: new Date(),
+        read_status: 0,
+        isPending: true,
+        tempId
+      };
+
+      setMessages(prev => [...prev, tempMessage]);
+      scrollToBottom(true);
+
+      try {
+        if (!socket.connected) {
+          setError('Đang kết nối đến server...');
+          socket.once('connect', () => {
+            socket.emit('send_message', {
+              conversation_id: selectedConversation._id,
+              image_base64: base64,
+              tempId
+            });
+          });
+          return;
+        }
+
+        socket.emit('send_message', {
+          conversation_id: selectedConversation._id,
+          image_base64: base64,
+          tempId
+        });
+
+      } catch (err) {
+        console.error('Error sending image:', err);
+        setError('Không thể gửi ảnh');
+        setMessages(prev => prev.filter(m => m._id !== tempId));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const sendMessageNow = (messageContent) => {
     // Optimistic update - Hiển thị tin nhắn ngay lập tức
     const tempId = `temp_${Date.now()}_${Math.random()}`;
@@ -483,7 +583,8 @@ const TeacherChat = () => {
       // Gửi qua socket
       socket.emit('send_message', {
         conversation_id: selectedConversation._id,
-        content: messageContent
+        content: messageContent,
+        tempId
       });
 
       console.log('📤 Đã gửi tin nhắn qua socket:', messageContent);
@@ -635,35 +736,63 @@ const TeacherChat = () => {
               borderColor: 'divider'
             }}>
               <CardContent sx={{ pb: 1, pt: 1.5, bgcolor: 'grey.50' }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Tìm kiếm cuộc trò chuyện..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" />
-                      </InputAdornment>
-                    )
-                  }}
-                  sx={{ 
-                    mb: 1,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 1.5,
-                      bgcolor: 'white',
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        bgcolor: 'grey.50'
-                      },
-                      '&.Mui-focused': {
+                <Box display="flex" gap={1}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Tìm kiếm..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon fontSize="small" />
+                        </InputAdornment>
+                      )
+                    }}
+                    sx={{ 
+                      mb: 1,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 1.5,
                         bgcolor: 'white',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
+                        fontSize: '0.875rem',
+                        '&:hover': {
+                          bgcolor: 'grey.50'
+                        },
+                        '&.Mui-focused': {
+                          bgcolor: 'white',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
+                        }
                       }
-                    }
-                  }}
-                />
+                    }}
+                  />
+                  {!hasClassGroup && (
+                    <ArgonButton
+                      size="small"
+                      color="primary"
+                      sx={{ height: 36, mt: 0.25, whiteSpace: 'nowrap' }}
+                      onClick={async () => {
+                        try {
+                          setCreatingGroup(true);
+                          const res = await messagingService.createClassChatGroup(null, null);
+                          if (res.success) {
+                            const conv = res.data.conversation;
+                            setConversations(prev => [conv, ...prev.filter(c => (c._id?.toString() || c._id) !== (conv._id?.toString() || conv._id))]);
+                            setSelectedConversation(conv);
+                          } else {
+                            setError(res.error || 'Không thể tạo nhóm');
+                          }
+                        } catch (e) {
+                          setError(e.message || 'Không thể tạo nhóm');
+                        } finally {
+                          setCreatingGroup(false);
+                        }
+                      }}
+                    >
+                      {creatingGroup ? 'Đang tạo...' : 'Tạo nhóm lớp'}
+                    </ArgonButton>
+                  )}
+                </Box>
               </CardContent>
 
               <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -710,15 +839,17 @@ const TeacherChat = () => {
                             <ListItemAvatar>
                               <Avatar 
                                 sx={{ 
-                                  bgcolor: isSelected ? 'primary.main' : 'primary.lighter',
-                                  color: isSelected ? 'white' : 'primary.main',
+                                  bgcolor: 'grey.100',
+                                  color: 'text.primary',
                                   width: 40,
                                   height: 40,
-                                  boxShadow: isSelected ? 2 : 0,
+                                  boxShadow: 0,
+                                  border: '1px solid',
+                                  borderColor: 'divider',
                                   transition: 'all 0.2s'
                                 }}
                               >
-                                {conv.class_id ? <GroupIcon fontSize="small" /> : <ChatIcon fontSize="small" />}
+                                {conv.class_id ? '👥' : '💬'}
                               </Avatar>
                             </ListItemAvatar>
                             <ListItemText
@@ -743,6 +874,12 @@ const TeacherChat = () => {
                                   >
                                     {getConversationTitle(conv)}
                                   </Typography>
+                                  <Chip 
+                                    label={conv.class_id ? 'Nhóm' : 'Trò chuyện'} 
+                                    size="small"
+                                    color={conv.class_id ? 'primary' : 'default'}
+                                    sx={{ height: 18, fontSize: '0.65rem' }}
+                                  />
                                   {lastMessage && (
                                     <Typography 
                                       variant="caption" 
@@ -760,7 +897,7 @@ const TeacherChat = () => {
                                 </Box>
                               }
                               secondary={
-                                <Box sx={{ mt: 0.25, pr: 0.5 }}>
+                                <Box sx={{ mt: 0.25, pr: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                                   {lastMessage ? (
                                     <Typography
                                       variant="caption"
@@ -781,6 +918,14 @@ const TeacherChat = () => {
                                       Chưa có tin nhắn
                                     </Typography>
                                   )}
+                                  {conv.participants_count ? (
+                                    <Chip 
+                                      label={`${conv.participants_count} TV`} 
+                                      size="small" 
+                                      variant="outlined"
+                                      sx={{ height: 18, fontSize: '0.65rem' }}
+                                    />
+                                  ) : null}
                                 </Box>
                               }
                               sx={{ 
@@ -843,22 +988,33 @@ const TeacherChat = () => {
                       boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                     }}
                   >
-                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Box display="flex" alignItems="center" justifyContent="space-between">
                       <Box display="flex" alignItems="center" gap={1.5}>
                         <Avatar 
                           sx={{ 
-                            bgcolor: 'primary.main',
+                            bgcolor: 'grey.100',
+                            color: 'text.primary',
                             width: 36,
                             height: 36,
-                            boxShadow: 2
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            boxShadow: 0
                           }}
                         >
-                          {selectedConversation.class_id ? <GroupIcon fontSize="small" /> : <ChatIcon fontSize="small" />}
+                          {selectedConversation.class_id ? '👥' : '💬'}
                         </Avatar>
                         <Box>
-                          <Typography variant="subtitle1" fontWeight="bold" sx={{ fontSize: '0.9375rem', lineHeight: 1.2 }}>
-                            {getConversationTitle(selectedConversation)}
-                          </Typography>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Typography variant="subtitle1" fontWeight="bold" sx={{ fontSize: '0.9375rem', lineHeight: 1.2 }}>
+                              {getConversationTitle(selectedConversation)}
+                            </Typography>
+                            <Chip 
+                              size="small" 
+                              label={selectedConversation.class_id ? 'Nhóm' : 'Trò chuyện'} 
+                              color={selectedConversation.class_id ? 'primary' : 'default'}
+                              sx={{ height: 18, fontSize: '0.65rem' }}
+                            />
+                          </Box>
                           {selectedConversation.participants_count && (
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                               {selectedConversation.participants_count} thành viên
@@ -866,6 +1022,7 @@ const TeacherChat = () => {
                           )}
                         </Box>
                       </Box>
+                      <Box />
                     </Box>
                   </CardContent>
 
@@ -960,17 +1117,35 @@ const TeacherChat = () => {
                                     {message.sender_id?.full_name || 'Người dùng'}
                                   </Typography>
                                 )}
-                                <Typography 
-                                  variant="body2" 
-                                  sx={{ 
-                                    wordBreak: 'break-word', 
-                                    whiteSpace: 'pre-wrap',
-                                    lineHeight: 1.4,
-                                    fontSize: '0.875rem'
-                                  }}
-                                >
-                                  {message.content}
-                                </Typography>
+                                {(message.image_url || message.image_base64) && (
+                                  <Box sx={{ mb: message.content ? 0.75 : 0, maxWidth: '100%' }}>
+                                    <a href={message.image_url || message.image_base64} target="_blank" rel="noreferrer">
+                                      <img 
+                                        src={message.image_url || message.image_base64}
+                                        alt="message"
+                                        style={{
+                                          display: 'block',
+                                          maxWidth: '100%',
+                                          borderRadius: 8,
+                                          boxShadow: '0 2px 8px rgba(0,0,0,0.12)'
+                                        }}
+                                      />
+                                    </a>
+                                  </Box>
+                                )}
+                                {message.content && (
+                                  <Typography 
+                                    variant="body2" 
+                                    sx={{ 
+                                      wordBreak: 'break-word', 
+                                      whiteSpace: 'pre-wrap',
+                                      lineHeight: 1.4,
+                                      fontSize: '0.875rem'
+                                    }}
+                                  >
+                                    {message.content}
+                                  </Typography>
+                                )}
                                 <Typography
                                   variant="caption"
                                   display="block"
@@ -1064,7 +1239,27 @@ const TeacherChat = () => {
                         size="small"
                         InputProps={{
                           endAdornment: (
-                            <InputAdornment position="end" sx={{ mr: 0.5 }}>
+                            <InputAdornment position="end" sx={{ mr: 0.5, display: 'flex', gap: 0.5 }}>
+                              {/* Hidden file input */}
+                              <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={handleFileChange}
+                              />
+                              <IconButton
+                                color="default"
+                                onClick={handleOpenFilePicker}
+                                size="small"
+                                disabled={!socket?.connected}
+                                sx={{
+                                  width: 32,
+                                  height: 32
+                                }}
+                              >
+                                <ImageIcon fontSize="small" />
+                              </IconButton>
                               <IconButton
                                 color="primary"
                                 onClick={handleSendMessage}
@@ -1129,6 +1324,55 @@ const TeacherChat = () => {
         </Grid>
       </ArgonBox>
       {/* Footer không hiển thị trong chat để tiết kiệm không gian */}
+
+      {/* Create Class Chat Group Dialog */}
+      <Dialog open={openCreateDialog} onClose={() => !creatingGroup && setOpenCreateDialog(false)} fullWidth maxWidth="xs">
+      <DialogTitle>Tạo nhóm chat cho lớp</DialogTitle>
+      <DialogContent>
+        <Box display="flex" flexDirection="column" gap={1.25} mt={0.5}>
+          <TextField
+            label="ID lớp"
+            size="small"
+            value={classIdInput}
+            onChange={(e) => setClassIdInput(e.target.value)}
+            placeholder="Nhập class_id"
+            fullWidth
+          />
+          <TextField
+            label="Tiêu đề (tuỳ chọn)"
+            size="small"
+            value={titleInput}
+            onChange={(e) => setTitleInput(e.target.value)}
+            placeholder="Ví dụ: Nhóm chat - Lớp A1"
+            fullWidth
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <ArgonButton color="secondary" variant="outlined" disabled={creatingGroup} onClick={() => setOpenCreateDialog(false)}>Huỷ</ArgonButton>
+        <ArgonButton color="primary" disabled={creatingGroup || !classIdInput.trim()} onClick={async () => {
+          try {
+            setCreatingGroup(true);
+            const res = await messagingService.createClassChatGroup(classIdInput.trim(), titleInput.trim() || null);
+            if (res.success) {
+              // thêm vào danh sách và chọn nhóm
+              const conv = res.data.conversation;
+              setConversations(prev => [conv, ...prev.filter(c => (c._id?.toString() || c._id) !== (conv._id?.toString() || conv._id))]);
+              setSelectedConversation(conv);
+              setOpenCreateDialog(false);
+              setClassIdInput('');
+              setTitleInput('');
+            } else {
+              setError(res.error || 'Không thể tạo nhóm');
+            }
+          } catch (e) {
+            setError(e.message || 'Không thể tạo nhóm');
+          } finally {
+            setCreatingGroup(false);
+          }
+        }}>{creatingGroup ? 'Đang tạo...' : 'Tạo nhóm'}</ArgonButton>
+      </DialogActions>
+    </Dialog>
     </DashboardLayout>
   );
 };

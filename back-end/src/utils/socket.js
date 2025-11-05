@@ -57,13 +57,18 @@ function initializeSocket(io) {
       }
     })();
 
-    // Lắng nghe sự kiện gửi tin nhắn
+    // Lắng nghe sự kiện gửi tin nhắn (text/ảnh)
     socket.on('send_message', async (data) => {
       try {
-        const { conversation_id, content } = data;
+        const { conversation_id, content, image_base64, tempId } = data;
 
-        if (!conversation_id || !content || !content.trim()) {
-          socket.emit('error', { message: 'Thiếu thông tin conversation_id hoặc content' });
+        if (!conversation_id) {
+          socket.emit('error', { message: 'Thiếu conversation_id', tempId });
+          return;
+        }
+
+        if ((!content || !content.trim()) && !image_base64) {
+          socket.emit('error', { message: 'Yêu cầu có nội dung hoặc ảnh', tempId });
           return;
         }
 
@@ -74,13 +79,31 @@ function initializeSocket(io) {
         });
 
         if (!participant) {
-          socket.emit('error', { message: 'Bạn không có quyền gửi tin nhắn trong cuộc trò chuyện này' });
+          socket.emit('error', { message: 'Bạn không có quyền gửi tin nhắn trong cuộc trò chuyện này', tempId });
           return;
+        }
+
+        // Upload ảnh nếu có
+        let uploadedImage = null;
+        if (image_base64) {
+          try {
+            const cloudinary = require('./cloudinary');
+            uploadedImage = await cloudinary.uploader.upload(image_base64, {
+              folder: 'kidslink/messages',
+              resource_type: 'auto'
+            });
+          } catch (uploadErr) {
+            console.error('Cloudinary upload error:', uploadErr);
+            socket.emit('error', { message: 'Tải ảnh lên thất bại', details: uploadErr.message, tempId });
+            return;
+          }
         }
 
         // Tạo message
         const message = new Message({
-          content: content.trim(),
+          content: content && content.trim ? content.trim() : content,
+          image_url: uploadedImage ? uploadedImage.secure_url : undefined,
+          image_public_id: uploadedImage ? uploadedImage.public_id : undefined,
           conversation_id,
           sender_id: user_id,
           send_at: new Date(),
@@ -101,13 +124,15 @@ function initializeSocket(io) {
 
         // Gửi message đến tất cả users trong conversation room (bao gồm cả người gửi)
         io.to(`conversation:${conversation_id}`).emit('new_message', {
-          message: message
+          message: message,
+          tempId
         });
 
         // Đảm bảo người gửi nhận được tin nhắn (emit trực tiếp để chắc chắn)
         // Frontend sẽ xử lý duplicate nếu đã nhận qua room
         socket.emit('new_message', {
-          message: message
+          message: message,
+          tempId
         });
 
         // Gửi thông báo đến các participants khác (trừ người gửi)
@@ -127,7 +152,8 @@ function initializeSocket(io) {
         // Xác nhận gửi thành công
         socket.emit('message_sent', {
           message_id: message._id,
-          conversation_id
+          conversation_id,
+          tempId
         });
 
       } catch (error) {
