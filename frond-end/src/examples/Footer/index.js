@@ -27,12 +27,12 @@ import ArgonTypography from "components/ArgonTypography";
 // Argon Dashboard 2 MUI base styles
 import typography from "assets/theme/base/typography";
 
-function Footer({ company, links }) {
-  const { href, name } = company;
+function Footer({ company = {}, links = [] }) {
+  const { href = "https://github.com/SEP490-G62/kidslink/tree/develop", name = "SEP490-G62" } = company;
   const { size } = typography;
 
   const renderLinks = () =>
-    links.map((link) => (
+    (links || []).map((link) => (
       <ArgonBox key={link.name} component="li" px={2} lineHeight={1}>
         <Link href={link.href} target="_blank">
           <ArgonTypography variant="button" fontWeight="regular" color="text">

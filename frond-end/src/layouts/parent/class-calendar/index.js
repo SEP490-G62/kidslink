@@ -29,6 +29,7 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "context/AuthContext";
+import Footer from "examples/Footer";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -760,6 +761,8 @@ function ClassCalendar() {
           </Card>
         )}
       </ArgonBox>
+            <Footer />
+
     </DashboardLayout>
   );
 }
