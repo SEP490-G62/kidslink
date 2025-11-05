@@ -60,7 +60,6 @@ import {
   useArgonController,
   setTransparentNavbar,
   setMiniSidenav,
-  setOpenConfigurator,
 } from "context";
 
 // Auth context
@@ -77,7 +76,7 @@ import logoSpotify from "assets/images/small-logos/logo-spotify.svg";
 function TeacherNavbar({ absolute, light, isMini, breadcrumbOverride }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useArgonController();
-  const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator } = controller;
+  const { miniSidenav, transparentNavbar, fixedNavbar } = controller;
   const [openMenu, setOpenMenu] = useState(false);
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
   const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
@@ -119,7 +118,6 @@ function TeacherNavbar({ absolute, light, isMini, breadcrumbOverride }) {
   }, [dispatch, fixedNavbar]);
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
-  const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
   const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
   const handleCloseMenu = () => setOpenMenu(false);
   
@@ -236,15 +234,7 @@ function TeacherNavbar({ absolute, light, isMini, breadcrumbOverride }) {
               </IconButton>
               {renderNotificationsMenu()}
 
-              {/* Settings */}
-              <IconButton
-                size="small"
-                color={light && transparentNavbar ? "white" : "dark"}
-                sx={navbarIconButton}
-                onClick={handleConfiguratorOpen}
-              >
-                <Icon>settings</Icon>
-              </IconButton>
+              {/* Settings (Configurator) removed */}
 
               {/* Profile Menu */}
               <IconButton
