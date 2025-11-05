@@ -29,6 +29,9 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
+import Popover from "@mui/material/Popover";
+import Box from "@mui/material/Box";
+import { EmojiEmotions as EmojiEmotionsIcon } from "@mui/icons-material";
 // (ListItem/ListItemText/ListItemAvatar đã import ở trên)
 
 // Argon Dashboard 2 MUI components
@@ -66,6 +69,7 @@ function ParentChat() {
   const [openTeacherSelect, setOpenTeacherSelect] = useState(false);
   const [teachersByChild, setTeachersByChild] = useState({});
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
+  const [emojiAnchorEl, setEmojiAnchorEl] = useState(null);
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -228,6 +232,16 @@ function ParentChat() {
     } catch (e) {
       return '';
     }
+  };
+
+  const commonEmojis = [
+    '😀','😃','😄','😁','😆','😂','🤣','😊','😍','😘','😜','🤗','👍','👏','🙏','💪','🎉','✨','🔥','❤️','💙','💚','💛','🥳','🤔','😅'
+  ];
+  const openEmoji = Boolean(emojiAnchorEl);
+  const handleOpenEmoji = (e) => setEmojiAnchorEl(e.currentTarget);
+  const handleCloseEmoji = () => setEmojiAnchorEl(null);
+  const handlePickEmoji = (emo) => {
+    setNewMessage((prev) => (prev || '') + emo);
   };
 
   const formatMessageTime = (dateString) => {
@@ -437,6 +451,15 @@ function ParentChat() {
                         onChange={(e) => setNewMessage(e.target.value)} 
                         onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} 
                       />
+                      <IconButton 
+                        color="default" 
+                        onClick={handleOpenEmoji}
+                        size="small"
+                        sx={{ flexShrink: 0 }}
+                        aria-label="emoji-picker"
+                      >
+                        <EmojiEmotionsIcon fontSize="small" />
+                      </IconButton>
                       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
                       <IconButton 
                         color="primary" 
@@ -455,7 +478,7 @@ function ParentChat() {
                       >
                         <i className="ni ni-send" />
                       </IconButton>
-                    </ArgonBox>
+              </ArgonBox>
                   </CardContent>
                 </>
             )}
@@ -538,6 +561,28 @@ function ParentChat() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Emoji picker */}
+      <Popover
+        open={openEmoji}
+        anchorEl={emojiAnchorEl}
+        onClose={handleCloseEmoji}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        disableRestoreFocus
+      >
+        <Box sx={{ p: 1, maxWidth: 260, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 0.5 }}>
+          {commonEmojis.map((e) => (
+            <Box
+              key={e}
+              onClick={() => handlePickEmoji(e)}
+              sx={{ cursor: 'pointer', fontSize: 20, lineHeight: '28px', textAlign: 'center', '&:hover': { filter: 'brightness(1.1)' } }}
+            >
+              {e}
+            </Box>
+          ))}
+        </Box>
+      </Popover>
     </DashboardLayout>
   );
 }

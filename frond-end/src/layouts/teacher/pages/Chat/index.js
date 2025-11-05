@@ -45,8 +45,10 @@ import {
   Search as SearchIcon,
   Chat as ChatIcon,
   Group as GroupIcon,
-  Image as ImageIcon
+  Image as ImageIcon,
+  EmojiEmotions as EmojiEmotionsIcon
 } from '@mui/icons-material';
+import Popover from '@mui/material/Popover';
 import { format, formatDistanceToNow } from 'date-fns';
 import { vi as viLocale } from 'date-fns/locale';
 import io from 'socket.io-client';
@@ -84,6 +86,7 @@ const TeacherChat = () => {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const hasClassGroup = useMemo(() => (conversations || []).some(c => !!c.class_id), [conversations]);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
+  const [emojiAnchorEl, setEmojiAnchorEl] = useState(null);
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -669,6 +672,14 @@ const TeacherChat = () => {
     }
   };
 
+  const commonEmojis = [
+    '😀','😃','😄','😁','😆','😂','🤣','😊','😍','😘','😜','🤗','👍','👏','🙏','💪','🎉','✨','🔥','❤️','💙','💚','💛','🥳','🤔','😅'
+  ];
+  const openEmoji = Boolean(emojiAnchorEl);
+  const handleOpenEmoji = (e) => setEmojiAnchorEl(e.currentTarget);
+  const handleCloseEmoji = () => setEmojiAnchorEl(null);
+  const handlePickEmoji = (emo) => setNewMessage((prev) => (prev || '') + emo);
+
   const getConversationTitle = (conversation) => {
     if (conversation.title) {
       return conversation.title;
@@ -1245,6 +1256,17 @@ const TeacherChat = () => {
                           }
                         }}
                       />
+                      {/* Emoji picker trigger */}
+                      <IconButton
+                        color="default"
+                        onClick={handleOpenEmoji}
+                        size="small"
+                        disabled={!socket?.connected}
+                        sx={{ width: 32, height: 32, flexShrink: 0 }}
+                      >
+                        <EmojiEmotionsIcon fontSize="small" />
+                      </IconButton>
+
                       {/* Hidden file input */}
                       <input
                         ref={fileInputRef}
@@ -1356,6 +1378,28 @@ const TeacherChat = () => {
         }}>{creatingGroup ? 'Đang tạo...' : 'Tạo nhóm'}</ArgonButton>
       </DialogActions>
     </Dialog>
+
+    {/* Emoji picker */}
+    <Popover
+      open={openEmoji}
+      anchorEl={emojiAnchorEl}
+      onClose={handleCloseEmoji}
+      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      disableRestoreFocus
+    >
+      <Box sx={{ p: 1, maxWidth: 260, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 0.5 }}>
+        {commonEmojis.map((e) => (
+          <Box
+            key={e}
+            onClick={() => handlePickEmoji(e)}
+            sx={{ cursor: 'pointer', fontSize: 20, lineHeight: '28px', textAlign: 'center', '&:hover': { filter: 'brightness(1.1)' } }}
+          >
+            {e}
+          </Box>
+        ))}
+      </Box>
+    </Popover>
 
     {/* Image preview dialog */}
     <Dialog open={!!previewImageUrl} onClose={() => setPreviewImageUrl(null)} fullScreen>
