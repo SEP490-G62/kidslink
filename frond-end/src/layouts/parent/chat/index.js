@@ -65,6 +65,7 @@ function ParentChat() {
   const [children, setChildren] = useState([]);
   const [openTeacherSelect, setOpenTeacherSelect] = useState(false);
   const [teachersByChild, setTeachersByChild] = useState({});
+  const [previewImageUrl, setPreviewImageUrl] = useState(null);
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -229,6 +230,17 @@ function ParentChat() {
     }
   };
 
+  const formatMessageTime = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      const hh = date.getHours().toString().padStart(2, '0');
+      const mm = date.getMinutes().toString().padStart(2, '0');
+      return `${hh}:${mm}`;
+    } catch (e) {
+      return '';
+    }
+  };
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -313,7 +325,12 @@ function ParentChat() {
                               <ArgonTypography variant="body1" fontWeight="bold" color="dark" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {getTitle(conv)}
                         </ArgonTypography>
-                              <ArgonTypography variant="caption" color="text">{lastMessage ? formatMinutesAgo(lastMessage.send_at) : ''}</ArgonTypography>
+                              <ArgonBox display="flex" alignItems="center" gap={1}>
+                                {conv.participants_count >= 3 && (
+                                  <Chip label="Nhóm" size="small" color="primary" sx={{ height: 18, fontSize: '0.65rem' }} />
+                                )}
+                                <ArgonTypography variant="caption" color="text">{lastMessage ? formatMinutesAgo(lastMessage.send_at) : ''}</ArgonTypography>
+                              </ArgonBox>
                             </ArgonBox>
                           } secondary={
                         <ArgonBox display="flex" alignItems="center" gap={1}>
@@ -343,7 +360,12 @@ function ParentChat() {
                     <ArgonBox display="flex" alignItems="center" gap={1.5}>
                       <Avatar>{selectedConversation.class_id ? '👥' : '💬'}</Avatar>
                       <ArgonBox>
-                        <ArgonTypography variant="subtitle1" fontWeight="bold">{getTitle(selectedConversation)}</ArgonTypography>
+                        <ArgonBox display="flex" alignItems="center" gap={1}>
+                          <ArgonTypography variant="subtitle1" fontWeight="bold">{getTitle(selectedConversation)}</ArgonTypography>
+                          {selectedConversation.participants_count >= 3 && (
+                            <Chip label="Nhóm" size="small" color="primary" sx={{ height: 18, fontSize: '0.65rem' }} />
+                          )}
+                        </ArgonBox>
                         {selectedConversation.participants_count ? <ArgonTypography variant="caption" color="text">{selectedConversation.participants_count} thành viên</ArgonTypography> : null}
                       </ArgonBox>
                     </ArgonBox>
@@ -371,12 +393,30 @@ function ParentChat() {
                                 )}
                                 {(m.image_url || m.image_base64) && (
                                   <ArgonBox mb={m.content ? 0.75 : 0}>
-                                    <a href={m.image_url || m.image_base64} target="_blank" rel="noreferrer">
-                                      <img src={m.image_url || m.image_base64} alt="img" style={{ maxWidth: '100%', borderRadius: 8 }} />
-                                    </a>
+                                    <img 
+                                      src={m.image_url || m.image_base64} 
+                                      alt="img" 
+                                      onClick={() => setPreviewImageUrl(m.image_url || m.image_base64)}
+                                      style={{ 
+                                        display: 'block',
+                                        width: 220,
+                                        height: 220,
+                                        objectFit: 'cover',
+                                        borderRadius: 8,
+                                        cursor: 'pointer'
+                                      }} 
+                                    />
                                   </ArgonBox>
                                 )}
                                 {m.content && (<ArgonTypography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{m.content}</ArgonTypography>)}
+                                <ArgonTypography
+                                  variant="caption"
+                                  color="dark"
+                                  sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}
+                                >
+                                  {formatMessageTime(m.send_at)}
+                                  {m.isPending && ' · Đang gửi...'}
+                                </ArgonTypography>
                               </Paper>
                             </ArgonBox>
                           );
@@ -386,14 +426,36 @@ function ParentChat() {
                         )}
                       </ArgonBox>
                   <CardContent sx={{ borderTop: '1px solid #eee' }}>
-                    <ArgonBox sx={{ position: 'relative' }}>
-                      <TextField fullWidth multiline maxRows={3} placeholder="Nhập tin nhắn..." size="small" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} InputProps={{ endAdornment: (
-                        <InputAdornment position="end" sx={{ mr: 0.5, display: 'flex', gap: 0.5 }}>
-                          <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
-                          <IconButton color="primary" onClick={() => { if (fileInputRef.current) { fileInputRef.current.value = ''; fileInputRef.current.click(); } }} size="small"><i className="ni ni-image" /></IconButton>
-                          <IconButton color="primary" onClick={handleSendMessage} size="small" disabled={!newMessage.trim() || !socket?.connected}><i className="ni ni-send" /></IconButton>
-                        </InputAdornment>) }} />
-              </ArgonBox>
+                    <ArgonBox sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TextField 
+                        fullWidth 
+                        multiline 
+                        maxRows={3} 
+                        placeholder="Nhập tin nhắn..." 
+                        size="small" 
+                        value={newMessage} 
+                        onChange={(e) => setNewMessage(e.target.value)} 
+                        onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} 
+                      />
+                      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+                      <IconButton 
+                        color="primary" 
+                        onClick={() => { if (fileInputRef.current) { fileInputRef.current.value = ''; fileInputRef.current.click(); } }} 
+                        size="small"
+                        sx={{ flexShrink: 0 }}
+                      >
+                        <i className="ni ni-image" />
+                      </IconButton>
+                      <IconButton 
+                        color="primary" 
+                        onClick={handleSendMessage} 
+                        size="small" 
+                        disabled={!newMessage.trim() || !socket?.connected}
+                        sx={{ flexShrink: 0 }}
+                      >
+                        <i className="ni ni-send" />
+                      </IconButton>
+                    </ArgonBox>
                   </CardContent>
                 </>
             )}
@@ -459,6 +521,22 @@ function ParentChat() {
       <DialogActions>
         <Button onClick={() => setOpenTeacherSelect(false)}>Đóng</Button>
       </DialogActions>
+      </Dialog>
+
+      {/* Image preview dialog */}
+      <Dialog open={!!previewImageUrl} onClose={() => setPreviewImageUrl(null)} fullScreen>
+        <DialogContent 
+          onClick={() => setPreviewImageUrl(null)}
+          sx={{ p: 0, m: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', bgcolor: 'black', width: '100vw', height: '100vh' }}
+        >
+          {previewImageUrl && (
+            <img 
+              src={previewImageUrl} 
+              alt="preview" 
+              style={{ width: '100vw', height: '100vh', objectFit: 'contain' }}
+            />
+          )}
+        </DialogContent>
       </Dialog>
     </DashboardLayout>
   );

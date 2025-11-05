@@ -48,6 +48,7 @@ import {
   Image as ImageIcon
 } from '@mui/icons-material';
 import { format, formatDistanceToNow } from 'date-fns';
+import { vi as viLocale } from 'date-fns/locale';
 import io from 'socket.io-client';
 import ArgonBox from 'components/ArgonBox';
 import ArgonTypography from 'components/ArgonTypography';
@@ -82,6 +83,7 @@ const TeacherChat = () => {
   const [titleInput, setTitleInput] = useState('');
   const [creatingGroup, setCreatingGroup] = useState(false);
   const hasClassGroup = useMemo(() => (conversations || []).some(c => !!c.class_id), [conversations]);
+  const [previewImageUrl, setPreviewImageUrl] = useState(null);
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -657,18 +659,11 @@ const TeacherChat = () => {
     try {
       const date = new Date(dateString);
       const now = new Date();
-      const diffMs = now - date;
-      const diffMins = diffMs / (1000 * 60);
-
-      if (diffMins < 1) {
-        return 'Vừa xong';
-      } else if (diffMins < 60) {
-        return formatDistanceToNow(date, { addSuffix: true });
-      } else if (diffMins < 1440) {
+      // Cùng ngày: HH:mm, khác ngày: dd/MM/yyyy HH:mm
+      if (date.toDateString() === now.toDateString()) {
         return format(date, 'HH:mm');
-      } else {
-        return format(date, 'dd/MM/yyyy HH:mm');
       }
+      return format(date, 'dd/MM/yyyy HH:mm');
     } catch (err) {
       return '';
     }
@@ -874,12 +869,9 @@ const TeacherChat = () => {
                                   >
                                     {getConversationTitle(conv)}
                                   </Typography>
-                                  <Chip 
-                                    label={conv.class_id ? 'Nhóm' : 'Trò chuyện'} 
-                                    size="small"
-                                    color={conv.class_id ? 'primary' : 'default'}
-                                    sx={{ height: 18, fontSize: '0.65rem' }}
-                                  />
+                                  {conv.participants_count >= 3 && (
+                                    <Chip label="Nhóm" size="small" color="primary" sx={{ height: 18, fontSize: '0.65rem' }} />
+                                  )}
                                   {lastMessage && (
                                     <Typography 
                                       variant="caption" 
@@ -1008,12 +1000,9 @@ const TeacherChat = () => {
                             <Typography variant="subtitle1" fontWeight="bold" sx={{ fontSize: '0.9375rem', lineHeight: 1.2 }}>
                               {getConversationTitle(selectedConversation)}
                             </Typography>
-                            <Chip 
-                              size="small" 
-                              label={selectedConversation.class_id ? 'Nhóm' : 'Trò chuyện'} 
-                              color={selectedConversation.class_id ? 'primary' : 'default'}
-                              sx={{ height: 18, fontSize: '0.65rem' }}
-                            />
+                            {selectedConversation.participants_count >= 3 && (
+                              <Chip label="Nhóm" size="small" color="primary" sx={{ height: 18, fontSize: '0.65rem' }} />
+                            )}
                           </Box>
                           {selectedConversation.participants_count && (
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
@@ -1118,19 +1107,21 @@ const TeacherChat = () => {
                                   </Typography>
                                 )}
                                 {(message.image_url || message.image_base64) && (
-                                  <Box sx={{ mb: message.content ? 0.75 : 0, maxWidth: '100%' }}>
-                                    <a href={message.image_url || message.image_base64} target="_blank" rel="noreferrer">
-                                      <img 
-                                        src={message.image_url || message.image_base64}
-                                        alt="message"
-                                        style={{
-                                          display: 'block',
-                                          maxWidth: '100%',
-                                          borderRadius: 8,
-                                          boxShadow: '0 2px 8px rgba(0,0,0,0.12)'
-                                        }}
-                                      />
-                                    </a>
+                                  <Box sx={{ mb: message.content ? 0.75 : 0 }}>
+                                    <img 
+                                      src={message.image_url || message.image_base64}
+                                      alt="message"
+                                      onClick={() => setPreviewImageUrl(message.image_url || message.image_base64)}
+                                      style={{
+                                        display: 'block',
+                                        width: 220,
+                                        height: 220,
+                                        objectFit: 'cover',
+                                        borderRadius: 8,
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                                        cursor: 'pointer'
+                                      }}
+                                    />
                                   </Box>
                                 )}
                                 {message.content && (
@@ -1227,7 +1218,7 @@ const TeacherChat = () => {
                       boxShadow: '0 -2px 8px rgba(0,0,0,0.05)'
                     }}
                   >
-                    <Box sx={{ position: 'relative' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <TextField
                         fullWidth
                         multiline
@@ -1237,61 +1228,6 @@ const TeacherChat = () => {
                         onChange={handleTyping}
                         onKeyPress={handleKeyPress}
                         size="small"
-                        InputProps={{
-                          endAdornment: (
-                            <InputAdornment position="end" sx={{ mr: 0.5, display: 'flex', gap: 0.5 }}>
-                              {/* Hidden file input */}
-                              <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                style={{ display: 'none' }}
-                                onChange={handleFileChange}
-                              />
-                              <IconButton
-                                color="default"
-                                onClick={handleOpenFilePicker}
-                                size="small"
-                                disabled={!socket?.connected}
-                                sx={{
-                                  width: 32,
-                                  height: 32
-                                }}
-                              >
-                                <ImageIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                color="primary"
-                                onClick={handleSendMessage}
-                                disabled={!newMessage.trim() || !socket?.connected}
-                                size="small"
-                                sx={{
-                                  bgcolor: newMessage.trim() && socket?.connected 
-                                    ? 'primary.main' 
-                                    : 'grey.300',
-                                  color: newMessage.trim() && socket?.connected 
-                                    ? 'white' 
-                                    : 'grey.500',
-                                  width: 32,
-                                  height: 32,
-                                  transition: 'all 0.2s',
-                                  '&:hover': {
-                                    bgcolor: newMessage.trim() && socket?.connected 
-                                      ? 'primary.dark' 
-                                      : 'grey.400',
-                                    transform: 'scale(1.05)'
-                                  },
-                                  '&:disabled': {
-                                    bgcolor: 'grey.300',
-                                    color: 'grey.500'
-                                  }
-                                }}
-                              >
-                                <SendIcon fontSize="small" />
-                              </IconButton>
-                            </InputAdornment>
-                          )
-                        }}
                         sx={{ 
                           '& .MuiOutlinedInput-root': {
                             bgcolor: 'white',
@@ -1309,13 +1245,60 @@ const TeacherChat = () => {
                           }
                         }}
                       />
-                      {!socket?.connected && (
-                        <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.7rem' }}>
-                          <CircularProgress size={8} />
-                          Đang kết nối...
-                        </Typography>
-                      )}
+                      {/* Hidden file input */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleFileChange}
+                      />
+                      <IconButton
+                        color="default"
+                        onClick={handleOpenFilePicker}
+                        size="small"
+                        disabled={!socket?.connected}
+                        sx={{ width: 32, height: 32, flexShrink: 0 }}
+                      >
+                        <ImageIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        color="primary"
+                        onClick={handleSendMessage}
+                        disabled={!newMessage.trim() || !socket?.connected}
+                        size="small"
+                        sx={{
+                          bgcolor: newMessage.trim() && socket?.connected 
+                            ? 'primary.main' 
+                            : 'grey.300',
+                          color: newMessage.trim() && socket?.connected 
+                            ? 'white' 
+                            : 'grey.500',
+                          width: 32,
+                          height: 32,
+                          transition: 'all 0.2s',
+                          flexShrink: 0,
+                          '&:hover': {
+                            bgcolor: newMessage.trim() && socket?.connected 
+                              ? 'primary.dark' 
+                              : 'grey.400',
+                            transform: 'scale(1.05)'
+                          },
+                          '&:disabled': {
+                            bgcolor: 'grey.300',
+                            color: 'grey.500'
+                          }
+                        }}
+                      >
+                        <SendIcon fontSize="small" />
+                      </IconButton>
                     </Box>
+                    {!socket?.connected && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.7rem' }}>
+                        <CircularProgress size={8} />
+                        Đang kết nối...
+                      </Typography>
+                    )}
                   </CardContent>
                 </>
               )}
@@ -1372,6 +1355,18 @@ const TeacherChat = () => {
           }
         }}>{creatingGroup ? 'Đang tạo...' : 'Tạo nhóm'}</ArgonButton>
       </DialogActions>
+    </Dialog>
+
+    {/* Image preview dialog */}
+    <Dialog open={!!previewImageUrl} onClose={() => setPreviewImageUrl(null)} fullScreen>
+      <DialogContent 
+        onClick={() => setPreviewImageUrl(null)}
+        sx={{ p: 0, m: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', bgcolor: 'black', width: '100vw', height: '100vh' }}
+      >
+        {previewImageUrl && (
+          <img src={previewImageUrl} alt="preview" style={{ width: '100vw', height: '100vh', objectFit: 'contain' }} />
+        )}
+      </DialogContent>
     </Dialog>
     </DashboardLayout>
   );

@@ -6,7 +6,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 // @mui material components
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import Icon from "@mui/material/Icon";
+// Removed: Icon (Configurator button removed)
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -14,7 +14,6 @@ import ArgonBox from "components/ArgonBox";
 // Argon Dashboard 2 MUI example components
 import Sidenav from "examples/Sidenav";
 import ParentSidenav from "examples/Sidenav/parent";
-import Configurator from "examples/Configurator";
 
 // Argon Dashboard 2 MUI themes
 import theme from "assets/theme";
@@ -34,7 +33,7 @@ import teacherRoutes from "routes/teacherRoutes";
 import parentRoutes from "routes/parentRoutes";
 
 // Argon Dashboard 2 MUI contexts
-import { useArgonController, setMiniSidenav, setOpenConfigurator } from "context";
+import { useArgonController, setMiniSidenav } from "context";
 import { AuthProvider } from "context/AuthContext";
 
 // Images
@@ -47,7 +46,7 @@ import "assets/css/nucleo-svg.css";
 
 export default function App() {
   const [controller, dispatch] = useArgonController();
-  const { miniSidenav, direction, layout, openConfigurator, sidenavColor, darkSidenav, darkMode } =
+  const { miniSidenav, direction, layout, sidenavColor, darkSidenav, darkMode } =
     controller;
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const [rtlCache, setRtlCache] = useState(null);
@@ -79,8 +78,7 @@ export default function App() {
     }
   };
 
-  // Change the openConfigurator state
-  const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
+  // Removed Configurator feature
 
   // Setting the dir attribute for the body element
   useEffect(() => {
@@ -112,29 +110,7 @@ export default function App() {
   const activeRoutes = isTeacherPath ? teacherRoutes : isParentPath ? parentRoutes : isHealthCareStaffPath ? healthCareStaffRoutes : routes;
   const SidenavComponent = isParentPath ? ParentSidenav : Sidenav;
 
-  const configsButton = (
-    <ArgonBox
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      width="3.5rem"
-      height="3.5rem"
-      bgColor="white"
-      shadow="sm"
-      borderRadius="50%"
-      position="fixed"
-      right="2rem"
-      bottom="2rem"
-      zIndex={99}
-      color="dark"
-      sx={{ cursor: "pointer" }}
-      onClick={handleConfiguratorOpen}
-    >
-      <Icon fontSize="default" color="inherit">
-        settings
-      </Icon>
-    </ArgonBox>
-  );
+  // Removed floating configurator button
 
   return (
     <AuthProvider>
@@ -152,11 +128,10 @@ export default function App() {
                   onMouseEnter={handleOnMouseEnter}
                   onMouseLeave={handleOnMouseLeave}
                 />
-                <Configurator />
-                {configsButton}
+                {/* Configurator removed */}
               </>
             )}
-            {layout === "vr" && <Configurator />}
+            {layout === "vr" && null}
             <Routes>
               {getRoutes(activeRoutes)}
               <Route path="*" element={<Navigate to="/" />} />
@@ -176,11 +151,10 @@ export default function App() {
                 onMouseEnter={handleOnMouseEnter}
                 onMouseLeave={handleOnMouseLeave}
               />
-              <Configurator />
-              {configsButton}
+              {/* Configurator removed */}
             </>
           )}
-          {layout === "vr" && <Configurator />}
+          {layout === "vr" && null}
           <Routes>
             {getRoutes(activeRoutes)}
             <Route path="*" element={<Navigate to="/" />} />
