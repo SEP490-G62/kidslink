@@ -411,7 +411,7 @@ function ClassCalendar() {
                   <Grid item xs={12} sm={6} md={3}>
                     <ArgonBox>
                       <Typography variant="body2" fontWeight="medium" color="text" sx={{ mb: 1.5 }}>
-                        Năm học
+                        Năm
                       </Typography>
                       <FormControl fullWidth size="small">
                         <Select

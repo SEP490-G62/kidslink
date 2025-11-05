@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Class, Teacher, StudentClass, Student, DailyReport } = require('../models');
+const { Class, Teacher, StudentClass, Student, DailyReport, Calendar } = require('../models');
 
 // Helper to get teacher document from authenticated user
 async function getTeacherByReqUser(req) {
@@ -241,5 +241,75 @@ module.exports = {
   getClassStudents,
   getStudentsAttendanceByDate
 };
+
+// GET /teacher/class-calendar
+// Lấy lịch học của lớp có academic_year lớn nhất thuộc giáo viên hiện tại
+async function getTeacherLatestClassCalendar(req, res) {
+  try {
+    const teacher = await getTeacherByReqUser(req);
+    if (!teacher) {
+      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
+    }
+
+    // Lấy lớp mới nhất theo academic_year mà giáo viên phụ trách
+    const latestClass = await Class.findOne({
+      $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+    })
+      .sort({ academic_year: -1 })
+      .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } });
+
+    if (!latestClass) {
+      return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
+    }
+
+    // Lấy calendars của lớp và populate dữ liệu liên quan
+    const calendars = await Calendar.find({ class_id: latestClass._id })
+      .populate('weekday_id')
+      .populate('slot_id')
+      .populate('activity_id')
+      .populate({ path: 'teacher_id', model: 'Teacher', populate: { path: 'user_id', model: 'User' } });
+
+    const result = {
+      class: {
+        id: latestClass._id,
+        name: latestClass.class_name,
+        academicYear: latestClass.academic_year,
+        teacher: latestClass.teacher_id && latestClass.teacher_id.user_id ? {
+          id: latestClass.teacher_id._id,
+          fullName: latestClass.teacher_id.user_id.full_name || latestClass.teacher_id.full_name || 'Giáo viên chủ nhiệm'
+        } : null
+      },
+      calendars: calendars
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .map(c => ({
+          id: c._id,
+          date: c.date,
+          weekday: c.weekday_id ? c.weekday_id.day_of_week : null,
+          slots: c.slot_id ? [{
+            id: c.slot_id._id,
+            slotName: c.slot_id.slot_name,
+            startTime: c.slot_id.start_time,
+            endTime: c.slot_id.end_time,
+            activity: c.activity_id ? {
+              id: c.activity_id._id,
+              name: c.activity_id.activity_name || c.activity_id.name || 'Hoạt động',
+              description: c.activity_id.description,
+              require_outdoor: typeof c.activity_id.require_outdoor === 'number' ? c.activity_id.require_outdoor : 0
+            } : null,
+            teacher: c.teacher_id ? {
+              id: c.teacher_id._id,
+              fullName: c.teacher_id.user_id?.full_name || c.teacher_id.full_name || 'Giáo viên'
+            } : null
+          }] : []
+        }))
+    };
+
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+}
+
+module.exports.getTeacherLatestClassCalendar = getTeacherLatestClassCalendar;
 
 
