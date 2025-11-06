@@ -143,7 +143,6 @@ export default function StudentNotices() {
           <Button variant="contained" color="error" onClick={save}>Lưu</Button>
         </DialogActions>
       </Dialog>
-      <Footer />
     </DashboardLayout>
   );
 }

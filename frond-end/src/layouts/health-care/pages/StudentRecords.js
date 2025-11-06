@@ -141,7 +141,6 @@ export default function StudentRecords() {
           <Button variant="contained" onClick={save}>Lưu</Button>
         </DialogActions>
       </Dialog>
-      <Footer />
     </DashboardLayout>
   );
 }
