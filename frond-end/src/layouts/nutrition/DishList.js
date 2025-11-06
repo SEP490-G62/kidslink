@@ -15,6 +15,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
+import Chip from "@mui/material/Chip";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -112,6 +113,7 @@ export default function NutritionDishList() {
   const [currentSlot, setCurrentSlot] = useState(null); // { meal_id, weekday_id, date }
   const [selectedDishIds, setSelectedDishIds] = useState(new Set());
   const [savingSlot, setSavingSlot] = useState(false);
+  const [dishSearch, setDishSearch] = useState("");
 
   // State for class age meal selection table (weekly view)
   const [selectedClassAgeForTable, setSelectedClassAgeForTable] = useState("");
@@ -122,8 +124,28 @@ export default function NutritionDishList() {
   const [currentWeeklySlot, setCurrentWeeklySlot] = useState(null); // { meal_id, weekday_id, date }
   const [selectedDishesForWeekly, setSelectedDishesForWeekly] = useState(new Set());
   const [savingWeeklyMeal, setSavingWeeklyMeal] = useState(false);
+  const [dishSearchWeekly, setDishSearchWeekly] = useState("");
 
   const weekDaysOptions = useMemo(() => weekDays.map(d => ({ id: d._id, name: d.day_of_week })), [weekDays]);
+
+  // Check if there is any dish assigned in the selected week (for the table view)
+  const hasAnyDishThisWeek = useMemo(() => {
+    if (!weeklyMealSelection || Object.keys(weeklyMealSelection).length === 0) return false;
+    return Object.values(weeklyMealSelection).some(slot => (slot?.dishes || []).length > 0);
+  }, [weeklyMealSelection]);
+
+  // Filtered lists for dialogs
+  const filteredAllDishes = useMemo(() => {
+    if (!dishSearch.trim()) return dishes;
+    const q = dishSearch.trim().toLowerCase();
+    return dishes.filter(d => (d.dish_name || "").toLowerCase().includes(q));
+  }, [dishes, dishSearch]);
+
+  const filteredAllDishesWeekly = useMemo(() => {
+    if (!dishSearchWeekly.trim()) return dishes;
+    const q = dishSearchWeekly.trim().toLowerCase();
+    return dishes.filter(d => (d.dish_name || "").toLowerCase().includes(q));
+  }, [dishes, dishSearchWeekly]);
 
   useEffect(() => {
     async function loadInit() {
@@ -614,6 +636,10 @@ export default function NutritionDishList() {
             </Grid>
           )}
 
+          {selectedClassAgeForTable && !loading && !loadingWeeklySelection && !hasAnyDishThisWeek && (
+            <Alert severity="info" sx={{ mb: 2 }}>tuần này chưa có danh sách món ăn</Alert>
+          )}
+
           {selectedClassAgeForTable && !loading && (
             <>
               {loadingWeeklySelection ? (
@@ -714,7 +740,7 @@ export default function NutritionDishList() {
                                           {meal.meal}
                                         </ArgonTypography>
                                         {slotData.dishes.length === 0 ? (
-                                          <ArgonTypography variant="caption" color="text.secondary" sx={{ fontSize: '11px' }}>
+                                          <ArgonTypography variant="caption" sx={{ fontSize: '11px', color: 'error.main' }}>
                                             Click để chọn món
                                           </ArgonTypography>
                                         ) : (
@@ -724,7 +750,7 @@ export default function NutritionDishList() {
                                                 key={dish._id || idx} 
                                                 variant="caption" 
                                                 display="block"
-                                                sx={{ fontSize: '12px', mb: 0.5, color: '#333' }}
+                                                sx={{ fontSize: '12px', mb: 0.5, color: '#333', fontWeight: 'bold', fontStyle: 'italic' }}
                                               >
                                                 {dish.dish_name || dish.name}
                                               </ArgonTypography>
@@ -773,34 +799,104 @@ export default function NutritionDishList() {
           {currentSlot && meals.find(m => m._id === currentSlot.meal_id) && weekDaysOptions.find(w => w.id === currentSlot.weekday_id) && (
             <ArgonTypography variant="body2" color="white" sx={{ mt: 0.5, opacity: 0.9 }}>
               {meals.find(m => m._id === currentSlot.meal_id)?.meal} - {weekDaysOptions.find(w => w.id === currentSlot.weekday_id)?.name}
+              {currentSlot?.date && (
+                <>
+                  {" "}- {new Date(currentSlot.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </>
+              )}
             </ArgonTypography>
           )}
         </DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
-          <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
-            {dishes.length === 0 ? (
-              <ListItem>
-                <ListItemText 
-                  primary="Chưa có món ăn nào" 
-                  secondary="Vui lòng thêm món ăn ở phần trên"
-                />
-              </ListItem>
-            ) : (
-              dishes.map(d => (
-                <ListItem key={d._id} button onClick={() => handleToggleDish(d._id)}>
-                  <ListItemIcon>
-                    <Checkbox 
-                      edge="start" 
-                      checked={selectedDishIds.has(d._id)} 
-                      tabIndex={-1} 
-                      disableRipple 
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth 
+                size="small"
+                placeholder="Tìm món theo tên" 
+                value={dishSearch} 
+                onChange={(e) => setDishSearch(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <ArgonBox display="flex" flexWrap="wrap" gap={1}>
+                {Array.from(selectedDishIds).map(id => {
+                  const dish = dishes.find(x => x._id === id);
+                  if (!dish) return null;
+                  return (
+                    <Chip 
+                      key={id} 
+                      label={dish.dish_name} 
+                      color="success" 
+                      variant="outlined" 
+                      onDelete={() => handleToggleDish(id)}
+                      size="small"
                     />
-                  </ListItemIcon>
-                  <ListItemText primary={d.dish_name} secondary={d.description} />
-                </ListItem>
-              ))
-            )}
-          </List>
+                  );
+                })}
+                {selectedDishIds.size === 0 && (
+                  <ArgonTypography variant="caption" color="text.secondary">Chưa chọn món nào</ArgonTypography>
+                )}
+              </ArgonBox>
+            </Grid>
+            <Grid item xs={12} display="flex" justifyContent="space-between">
+              <Button 
+                size="small" 
+                variant="contained" 
+                color="success"
+                onClick={() => {
+                  const allIds = new Set(filteredAllDishes.map(d => d._id));
+                  setSelectedDishIds(allIds);
+                }}
+              >
+                Chọn tất cả
+              </Button>
+              <Button 
+                size="small" 
+                variant="text" 
+                color="error"
+                onClick={() => setSelectedDishIds(new Set())}
+              >
+                Bỏ chọn hết
+              </Button>
+            </Grid>
+            <Grid item xs={12}>
+              <List dense sx={{ maxHeight: 400, overflow: 'auto', border: '1px solid #e0e0e0', borderRadius: 1, p: 0 }}>
+                {filteredAllDishes.length === 0 ? (
+                  <ListItem>
+                    <ListItemText 
+                      primary="Không tìm thấy món phù hợp" 
+                      secondary={dishSearch ? `Từ khóa: "${dishSearch}"` : 'Vui lòng thêm món ăn ở phần trên'}
+                    />
+                  </ListItem>
+                ) : (
+                  filteredAllDishes.map(d => (
+                    <ListItem 
+                      key={d._id} 
+                      button 
+                      onClick={() => handleToggleDish(d._id)}
+                      sx={{ '&:hover': { backgroundColor: '#fafafa' }, py: 0.5 }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <Checkbox 
+                          edge="start" 
+                          color="success"
+                          checked={selectedDishIds.has(d._id)} 
+                          tabIndex={-1} 
+                          disableRipple
+                          size="small" 
+                        />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primaryTypographyProps={{ sx: { fontWeight: selectedDishIds.has(d._id) ? 'bold' : 500 } }}
+                        primary={d.dish_name}
+                      />
+                    </ListItem>
+                  ))
+                )}
+              </List>
+            </Grid>
+          </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setMealSlotDialogOpen(false)}>Hủy</Button>
@@ -831,34 +927,104 @@ export default function NutritionDishList() {
           {currentWeeklySlot && meals.find(m => m._id === currentWeeklySlot.meal_id) && weekDaysOptions.find(w => w.id === currentWeeklySlot.weekday_id) && (
             <ArgonTypography variant="body2" color="white" sx={{ mt: 0.5, opacity: 0.9 }}>
               {meals.find(m => m._id === currentWeeklySlot.meal_id)?.meal} - {weekDaysOptions.find(w => w.id === currentWeeklySlot.weekday_id)?.name}
+              {currentWeeklySlot?.date && (
+                <>
+                  {" "}- {new Date(currentWeeklySlot.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </>
+              )}
             </ArgonTypography>
           )}
         </DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
-          <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
-            {dishes.length === 0 ? (
-              <ListItem>
-                <ListItemText 
-                  primary="Chưa có món ăn nào" 
-                  secondary="Vui lòng thêm món ăn ở phần trên"
-                />
-              </ListItem>
-            ) : (
-              dishes.map(d => (
-                <ListItem key={d._id} button onClick={() => handleToggleDishForWeekly(d._id)}>
-                  <ListItemIcon>
-                    <Checkbox 
-                      edge="start" 
-                      checked={selectedDishesForWeekly.has(d._id)} 
-                      tabIndex={-1} 
-                      disableRipple 
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth 
+                size="small"
+                placeholder="Tìm món theo tên " 
+                value={dishSearchWeekly} 
+                onChange={(e) => setDishSearchWeekly(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <ArgonBox display="flex" flexWrap="wrap" gap={1}>
+                {Array.from(selectedDishesForWeekly).map(id => {
+                  const dish = dishes.find(x => x._id === id);
+                  if (!dish) return null;
+                  return (
+                    <Chip 
+                      key={id} 
+                      label={dish.dish_name} 
+                      color="success" 
+                      variant="outlined" 
+                      onDelete={() => handleToggleDishForWeekly(id)}
+                      size="small"
                     />
-                  </ListItemIcon>
-                  <ListItemText primary={d.dish_name} secondary={d.description} />
-                </ListItem>
-              ))
-            )}
-          </List>
+                  );
+                })}
+                {selectedDishesForWeekly.size === 0 && (
+                  <ArgonTypography variant="caption" color="text.secondary">Chưa chọn món nào</ArgonTypography>
+                )}
+              </ArgonBox>
+            </Grid>
+            <Grid item xs={12} display="flex" justifyContent="space-between">
+              <Button 
+                size="small" 
+                variant="contained" 
+                color="success"
+                onClick={() => {
+                  const allIds = new Set(filteredAllDishesWeekly.map(d => d._id));
+                  setSelectedDishesForWeekly(allIds);
+                }}
+              >
+                Chọn tất cả
+              </Button>
+              <Button 
+                size="small" 
+                variant="text" 
+                color="error"
+                onClick={() => setSelectedDishesForWeekly(new Set())}
+              >
+                Bỏ chọn hết
+              </Button>
+            </Grid>
+            <Grid item xs={12}>
+              <List dense sx={{ maxHeight: 400, overflow: 'auto', border: '1px solid #e0e0e0', borderRadius: 1, p: 0 }}>
+                {filteredAllDishesWeekly.length === 0 ? (
+                  <ListItem>
+                    <ListItemText 
+                      primary="Không tìm thấy món phù hợp" 
+                      secondary={dishSearchWeekly ? `Từ khóa: "${dishSearchWeekly}"` : 'Vui lòng thêm món ăn ở phần trên'}
+                    />
+                  </ListItem>
+                ) : (
+                  filteredAllDishesWeekly.map(d => (
+                    <ListItem 
+                      key={d._id} 
+                      button 
+                      onClick={() => handleToggleDishForWeekly(d._id)}
+                      sx={{ '&:hover': { backgroundColor: '#fafafa' }, py: 0.5 }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <Checkbox 
+                          edge="start" 
+                          color="success"
+                          checked={selectedDishesForWeekly.has(d._id)} 
+                          tabIndex={-1} 
+                          disableRipple
+                          size="small" 
+                        />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primaryTypographyProps={{ sx: { fontWeight: selectedDishesForWeekly.has(d._id) ? 'bold' : 500 } }}
+                        primary={d.dish_name}
+                      />
+                    </ListItem>
+                  ))
+                )}
+              </List>
+            </Grid>
+          </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setWeeklyMealDialogOpen(false)}>Hủy</Button>
