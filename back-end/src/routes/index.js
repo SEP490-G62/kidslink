@@ -12,6 +12,7 @@ const classRouter = require('./class');
 const classAgeRouter = require('./classAge');
 const studentRouter = require('./student');
 const schoolAdminPostRouter = require('./schoolAdminPost');
+const feeRouter = require('./fee');
 
 // Định tuyến các API endpoints
 router.use('/auth', authRouter);
@@ -24,6 +25,7 @@ router.use('/classes', classRouter);
 router.use('/class-ages', classAgeRouter);
 router.use('/student', studentRouter);
 router.use('/school-admin/posts', schoolAdminPostRouter);
+router.use('/fees', feeRouter);
 
 
 module.exports = router;

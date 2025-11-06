@@ -7,6 +7,7 @@ import SchoolDashboard from "layouts/school-admin/pages/Dashboard";
 import ChildrenPage from "layouts/school-admin/pages/Children";
 import ManagePost from "layouts/school-admin/pages/ManagePost";
 import ManageAccountPage from "layouts/school-admin/pages/ManageAccount";
+import ManageTuition from "layouts/school-admin/pages/ManageTuition";
 import Profile from "layouts/profile";
 import { useEffect } from "react";
 import { useAuth } from "context/AuthContext";
@@ -76,6 +77,16 @@ const schoolAdminRoutes = [
       <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-single-02" />
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageAccountPage /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Quản lý học phí",
+    key: "school-admin-tuition",
+    route: "/school-admin/tuition",
+    icon: (
+      <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-money-coins" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageTuition /></ProtectedRoute>,
   },
   {
     type: "divider",
