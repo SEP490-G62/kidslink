@@ -6,6 +6,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 // Note: using simple Paper KPI to avoid theme dark-mode text issues
 import DefaultDoughnutChart from "examples/Charts/DoughnutCharts/DefaultDoughnutChart";
 import colorsTheme from "assets/theme/base/colors";
@@ -198,6 +199,7 @@ function SchoolDashboard() {
 
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <ArgonBox py={3} position="relative" zIndex={3}>
         <ArgonBox mb={3} display="flex" justifyContent="space-between" alignItems="center">
           <ArgonTypography variant="h5" fontWeight="bold" color="white">Tổng quan trường</ArgonTypography>

@@ -24,6 +24,7 @@ import Chip from "@mui/material/Chip";
 import { Edit as EditIcon, Delete as DeleteIcon, Restore as RestoreIcon, Search as SearchIcon, Add as AddIcon, KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import InputAdornment from "@mui/material/InputAdornment";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import ArgonButton from "components/ArgonButton";
@@ -219,6 +220,7 @@ function ManageAccountPage() {
 
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <ArgonBox py={3} position="relative" zIndex={3}>
         <ArgonBox mb={3} display="flex" justifyContent="space-between" alignItems="center">
           <ArgonTypography variant="h5" fontWeight="bold" color="white">Quản lý tài khoản</ArgonTypography>
