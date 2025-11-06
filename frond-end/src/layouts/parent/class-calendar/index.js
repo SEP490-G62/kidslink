@@ -29,6 +29,7 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "context/AuthContext";
+import Footer from "examples/Footer";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -44,6 +45,7 @@ function ClassCalendar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [calendarData, setCalendarData] = useState(null);
+  const [timeSlotsApi, setTimeSlotsApi] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedWeek, setSelectedWeek] = useState(0);
 
@@ -98,6 +100,9 @@ function ClassCalendar() {
         setError("");
         const data = await parentService.getLatestClassCalendar(selectedChild?._id);
         if (mounted) setCalendarData(data);
+        // Lấy danh sách khung giờ chuẩn
+        const slots = await parentService.getClassTimeSlots();
+        if (mounted) setTimeSlotsApi(slots);
       } catch (e) {
         if (mounted) setError(e.message || 'Không thể tải lịch lớp');
       } finally {
@@ -107,21 +112,23 @@ function ClassCalendar() {
     return () => { mounted = false; };
   }, [selectedChild]);
 
-  // Tạo map slots theo ngày
+  // Tạo map slots theo ngày (gom nhiều calendar cùng ngày, mỗi calendar 1 slot)
   const slotsByDay = useMemo(() => {
     if (!calendarData || !calendarData.calendars) return new Map();
     
     const map = new Map();
     
     weekDays.forEach(day => {
-      const calendar = calendarData.calendars.find(c => {
+      const calendarsOfDay = calendarData.calendars.filter(c => {
         const calDate = new Date(c.date);
         const calDateStr = calDate.toISOString().split('T')[0];
         return calDateStr === day.isoDate;
       });
       
-      if (calendar && calendar.slots && calendar.slots.length > 0) {
-        const sortedSlots = [...calendar.slots].sort((a, b) => {
+      const slots = calendarsOfDay.flatMap(c => Array.isArray(c.slots) ? c.slots : []);
+
+      if (slots.length > 0) {
+        const sortedSlots = [...slots].sort((a, b) => {
           const timeA = a.startTime || '00:00';
           const timeB = b.startTime || '00:00';
           return timeA.localeCompare(timeB);
@@ -132,6 +139,47 @@ function ClassCalendar() {
     
     return map;
   }, [calendarData, weekDays]);
+
+  // Danh sách khung giờ duy nhất (start-end) từ tất cả ngày trong tuần, sắp xếp tăng dần
+  const timeSlots = useMemo(() => {
+    // Nếu API có trả danh sách slot -> dùng để đảm bảo các hàng cố định
+    if (Array.isArray(timeSlotsApi) && timeSlotsApi.length > 0) {
+      const list = timeSlotsApi.map(s => ({
+        label: `${s.startTime || '00:00'} - ${s.endTime || '00:00'}`,
+        name: s.slotName || ''
+      }));
+      // Unique theo label, giữ tên đầu tiên
+      const map = new Map();
+      list.forEach(it => { if (!map.has(it.label)) map.set(it.label, it.name); });
+      return Array.from(map.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([label, name]) => ({ label, name }));
+    }
+    // Fallback: tự gom từ data lịch và lấy tên slot phổ biến nhất theo label
+    const labelToNames = new Map(); // label -> array names
+    weekDays.forEach(day => {
+      const slots = slotsByDay.get(day.isoDate) || [];
+      slots.forEach(s => {
+        const start = s.startTime || '00:00';
+        const end = s.endTime || '00:00';
+        const label = `${start} - ${end}`;
+        const name = s.slotName || '';
+        if (!labelToNames.has(label)) labelToNames.set(label, []);
+        if (name) labelToNames.get(label).push(name);
+      });
+    });
+    const labels = Array.from(labelToNames.keys()).sort((a, b) => a.localeCompare(b));
+    return labels.map(label => {
+      const names = labelToNames.get(label) || [];
+      // chọn tên xuất hiện nhiều nhất
+      const freq = new Map();
+      names.forEach(n => freq.set(n, (freq.get(n) || 0) + 1));
+      let best = '';
+      let bestCount = 0;
+      freq.forEach((count, n) => { if (count > bestCount) { best = n; bestCount = count; } });
+      return { label, name: best };
+    });
+  }, [timeSlotsApi, slotsByDay, weekDays]);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -363,7 +411,7 @@ function ClassCalendar() {
                   <Grid item xs={12} sm={6} md={3}>
                     <ArgonBox>
                       <Typography variant="body2" fontWeight="medium" color="text" sx={{ mb: 1.5 }}>
-                        Năm học
+                        Năm
                       </Typography>
                       <FormControl fullWidth size="small">
                         <Select
@@ -490,8 +538,22 @@ function ClassCalendar() {
                   }}
                 >
                   <TableBody>
-                    {/* Day Headers */}
+                  {/* Header hàng tiêu đề: cột đầu là Thời gian, sau đó các ngày */}
                     <TableRow>
+                    <TableCell 
+                      align="center"
+                      sx={{ 
+                        p: '16px 12px !important',
+                        backgroundColor: '#f1f3f5',
+                        borderBottom: '2px solid #dee2e6',
+                        width: '120px !important',
+                        maxWidth: '140px !important'
+                      }}
+                    >
+                      <ArgonTypography variant="subtitle2" fontWeight="bold" color="text">
+                        Thời gian
+                      </ArgonTypography>
+                    </TableCell>
                       {weekDays.map(day => (
                         <TableCell 
                           key={`header-${day.isoDate}`}
@@ -539,21 +601,141 @@ function ClassCalendar() {
                         </TableCell>
                       ))}
                     </TableRow>
-                    {/* Activities Row */}
+
+                  {/* Mỗi hàng tương ứng một khung giờ */}
+                  {timeSlots.length === 0 ? (
                     <TableRow>
-                      {weekDays.map(day => (
+                      <TableCell colSpan={weekDays.length + 1} align="center" sx={{ p: '24px !important' }}>
+                        <Typography variant="body2" color="text.secondary">Không có hoạt động</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    timeSlots.map(ts => (
+                      <TableRow key={`row-${ts.label}`}>
+                        {/* Cột thời gian */}
                         <TableCell 
-                          key={day.isoDate}
+                          align="center"
                           sx={{
-                            minHeight: 250,
-                            p: '0 !important',
-                            backgroundColor: day.isToday ? '#f8fbff' : '#fff'
+                            p: '12px !important',
+                            backgroundColor: '#fff',
+                            color: '#495057',
+                            borderRight: '2px solid #e9ecef'
                           }}
                         >
-                          {getDayActivities(day)}
+                          <ArgonBox>
+                            <ArgonTypography variant="button" fontWeight="bold" sx={{ color: '#343a40', display: 'block', mb: 0.5 }}>
+                              {ts.name || 'Khung giờ'}
+                            </ArgonTypography>
+                            <Chip
+                              label={ts.label}
+                              size="small"
+                              sx={{
+                                height: 22,
+                                fontSize: '0.72rem',
+                                backgroundColor: '#e9f7ef',
+                                color: '#2e7d32',
+                                fontWeight: 600
+                              }}
+                            />
+                          </ArgonBox>
                         </TableCell>
-                      ))}
+                        {/* Các cột ngày cho khung giờ này */}
+                        {weekDays.map(day => {
+                          const slots = slotsByDay.get(day.isoDate) || [];
+                          const slot = slots.find(s => `${s.startTime || '00:00'} - ${s.endTime || '00:00'}` === ts.label);
+                          return (
+                            <TableCell 
+                              key={`cell-${day.isoDate}-${ts.label}`}
+                              sx={{
+                                p: '8px !important',
+                                backgroundColor: day.isToday ? '#f8fbff' : '#fff',
+                                verticalAlign: 'top'
+                              }}
+                            >
+                              {slot ? (
+                                <Card
+                                  sx={{
+                                    borderRadius: 2,
+                                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.08)',
+                                    backgroundColor: '#fff',
+                                    border: '1px solid #e9ecef',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                    <ArgonBox sx={{ flex: 1, minWidth: 0 }}>
+                                      <ArgonTypography 
+                                        variant="body2" 
+                                        fontWeight="bold" 
+                                        sx={{ 
+                                          mb: 0.75,
+                                          color: '#1976d2',
+                                          fontSize: '0.98rem',
+                                          lineHeight: 1.4
+                                        }}
+                                      >
+                                        {slot.activity?.name || slot.slotName || 'Hoạt động'}
+                                      </ArgonTypography>
+                                      <ArgonBox display="flex" alignItems="center" gap={1} mb={0.5}>
+                                        <Chip
+                                          label={`${slot.startTime || ''}-${slot.endTime || ''}`}
+                                          size="small"
+                                          sx={{
+                                            height: 20,
+                                            fontSize: '0.7rem',
+                                            backgroundColor: '#e3f2fd',
+                                            color: '#1976d2',
+                                            fontWeight: 600
+                                          }}
+                                        />
+                                        {slot.slotName && (
+                                          <Chip
+                                            label={slot.slotName}
+                                            size="small"
+                                            sx={{
+                                              height: 20,
+                                              fontSize: '0.7rem',
+                                              backgroundColor: '#f1f3f5',
+                                              color: '#495057',
+                                              fontWeight: 600
+                                            }}
+                                          />
+                                        )}
+                                      </ArgonBox>
+                                      <ArgonBox display="flex" alignItems="center" mt={0.5}>
+                                        <Typography 
+                                          variant="caption" 
+                                          sx={{ 
+                                            fontSize: '0.75rem',
+                                            color: '#666'
+                                          }}
+                                        >
+                                          Giáo viên: {slot.teacher?.fullName || calendarData?.class?.teacher?.fullName || 'Chưa xác định'}
+                                        </Typography>
+                                      </ArgonBox>
+                                      {slot.activity?.require_outdoor === 1 && (
+                                        <Chip
+                                          label="Ngoài trời"
+                                          size="small"
+                                          sx={{
+                                            height: 18,
+                                            fontSize: '0.65rem',
+                                            backgroundColor: '#e8f5e9',
+                                            color: '#2e7d32',
+                                            mt: 0.5
+                                          }}
+                                        />
+                                      )}
+                                    </ArgonBox>
+                                  </CardContent>
+                                </Card>
+                              ) : null}
+                            </TableCell>
+                          );
+                        })}
                     </TableRow>
+                    ))
+                  )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -579,6 +761,8 @@ function ClassCalendar() {
           </Card>
         )}
       </ArgonBox>
+            <Footer />
+
     </DashboardLayout>
   );
 }

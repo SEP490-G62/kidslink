@@ -22,6 +22,7 @@ import ListItemText from "@mui/material/ListItemText";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
+import Footer from "examples/Footer";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -376,6 +377,8 @@ function DailyReport() {
           </ArgonBox>
         )}
       </ArgonBox>
+      <Footer />
+
     </DashboardLayout>
   );
 }

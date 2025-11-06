@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const messagingRouter = require('./messaging');
 
 // Import các router con
 const authRouter = require('./auth');
@@ -29,5 +30,6 @@ router.use('/school-admin/posts', schoolAdminPostRouter);
 router.use('/school-admin/calendar', schoolAdminCalendarRouter);
 router.use('/fees', feeRouter);
 
+router.use('/api/messaging', messagingRouter);
 
 module.exports = router;

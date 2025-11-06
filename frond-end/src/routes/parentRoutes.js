@@ -23,7 +23,6 @@ import ParentFeePayment from "layouts/parent/fee-payment/index";
 import ParentPersonalInfo from "layouts/parent/personal-info/index";
 import ParentComplaintsFeedback from "layouts/parent/complaints-feedback/index";
 import ParentChat from "layouts/parent/chat/index";
-import ChatDetail from "layouts/parent/chat/detail";
 
 // Logout component
 import { useEffect } from "react";
