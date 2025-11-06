@@ -125,7 +125,7 @@ function Illustration() {
               navigate('/dashboard');
               break;
             case 'school_admin':
-              navigate('/school-admin/classes');
+              navigate('/school-admin/dashboard');
               break;
             case 'teacher':
               navigate('/teacher');
