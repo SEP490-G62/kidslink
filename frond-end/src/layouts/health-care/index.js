@@ -416,7 +416,7 @@ export default function HealthCareStaffDashboard() {
                             <ListItemText
                               primary={<ArgonTypography fontWeight="bold">{n.symptoms}</ArgonTypography>}
                               secondary={<>
-                                <ArgonTypography fontSize={14}>Thời gian: {n.notice_time}</ArgonTypography>
+                                <ArgonTypography fontSize={14}>Thời gian: {n.notice_time ? new Date(n.notice_time).toLocaleString('vi-VN') : ''}</ArgonTypography>
                                 <ArgonTypography fontSize={13} color="secondary">Hành động: {n.actions_taken} | Thuốc: {n.medications}</ArgonTypography>
                                 <ArgonTypography fontSize={12}>Ghi chú: {n.note}</ArgonTypography>
                               </>}
