@@ -9,14 +9,10 @@ import {
   Paper,
   IconButton,
   TextField,
-  Chip,
   Select,
   MenuItem,
   InputAdornment,
-  Box,
-  Switch,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -36,47 +32,10 @@ const ClassesPage = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filterYear, setFilterYear] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
   const [yearSelectOpen, setYearSelectOpen] = useState(false);
-  const [statusSelectOpen, setStatusSelectOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
   const navigate = useNavigate();
-
-  const StatusSwitch = React.useMemo(
-    () =>
-      styled(Switch)(({ theme }) => ({
-        width: 44,
-        height: 24,
-        padding: 0,
-        display: "inline-flex",
-        "& .MuiSwitch-switchBase": {
-          padding: 2,
-          top: 0,
-          left: 0,
-          transform: "translateX(2px)",
-          "&.Mui-checked": {
-            transform: "translateX(20px)",
-            "& + .MuiSwitch-track": {
-              backgroundColor: "#22c55e !important",
-              opacity: 1,
-            },
-          },
-        },
-        "& .MuiSwitch-thumb": {
-          width: 20,
-          height: 20,
-          boxShadow: "none",
-          backgroundColor: "#fff",
-        },
-        "& .MuiSwitch-track": {
-          borderRadius: 12,
-          backgroundColor: "#e5e7eb !important",
-          opacity: 1,
-        },
-      })),
-    []
-  );
 
   const fetchClasses = async () => {
     try {
@@ -109,11 +68,10 @@ const ClassesPage = () => {
       );
       
       const matchesYear = filterYear === "" || c.academic_year === filterYear;
-      const matchesStatus = filterStatus === "" || c.status === Number(filterStatus);
       
-      return matchesSearch && matchesYear && matchesStatus;
+      return matchesSearch && matchesYear;
     });
-  }, [classes, search, filterYear, filterStatus]);
+  }, [classes, search, filterYear]);
 
   // Get unique academic years for filter
   const academicYears = useMemo(() => {
@@ -152,17 +110,6 @@ const ClassesPage = () => {
     } catch (e) {
       console.error("Lỗi khi xóa lớp:", e);
       alert("Không thể xóa lớp. Vui lòng thử lại.");
-    }
-  };
-
-  const handleToggleStatus = async (classRow) => {
-    const newStatus = classRow.status === 1 ? 0 : 1;
-    setClasses((prev) => prev.map((c) => (c._id === classRow._id ? { ...c, status: newStatus } : c)));
-    try {
-      await api.put(`/classes/${classRow._id}`, { status: newStatus }, true);
-    } catch (e) {
-      console.error("Lỗi khi cập nhật trạng thái lớp:", e);
-      setClasses((prev) => prev.map((c) => (c._id === classRow._id ? { ...c, status: classRow.status } : c)));
     }
   };
 
@@ -224,20 +171,6 @@ const ClassesPage = () => {
               </MenuItem>
             ))}
           </Select>
-          <Select
-            size="small"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            displayEmpty
-            onOpen={() => setStatusSelectOpen(true)}
-            onClose={() => setStatusSelectOpen(false)}
-            IconComponent={statusSelectOpen ? KeyboardArrowUp : KeyboardArrowDown}
-            sx={{ width: 180, bgcolor: 'white', borderRadius: 1 }}
-          >
-            <MenuItem value="">Tất cả trạng thái</MenuItem>
-            <MenuItem value="1">Hoạt động</MenuItem>
-            <MenuItem value="0">Không hoạt động</MenuItem>
-          </Select>
           <ArgonTypography variant="caption" color="white" ml={1}>
             Tìm thấy: {filtered.length} lớp
           </ArgonTypography>
@@ -266,13 +199,12 @@ const ClassesPage = () => {
               }}
             >
               <colgroup>
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "20%" }} />
-                <col style={{ width: "18%" }} />
-                <col style={{ width: "14%" }} />
-                <col style={{ width: "12%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "11%" }} />
               </colgroup>
               <TableHead>
                 <TableRow>
@@ -290,9 +222,6 @@ const ClassesPage = () => {
                   </TableCell>
                   <TableCell>
                     <strong>Giáo viên phụ</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Trạng thái</strong>
                   </TableCell>
                   <TableCell>
                     <strong>Thao tác</strong>
@@ -329,18 +258,6 @@ const ClassesPage = () => {
                         </ArgonTypography>
                       </TableCell>
                       <TableCell>
-                        <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
-                          <ArgonTypography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
-                            {c.status === 1 ? "Hoạt động" : "Không hoạt động"}
-                          </ArgonTypography>
-                          <StatusSwitch
-                            size="small"
-                            checked={c.status === 1}
-                            onChange={() => handleToggleStatus(c)}
-                          />
-                        </Box>
-                      </TableCell>
-                      <TableCell>
                         <IconButton
                           size="small"
                           color="primary"
@@ -370,7 +287,7 @@ const ClassesPage = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={6} align="center">
                       <ArgonTypography variant="body2" color="text">
                         {search
                           ? "Không tìm thấy lớp học nào phù hợp"

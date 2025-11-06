@@ -7,6 +7,7 @@ import SchoolDashboard from "layouts/school-admin/pages/Dashboard";
 import ChildrenPage from "layouts/school-admin/pages/Children";
 import ManagePost from "layouts/school-admin/pages/ManagePost";
 import ManageAccountPage from "layouts/school-admin/pages/ManageAccount";
+import ManageCalendar from "layouts/school-admin/pages/ManageCalendar";
 
 const schoolAdminRoutes = [
   {
@@ -38,6 +39,16 @@ const schoolAdminRoutes = [
       <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-single-02" />
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ChildrenPage /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Quản lý lịch học",
+    key: "manage-calendar",
+    route: "/school-admin/calendar",
+    icon: (
+      <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-calendar-grid-58" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageCalendar /></ProtectedRoute>,
   },
   {
     type: "route",

@@ -9,6 +9,7 @@ import GalleryModal from "layouts/parent/posts/GalleryModal";
 import LikesModal from "layouts/parent/posts/LikesModal";
 import CommentModal from "layouts/parent/posts/CommentModal";
 import api from "services/api";
+import schoolAdminService from "services/schoolAdminService";
 
 const ManagePost = () => {
   const [posts, setPosts] = useState([]);
@@ -64,6 +65,34 @@ const ManagePost = () => {
     }
   };
 
+  const handleLike = async (postId) => {
+    try {
+      const response = await schoolAdminService.toggleLike(postId);
+      if (response.data?.success) {
+        // Update post like status in local state
+        setPosts(prevPosts => 
+          prevPosts.map(post => {
+            if (post._id === postId) {
+              const currentLikes = post.like_count || post.likes_count || 0;
+              const isLiked = response.data.isLiked;
+              return {
+                ...post,
+                is_liked: isLiked,
+                isLiked: isLiked,
+                like_count: isLiked ? currentLikes + 1 : currentLikes - 1,
+                likes_count: isLiked ? currentLikes + 1 : currentLikes - 1
+              };
+            }
+            return post;
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      alert("Lỗi khi thích bài đăng: " + (error.message || "Vui lòng thử lại"));
+    }
+  };
+
   const handleSuccess = () => {
     fetchPosts();
     setCreateModalOpen(false);
@@ -90,12 +119,13 @@ const ManagePost = () => {
             <PostCard
               key={post._id}
               post={post}
-              onEdit={() => handleEdit(post)}
-              onDelete={() => handleDelete(post._id)}
-              onGallery={() => { setSelectedPost(post); setGalleryOpen(true); }}
-              onLikes={() => { setSelectedPost(post); setLikesOpen(true); }}
+              currentUserId={null}
+              onLike={() => handleLike(post._id)}
               onComment={() => { setSelectedPost(post); setCommentOpen(true); }}
-              isAdmin
+              onShowLikes={() => { setSelectedPost(post); setLikesOpen(true); }}
+              onOpenGallery={() => { setSelectedPost(post); setGalleryOpen(true); }}
+              onEditPost={() => handleEdit(post)}
+              onDeletePost={() => handleDelete(post._id)}
             />
           ))
         ) : (

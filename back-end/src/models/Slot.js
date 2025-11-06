@@ -22,12 +22,12 @@ const slotSchema = new mongoose.Schema({
   activity_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Activity',
-    required: true
+    required: false // Không bắt buộc - tiết học chỉ cần thời gian
   },
   teacher_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Teacher',
-    required: true
+    required: false // Không bắt buộc
   }
 }, {
   timestamps: true
