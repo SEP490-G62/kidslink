@@ -1,6 +1,32 @@
 const DailyReport = require('../models/DailyReport');
 const Student = require('../models/Student');
 
+// Helper function: Lấy ngày hiện tại theo múi giờ Việt Nam (UTC+7)
+const getTodayVietnam = () => {
+  const now = new Date();
+  // getTime() trả về UTC timestamp, cộng thêm 7 giờ để có giờ Việt Nam
+  const vietnamTime = now.getTime() + (7 * 60 * 60 * 1000);
+  const vietnamDate = new Date(vietnamTime);
+  const year = vietnamDate.getUTCFullYear();
+  const month = String(vietnamDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(vietnamDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function: Chuyển Date sang ngày theo múi giờ Việt Nam (UTC+7)
+const getDateVietnam = (date) => {
+  if (!date) return null;
+  const dateObj = date instanceof Date ? date : new Date(date);
+  // Lấy UTC time và cộng thêm 7 giờ để có giờ Việt Nam
+  const utcTime = dateObj.getTime();
+  const vietnamTime = utcTime + (7 * 60 * 60 * 1000);
+  const vietnamDate = new Date(vietnamTime);
+  const year = vietnamDate.getUTCFullYear();
+  const month = String(vietnamDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(vietnamDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Validation chung cho checkin và checkout
 const studentValidators = [
   (req, res, next) => {
@@ -196,8 +222,7 @@ const updateComment = async (req, res) => {
     const reportId = req.params.id;
     const { comments, report_date } = req.body;
     const user_id = req.user.id;
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = getTodayVietnam(); // Sử dụng múi giờ Việt Nam
     let reqDateStr = '';
     if (report_date) {
       reqDateStr = new Date(report_date).toISOString().split('T')[0];
@@ -208,7 +233,7 @@ const updateComment = async (req, res) => {
     console.log('report_date (client):', report_date);
     console.log('reqDateStr:', reqDateStr);
     console.log('user_id:', user_id);
-    console.log('server today:', todayStr);
+    console.log('server today (Vietnam):', todayStr);
     // Tìm teacher tương ứng với user_id
     const Teacher = require('../models/Teacher');
     const teacher = await Teacher.findOne({ user_id });
@@ -226,9 +251,11 @@ const updateComment = async (req, res) => {
     report = await DailyReport.findById(reportId);
     if (report) {
       // Nếu vừa khớp student_id, vừa đúng ngày mới cho sửa
-      const reportDateStr = new Date(report.report_date).toISOString().split('T')[0];
+      // Chuyển report_date sang múi giờ Việt Nam để so sánh
+      const reportDateStr = getDateVietnam(report.report_date);
       if (reportDateStr !== todayStr) {
         console.log('Chỉ được phép nhận xét ngày hôm nay (reportDateStr !== todayStr)');
+        console.log('reportDateStr:', reportDateStr, 'todayStr:', todayStr);
         return res.status(403).json({ error: 'Chỉ được phép nhận xét ngày hôm nay!' });
       }
       // Check quyền
@@ -248,11 +275,14 @@ const updateComment = async (req, res) => {
         return res.status(404).json({ error: 'Không tìm thấy học sinh!' });
       }
       // kiểm tra đã có report hôm nay chưa
+      // Tính ngày bắt đầu và kết thúc theo múi giờ Việt Nam
+      const todayStart = new Date(todayStr + 'T00:00:00+07:00');
+      const todayEnd = new Date(todayStr + 'T23:59:59+07:00');
       let reportToday = await DailyReport.findOne({
         student_id: student._id,
         report_date: {
-          $gte: new Date(todayStr + 'T00:00:00.000Z'),
-          $lt: new Date(todayStr + 'T23:59:59.999Z')
+          $gte: todayStart,
+          $lt: new Date(todayEnd.getTime() + 1000) // Thêm 1 giây để bao gồm 23:59:59
         }
       });
       if (reportToday) {
@@ -265,8 +295,9 @@ const updateComment = async (req, res) => {
         return res.status(200).json({ message: 'Đánh giá học sinh thành công', report: updated });
       } else {
         // Chưa có report, tạo mới cho hôm nay, luôn set comments = 'Nghỉ'
+        const todayStart = new Date(todayStr + 'T00:00:00+07:00');
         let newReport = new DailyReport({
-          report_date: new Date(todayStr + 'T00:00:00.000Z'),
+          report_date: todayStart,
           checkin_time: undefined,
           checkout_time: undefined,
           comments: 'Nghỉ',
@@ -286,10 +317,82 @@ const updateComment = async (req, res) => {
   }
 };
 
+// Lấy lịch sử daily reports của học sinh theo tuần
+const getStudentWeeklyReports = async (req, res) => {
+  try {
+    const { student_id } = req.params;
+    const { week_start } = req.query; // Format: YYYY-MM-DD (ngày đầu tuần, thường là thứ 2)
+    
+    if (!student_id) {
+      return res.status(400).json({ error: 'student_id là bắt buộc' });
+    }
+    
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(student_id)) {
+      return res.status(400).json({ error: 'student_id không hợp lệ' });
+    }
+    
+    // Kiểm tra student có tồn tại không
+    const Student = require('../models/Student');
+    const student = await Student.findById(student_id);
+    if (!student) {
+      return res.status(404).json({ error: 'Không tìm thấy học sinh' });
+    }
+    
+    // Tính toán khoảng thời gian tuần
+    let weekStart, weekEnd;
+    if (week_start) {
+      // Parse ngày đầu tuần (thứ 2)
+      const date = new Date(week_start + 'T00:00:00.000Z');
+      weekStart = new Date(date);
+      weekEnd = new Date(date);
+      weekEnd.setDate(weekEnd.getDate() + 7); // 7 ngày sau
+    } else {
+      // Mặc định: tuần hiện tại (thứ 2 đến chủ nhật)
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0 = Chủ nhật, 1 = Thứ 2, ...
+      const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Đưa về thứ 2
+      weekStart = new Date(today);
+      weekStart.setDate(today.getDate() + diff);
+      weekStart.setHours(0, 0, 0, 0);
+      weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 7);
+    }
+    
+    // Tìm tất cả daily reports trong tuần
+    const reports = await DailyReport.find({
+      student_id: student_id,
+      report_date: {
+        $gte: weekStart,
+        $lt: weekEnd
+      }
+    })
+      .sort({ report_date: 1 })
+      .populate({ path: 'teacher_checkin_id', populate: { path: 'user_id', select: 'full_name avatar_url' } })
+      .populate({ path: 'teacher_checkout_id', populate: { path: 'user_id', select: 'full_name avatar_url' } })
+      .lean();
+    
+    return res.status(200).json({
+      success: true,
+      data: reports,
+      week_start: weekStart.toISOString().split('T')[0],
+      week_end: new Date(weekEnd.getTime() - 1).toISOString().split('T')[0]
+    });
+    
+  } catch (error) {
+    console.error('[ERROR getStudentWeeklyReports]', error);
+    res.status(500).json({
+      error: 'Lỗi server khi lấy lịch sử báo cáo',
+      details: error.message
+    });
+  }
+};
+
 
 module.exports = {
   studentValidators,
   checkIn,
   checkOut,
   updateComment,
+  getStudentWeeklyReports,
 };

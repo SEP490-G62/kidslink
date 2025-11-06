@@ -709,6 +709,8 @@ function ChildInformation() {
           </Button>
         </DialogActions>
       </Dialog>
+            <Footer />
+
     </DashboardLayout>
   );
 }

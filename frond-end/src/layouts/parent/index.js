@@ -594,7 +594,7 @@ function ParentDashboard() {
         onPostCreated={handlePostCreated}
       />
 
-      {/* <Footer /> */}
+      <Footer />
     </DashboardLayout>
   );
 }

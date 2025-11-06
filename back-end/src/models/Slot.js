@@ -13,21 +13,6 @@ const slotSchema = new mongoose.Schema({
   end_time: {
     type: String,
     required: true
-  },
-  calendar_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Calendar',
-    required: true
-  },
-  activity_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Activity',
-    required: true
-  },
-  teacher_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Teacher',
-    required: true
   }
 }, {
   timestamps: true

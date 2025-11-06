@@ -5,10 +5,7 @@ const {
   StudentClass,
   Class: ClassModel,
   Calendar,
-  Slot,
-  Activity,
-  Teacher,
-  WeekDay
+  Slot
 } = require('../../models');
 
 // GET /parent/class-calendar?student_id=optional
@@ -81,14 +78,10 @@ async function getClassCalendarLatest(req, res) {
 
     const latestClass = sortedByYearDesc[0].class_id;
 
-    // Lấy tất cả calendar của lớp đó và join dữ liệu liên quan
+    // Lấy tất cả calendar của lớp đó và join dữ liệu liên quan (slot/activity/teacher)
     const calendars = await Calendar.find({ class_id: latestClass._id })
-      .populate('weekday_id');
-
-    const calendarIds = calendars.map(c => c._id);
-
-    // Lấy slots theo calendar
-    const slots = await Slot.find({ calendar_id: { $in: calendarIds } })
+      .populate('weekday_id')
+      .populate('slot_id')
       .populate('activity_id')
       .populate({
         path: 'teacher_id',
@@ -98,29 +91,6 @@ async function getClassCalendarLatest(req, res) {
           model: 'User'
         }
       });
-
-    // Group slots theo calendar_id
-    const calendarIdToSlots = new Map();
-    for (const slot of slots) {
-      const key = slot.calendar_id.toString();
-      if (!calendarIdToSlots.has(key)) calendarIdToSlots.set(key, []);
-      calendarIdToSlots.get(key).push({
-        id: slot._id,
-        slotName: slot.slot_name,
-        startTime: slot.start_time,
-        endTime: slot.end_time,
-        activity: slot.activity_id ? {
-          id: slot.activity_id._id,
-          name: slot.activity_id.activity_name || slot.activity_id.name || 'Hoạt động',
-          description: slot.activity_id.description,
-          require_outdoor: typeof slot.activity_id.require_outdoor === 'number' ? slot.activity_id.require_outdoor : 0
-        } : null,
-        teacher: slot.teacher_id ? {
-          id: slot.teacher_id._id,
-          fullName: slot.teacher_id.user_id?.full_name || slot.teacher_id.full_name || 'Giáo viên'
-        } : null
-      });
-    }
 
     // Lấy teacher của class (teacher_id)
     const classTeacher = latestClass.teacher_id && latestClass.teacher_id.user_id 
@@ -143,7 +113,23 @@ async function getClassCalendarLatest(req, res) {
           id: c._id,
           date: c.date,
           weekday: c.weekday_id ? c.weekday_id.day_of_week : null,
-          slots: calendarIdToSlots.get(c._id.toString()) || []
+          // Theo logic mới, mỗi calendar gắn trực tiếp 1 slot/activity/teacher
+          slots: c.slot_id ? [{
+            id: c.slot_id._id,
+            slotName: c.slot_id.slot_name,
+            startTime: c.slot_id.start_time,
+            endTime: c.slot_id.end_time,
+            activity: c.activity_id ? {
+              id: c.activity_id._id,
+              name: c.activity_id.activity_name || c.activity_id.name || 'Hoạt động',
+              description: c.activity_id.description,
+              require_outdoor: typeof c.activity_id.require_outdoor === 'number' ? c.activity_id.require_outdoor : 0
+            } : null,
+            teacher: c.teacher_id ? {
+              id: c.teacher_id._id,
+              fullName: c.teacher_id.user_id?.full_name || c.teacher_id.full_name || 'Giáo viên'
+            } : null
+          }] : []
         }))
     };
 
@@ -155,5 +141,25 @@ async function getClassCalendarLatest(req, res) {
 }
 
 module.exports = { getClassCalendarLatest };
+
+// GET /parent/class-calendar/slots
+// Trả về danh sách slot (khung giờ) chuẩn để render theo hàng
+async function getClassTimeSlots(req, res) {
+  try {
+    const slots = await Slot.find({}).sort({ start_time: 1, end_time: 1 });
+    const data = slots.map(s => ({
+      id: s._id,
+      slotName: s.slot_name,
+      startTime: s.start_time,
+      endTime: s.end_time
+    }));
+    return res.json({ data });
+  } catch (error) {
+    console.error('getClassTimeSlots Error:', error);
+    return res.status(500).json({ error: 'Lỗi lấy danh sách khung giờ' });
+  }
+}
+
+module.exports.getClassTimeSlots = getClassTimeSlots;
 
 

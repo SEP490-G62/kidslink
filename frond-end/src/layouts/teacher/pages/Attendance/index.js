@@ -11,7 +11,7 @@ Coded by KidsLink Team
  =========================================================
 */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Grid, 
   Card, 
@@ -69,9 +69,13 @@ const TeacherAttendance = () => {
   const [students, setStudents] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [classInfo, setClassInfo] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   const [checkingIn, setCheckingIn] = useState(null);
   const [checkingOut, setCheckingOut] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -80,6 +84,64 @@ const TeacherAttendance = () => {
     type: null, // 'checkin' or 'checkout'
     student: null
   });
+  const wasTodayRef = useRef(false); // Lưu lại xem lần trước có đang ở ngày hôm nay không
+
+  // Tự động cập nhật ngày khi sang ngày mới (sau 00:00) - chỉ khi đang ở ngày hôm nay
+  useEffect(() => {
+    const getTodayString = () => {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // Kiểm tra xem đang ở ngày hôm nay không
+    const todayStr = getTodayString();
+    const isCurrentlyToday = selectedDate === todayStr;
+    
+    // QUAN TRỌNG: Reset trạng thái theo dõi dựa trên selectedDate hiện tại
+    // Nếu đang ở ngày hôm nay, đánh dấu để theo dõi
+    // Nếu đang ở ngày khác, TẮT theo dõi ngay lập tức
+    if (isCurrentlyToday) {
+      wasTodayRef.current = true;
+    } else {
+      // Đang xem ngày khác, TẮT theo dõi ngay lập tức để tránh tự động reset
+      wasTodayRef.current = false;
+    }
+
+    // Kiểm tra mỗi giây để phát hiện ngay khi sang ngày mới (00:00:00)
+    // Chỉ tự động cập nhật khi đang ở ngày hôm nay và sang ngày mới
+    const interval = setInterval(() => {
+      const currentTodayStr = getTodayString();
+      const currentSelectedDate = selectedDate; // Capture giá trị hiện tại
+      
+      // Chỉ tự động cập nhật khi:
+      // 1. Lần trước đang ở ngày hôm nay (wasTodayRef.current === true)
+      // 2. Và đã sang ngày mới (currentSelectedDate !== currentTodayStr)
+      if (wasTodayRef.current && currentSelectedDate !== currentTodayStr) {
+        // Kiểm tra lại: chỉ cập nhật nếu selectedDate hiện tại là ngày hôm qua (1 ngày trước)
+        const selectedDateObj = new Date(currentSelectedDate + 'T00:00:00');
+        const todayDateObj = new Date(currentTodayStr + 'T00:00:00');
+        const diffDays = Math.round((todayDateObj - selectedDateObj) / (1000 * 60 * 60 * 24));
+        
+        // Chỉ tự động cập nhật nếu chênh lệch đúng 1 ngày (hôm qua -> hôm nay)
+        if (diffDays === 1) {
+          // Đã sang ngày mới từ hôm qua, tự động cập nhật
+          setSelectedDate(currentTodayStr);
+          wasTodayRef.current = true; // Tiếp tục theo dõi
+        }
+      } else if (currentSelectedDate === currentTodayStr) {
+        // Đang ở ngày hôm nay, tiếp tục theo dõi
+        wasTodayRef.current = true;
+      } else {
+        // Đang xem ngày khác, không tự động reset
+        wasTodayRef.current = false;
+      }
+    }, 1000); // 1000ms = 1 giây
+
+    return () => clearInterval(interval);
+  }, [selectedDate]);
 
   useEffect(() => {
     fetchAttendanceData();
@@ -253,23 +315,16 @@ const TeacherAttendance = () => {
           </CardContent>
         </Card>
 
-        {/* Success/Error Messages */}
-        {successMessage && (
-          <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage(null)}>
-            {successMessage}
-          </Alert>
-        )}
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-        
-        {/* Date Warning */}
+        {/* Date Warning - Hiển thị đầu tiên vì quan trọng */}
         {!isDateValidForAttendance() && (
           <Alert 
             severity="warning" 
-            sx={{ mb: 2 }}
+            sx={{ 
+              mb: 2,
+              zIndex: 10,
+              position: 'relative',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+            }}
             icon={<AccessTime />}
           >
             <ArgonTypography variant="body2" fontWeight="bold">
@@ -278,6 +333,18 @@ const TeacherAttendance = () => {
             <ArgonTypography variant="body2" sx={{ mt: 0.5 }}>
               Ngày đã chọn: <strong>{formatDate(selectedDate)}</strong> - Không thể thực hiện checkin/checkout
             </ArgonTypography>
+          </Alert>
+        )}
+
+        {/* Success/Error Messages */}
+        {successMessage && (
+          <Alert severity="success" sx={{ mb: 2, position: 'relative', zIndex: 9 }} onClose={() => setSuccessMessage(null)}>
+            {successMessage}
+          </Alert>
+        )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, position: 'relative', zIndex: 9 }} onClose={() => setError(null)}>
+            {error}
           </Alert>
         )}
 

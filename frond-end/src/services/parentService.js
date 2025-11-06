@@ -404,6 +404,34 @@ class ParentService {
       return { success: false, error: error.message || 'Lỗi lấy lịch lớp' };
     }
   }
+
+  /**
+   * Lấy danh sách khung giờ (slots) chuẩn để render cột thời gian
+   */
+  async getClassTimeSlots() {
+    try {
+      const response = await apiService.get('/parent/class-calendar/slots');
+      // Chuẩn hóa trả về mảng
+      return Array.isArray(response?.data) ? response.data : (response?.data?.data || []);
+    } catch (error) {
+      console.error('ParentService.getClassTimeSlots Error:', error);
+      return [];
+   * Lấy thực đơn tuần theo con và ngày bắt đầu tuần (Thứ 2)
+   * @param {string} studentId - optional, để chọn con cụ thể
+   * @param {string} startDateISO - YYYY-MM-DD (ngày bất kỳ trong tuần; backend sẽ tự tính Thứ 2)
+   */
+  async getWeeklyMenu(studentId) {
+    try {
+      const params = new URLSearchParams();
+      if (studentId) params.append('student_id', studentId);
+      const url = `/parent/menu?${params.toString()}`;
+      const response = await apiService.get(url);
+      return response;
+    } catch (error) {
+      console.error('ParentService.getWeeklyMenu Error:', error);
+      return { success: false, error: error.message || 'Lỗi lấy thực đơn tuần' };
+    }
+  }
 }
 
 const parentService = new ParentService();

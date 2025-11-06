@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const messagingRouter = require('./messaging');
 
 // Import các router con
 const authRouter = require('./auth');
@@ -25,5 +26,6 @@ router.use('/class-ages', classAgeRouter);
 router.use('/student', studentRouter);
 router.use('/school-admin/posts', schoolAdminPostRouter);
 
+router.use('/api/messaging', messagingRouter);
 
 module.exports = router;
