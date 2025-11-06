@@ -29,6 +29,7 @@ import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import api from "services/api";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import StudentModal from "./StudentModal";
 import ParentModal from "./ParentModal";
 
@@ -233,6 +234,7 @@ const ChildrenPage = () => {
 
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <ArgonBox py={3} position="relative" zIndex={3}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <ArgonTypography variant="h5" fontWeight="bold" color="white">

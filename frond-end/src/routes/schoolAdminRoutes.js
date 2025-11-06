@@ -8,6 +8,25 @@ import ChildrenPage from "layouts/school-admin/pages/Children";
 import ManagePost from "layouts/school-admin/pages/ManagePost";
 import ManageAccountPage from "layouts/school-admin/pages/ManageAccount";
 import ManageCalendar from "layouts/school-admin/pages/ManageCalendar";
+import ManageTuition from "layouts/school-admin/pages/ManageTuition";
+import Profile from "layouts/profile";
+import { useEffect } from "react";
+import { useAuth } from "context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+// Inline Logout component for admin sidenav
+const Logout = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const doLogout = async () => {
+      await logout();
+      navigate("/authentication/sign-in");
+    };
+    doLogout();
+  }, [logout, navigate]);
+  return null;
+};
 
 const schoolAdminRoutes = [
   {
@@ -69,6 +88,36 @@ const schoolAdminRoutes = [
       <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-single-02" />
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageAccountPage /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Quản lý học phí",
+    key: "school-admin-tuition",
+    route: "/school-admin/tuition",
+    icon: (
+      <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-money-coins" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageTuition /></ProtectedRoute>,
+  },
+  {
+    type: "divider",
+    key: "school-admin-divider-1",
+  },
+  {
+    type: "route",
+    name: "Thông tin cá nhân",
+    key: "school-admin-profile",
+    route: "/profile",
+    icon: <ArgonBox component="i" color="dark" fontSize="14px" className="ni ni-single-02" />,
+    component: <ProtectedRoute><Profile /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Đăng xuất",
+    key: "school-admin-logout",
+    route: "/logout",
+    icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-user-run" />,
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><Logout /></ProtectedRoute>,
   },
 ];
 

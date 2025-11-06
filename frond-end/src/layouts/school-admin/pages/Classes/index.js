@@ -23,6 +23,7 @@ import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import ArgonButton from "components/ArgonButton";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import api from "services/api";
 import { useNavigate } from "react-router-dom";
 import ClassModal from "./ClassModal";
@@ -115,6 +116,7 @@ const ClassesPage = () => {
 
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <ArgonBox py={3} position="relative" zIndex={3}>
         <ArgonBox
           mb={3}

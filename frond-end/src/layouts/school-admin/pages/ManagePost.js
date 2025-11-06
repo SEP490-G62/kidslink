@@ -3,6 +3,7 @@ import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import ArgonButton from "components/ArgonButton";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import PostCard from "layouts/parent/posts/PostCard";
 import CreatePostModal from "layouts/parent/posts/CreatePostModal";
 import GalleryModal from "layouts/parent/posts/GalleryModal";
@@ -101,6 +102,7 @@ const ManagePost = () => {
 
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <ArgonBox py={3} position="relative" zIndex={3}>
         <ArgonBox mb={3} display="flex" justifyContent="space-between" alignItems="center">
           <ArgonTypography variant="h5" fontWeight="bold" color="white">

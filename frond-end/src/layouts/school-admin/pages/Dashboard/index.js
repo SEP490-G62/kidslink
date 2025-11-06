@@ -6,12 +6,15 @@ import CircularProgress from "@mui/material/CircularProgress";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 // Note: using simple Paper KPI to avoid theme dark-mode text issues
 import DefaultDoughnutChart from "examples/Charts/DoughnutCharts/DefaultDoughnutChart";
 import colorsTheme from "assets/theme/base/colors";
 import DefaultLineChart from "examples/Charts/LineCharts/DefaultLineChart";
 import { useAuth } from "context/AuthContext";
 import api from "services/api";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 
 function SchoolDashboard() {
   const { token } = useAuth();
@@ -20,6 +23,11 @@ function SchoolDashboard() {
   const [classes, setClasses] = useState([]);
   const [posts, setPosts] = useState([]);
   const [students, setStudents] = useState([]);
+  const [growthView, setGrowthView] = useState("month"); // month | year
+  const [monthStart, setMonthStart] = useState("");
+  const [monthEnd, setMonthEnd] = useState("");
+  const [yearStart, setYearStart] = useState("");
+  const [yearEnd, setYearEnd] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -76,6 +84,35 @@ function SchoolDashboard() {
     };
   }, [users, classes]);
 
+  const availableMonths = useMemo(() => {
+    const set = new Set();
+    students.forEach((s) => {
+      const d = new Date(s.enrolled_at || s.created_at || s.createdAt || Date.now());
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      set.add(key);
+    });
+    return Array.from(set).sort();
+  }, [students]);
+
+  const availableYears = useMemo(() => {
+    const set = new Set();
+    students.forEach((s) => {
+      const d = new Date(s.enrolled_at || s.created_at || s.createdAt || Date.now());
+      set.add(`${d.getFullYear()}`);
+    });
+    return Array.from(set).sort();
+  }, [students]);
+
+  useEffect(() => {
+    if (!monthStart && availableMonths.length) setMonthStart(availableMonths[0]);
+    if (!monthEnd && availableMonths.length) setMonthEnd(availableMonths[availableMonths.length - 1]);
+  }, [availableMonths, monthStart, monthEnd]);
+
+  useEffect(() => {
+    if (!yearStart && availableYears.length) setYearStart(availableYears[0]);
+    if (!yearEnd && availableYears.length) setYearEnd(availableYears[availableYears.length - 1]);
+  }, [availableYears, yearStart, yearEnd]);
+
   const doughnutConfig = useMemo(() => ({
     labels: Object.keys(counts.roleBreakdown || {}),
     datasets: {
@@ -121,14 +158,21 @@ function SchoolDashboard() {
     const map = new Map();
     students.forEach((s) => {
       const d = new Date(s.enrolled_at || s.created_at || s.createdAt || Date.now());
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const key = growthView === "year" ? `${d.getFullYear()}` : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       map.set(key, (map.get(key) || 0) + 1);
     });
-    const keys = Array.from(map.keys()).sort();
+    let keys = Array.from(map.keys()).sort();
+    // filter by selected range
+    if (growthView === "year" && yearStart && yearEnd) {
+      keys = keys.filter((k) => k >= yearStart && k <= yearEnd);
+    }
+    if (growthView === "month" && monthStart && monthEnd) {
+      keys = keys.filter((k) => k >= monthStart && k <= monthEnd);
+    }
     let cumulative = 0;
-    const data = keys.map((k) => { cumulative += map.get(k); return cumulative; });
+    const data = keys.map((k) => { cumulative += map.get(k) || 0; return cumulative; });
     return { labels: keys, datasets: [{ label: "Học sinh", color: "primary", data }] };
-  }, [students]);
+  }, [students, growthView, monthStart, monthEnd, yearStart, yearEnd]);
 
   const ageOrClassDistribution = useMemo(() => {
     const buckets = new Map();
@@ -155,6 +199,7 @@ function SchoolDashboard() {
 
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <ArgonBox py={3} position="relative" zIndex={3}>
         <ArgonBox mb={3} display="flex" justifyContent="space-between" alignItems="center">
           <ArgonTypography variant="h5" fontWeight="bold" color="white">Tổng quan trường</ArgonTypography>
@@ -164,7 +209,7 @@ function SchoolDashboard() {
           <ArgonBox p={3} bgcolor="white" borderRadius={2} display="flex" justifyContent="center"><CircularProgress size={28} /></ArgonBox>
         ) : (
           <>
-            <Grid container spacing={3} mb={3} sx={{ mt: 6 }}>
+            <Grid container spacing={3} mb={2} sx={{ mt: -3 }}>
               {[{
                 title: "Tổng lớp",
                 value: counts.totalClasses,
@@ -188,16 +233,16 @@ function SchoolDashboard() {
                 color: "#8b5cf6",
               }].map((kpi, idx) => (
                 <Grid item xs={12} md={6} lg={3} key={idx}>
-                  <Paper sx={{ p: 2.5, bgcolor: 'white', borderRadius: 2, minHeight: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <Box display="flex" alignItems="center" gap={1.25} mb={1}>
-                      <Box sx={{ width: 32, height: 32, borderRadius: '10px', backgroundColor: `${kpi.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: kpi.color, fontSize: 18 }}>
+                  <Paper sx={{ p: 2, bgcolor: 'white', borderRadius: 2, minHeight: 100, display: 'flex', flexDirection: 'column', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.08)', transition: 'transform 180ms ease, box-shadow 180ms ease', willChange: 'transform', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 28px rgba(0,0,0,0.18)' } }}>
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <Box sx={{ width: 28, height: 28, borderRadius: '10px', backgroundColor: `${kpi.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: kpi.color, fontSize: 16 }}>
                         {kpi.icon}
                       </Box>
                       <ArgonTypography variant="button" color="text" fontWeight="medium" textTransform="uppercase">
                         {kpi.title}
                       </ArgonTypography>
                     </Box>
-                    <ArgonTypography variant="h4" color="dark" fontWeight="bold" mb={0.5} sx={{ letterSpacing: 0.2 }}>
+                    <ArgonTypography variant="h5" color="dark" fontWeight="bold" mb={0.5} sx={{ letterSpacing: 0.2 }}>
                       {kpi.value}
                     </ArgonTypography>
                     <ArgonTypography variant="caption" fontWeight="bold" color={kpi.delta !== undefined ? (kpi.delta >= 0 ? 'success' : 'error') : 'text'} sx={{ visibility: kpi.delta === undefined ? 'hidden' : 'visible' }}>
@@ -208,18 +253,57 @@ function SchoolDashboard() {
               ))}
             </Grid>
 
-            <Grid container spacing={3} mb={3}>
+            <Grid container spacing={3} mb={3} sx={{ mt: 0, position: 'relative', zIndex: 5 }}>
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2 }}>
-                  <ArgonTypography variant="h6" mb={1}>Tăng trưởng số lượng học sinh</ArgonTypography>
-                  <DefaultLineChart icon={{}} title="" description="" height={260} chart={studentsGrowthLine} />
+                <Paper sx={{ p: 2, bgcolor: 'white', borderRadius: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', height: 420, display: 'flex', flexDirection: 'column' }}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1} gap={1}>
+                    <ArgonTypography variant="h6">Tăng trưởng số lượng học sinh</ArgonTypography>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Select value={growthView} size="small" onChange={(e) => setGrowthView(e.target.value)} sx={{ minWidth: 120 }}>
+                        <MenuItem value="month">Theo tháng</MenuItem>
+                        <MenuItem value="year">Theo năm</MenuItem>
+                      </Select>
+                      {growthView === 'month' ? (
+                        <>
+                          <Select size="small" value={monthStart} onChange={(e) => setMonthStart(e.target.value)} sx={{ minWidth: 120 }}>
+                            {availableMonths.map((m) => (
+                              <MenuItem key={m} value={m}>{m}</MenuItem>
+                            ))}
+                          </Select>
+                          <Select size="small" value={monthEnd} onChange={(e) => setMonthEnd(e.target.value)} sx={{ minWidth: 120 }}>
+                            {availableMonths.map((m) => (
+                              <MenuItem key={m} value={m}>{m}</MenuItem>
+                            ))}
+                          </Select>
+                        </>
+                      ) : (
+                        <>
+                          <Select size="small" value={yearStart} onChange={(e) => setYearStart(e.target.value)} sx={{ minWidth: 100 }}>
+                            {availableYears.map((y) => (
+                              <MenuItem key={y} value={y}>{y}</MenuItem>
+                            ))}
+                          </Select>
+                          <Select size="small" value={yearEnd} onChange={(e) => setYearEnd(e.target.value)} sx={{ minWidth: 100 }}>
+                            {availableYears.map((y) => (
+                              <MenuItem key={y} value={y}>{y}</MenuItem>
+                            ))}
+                          </Select>
+                        </>
+                      )}
+                    </Box>
+                  </Box>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <DefaultLineChart icon={{}} title="" description="" height={300} chart={studentsGrowthLine} />
+                  </Box>
                 </Paper>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2 }}>
+                <Paper sx={{ p: 2, bgcolor: 'white', borderRadius: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', height: 420, display: 'flex', flexDirection: 'column' }}>
                   <ArgonTypography variant="h6" mb={1}>Phân bố độ tuổi / lớp</ArgonTypography>
-                  <DefaultDoughnutChart title="" height={220} chart={ageOrClassDistribution} />
-                  <Box display="flex" flexWrap="wrap" gap={1} mt={1}>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <DefaultDoughnutChart title="" height={280} chart={ageOrClassDistribution} />
+                  </Box>
+                  <Box display="flex" flexWrap="wrap" gap={0.75} mt={1} sx={{ maxWidth: '100%', justifyContent: 'center' }}>
                     {ageOrClassDistribution.labels.map((label, idx) => (
                       <Box key={label} display="flex" alignItems="center" gap={0.75} mr={2}>
                         <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: ageOrClassDistribution.colors[idx] }} />
