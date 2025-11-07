@@ -376,6 +376,8 @@ ClassModal.propTypes = {
       }),
     ]),
     academic_year: PropTypes.string,
+    start_date: PropTypes.string,
+    end_date: PropTypes.string,
     status: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   }),
   onSuccess: PropTypes.func.isRequired,
