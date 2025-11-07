@@ -42,7 +42,10 @@ const ClassesPage = () => {
     try {
       setLoading(true);
       const res = await api.get("/classes", true);
-      const rows = Array.isArray(res) ? res : res.data || [];
+      console.log('Classes API response:', res); // Debug log
+      // Backend trả về { success: true, data: [...], pagination: {...} }
+      const rows = res.data || [];
+      console.log('Parsed classes:', rows); // Debug log
       setClasses(rows);
     } catch (e) {
       console.error("Lỗi khi tải danh sách lớp:", e);

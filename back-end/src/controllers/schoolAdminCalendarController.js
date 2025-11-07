@@ -31,67 +31,57 @@ const getClassCalendars = async (req, res) => {
       };
     }
 
-    // Get calendars with populated data
+    // Get calendars with populated data - theo model mới
     const calendars = await Calendar.find(query)
       .populate('weekday_id', 'day_name')
-      .sort({ date: 1 });
+      .populate('slot_id', 'slot_name start_time end_time')
+      .populate('activity_id', 'activity_name description require_outdoor')
+      .populate('teacher_id', 'full_name avatar_url')
+      .sort({ date: 1, 'slot_id.start_time': 1 });
 
-    // Get slots for each calendar
-    const calendarsWithSlots = await Promise.all(
-      calendars.map(async (calendar) => {
-        const slots = await Slot.find({ calendar_id: calendar._id })
-          .populate('activity_id', 'activity_name description require_outdoor')
-          .populate('teacher_id', 'full_name avatar_url')
-          .sort({ start_time: 1 });
-
-        return {
-          _id: calendar._id,
-          date: calendar.date,
-          weekday: calendar.weekday_id,
-          slots: slots.map(slot => ({
-            id: slot._id,
-            slotName: slot.slot_name,
-            startTime: slot.start_time,
-            endTime: slot.end_time,
-            activity: slot.activity_id ? {
-              _id: slot.activity_id._id,
-              name: slot.activity_id.activity_name,
-              description: slot.activity_id.description,
-              require_outdoor: slot.activity_id.require_outdoor
-            } : null,
-            teacher: slot.teacher_id ? {
-              _id: slot.teacher_id._id,
-              fullName: slot.teacher_id.full_name,
-              avatarUrl: slot.teacher_id.avatar_url
-            } : null
-          }))
+    // Group by date
+    const groupedByDate = {};
+    calendars.forEach(cal => {
+      const dateKey = cal.date.toISOString().split('T')[0];
+      if (!groupedByDate[dateKey]) {
+        groupedByDate[dateKey] = {
+          _id: dateKey,
+          date: cal.date,
+          weekday: cal.weekday_id,
+          slots: []
         };
-      })
-    );
-
-    // Lấy danh sách các khung giờ tiết học duy nhất từ TẤT CẢ các slots (áp dụng chung cho tất cả lớp)
-    const allSlots = await Slot.find().sort({ start_time: 1 });
-
-    const uniqueTimeSlots = new Map();
-    allSlots.forEach(slot => {
-      const key = `${slot.start_time}_${slot.end_time}`;
-      if (!uniqueTimeSlots.has(key)) {
-        uniqueTimeSlots.set(key, {
-          startTime: slot.start_time,
-          endTime: slot.end_time
-        });
       }
+      groupedByDate[dateKey].slots.push({
+        id: cal._id, // Calendar entry ID
+        slotId: cal.slot_id?._id,
+        slotName: cal.slot_id?.slot_name || '',
+        startTime: cal.slot_id?.start_time || '',
+        endTime: cal.slot_id?.end_time || '',
+        activity: cal.activity_id ? {
+          _id: cal.activity_id._id,
+          name: cal.activity_id.activity_name,
+          description: cal.activity_id.description,
+          require_outdoor: cal.activity_id.require_outdoor
+        } : null,
+        teacher: cal.teacher_id ? {
+          _id: cal.teacher_id._id,
+          fullName: cal.teacher_id.full_name,
+          avatarUrl: cal.teacher_id.avatar_url
+        } : null
+      });
     });
 
-    // Chuyển thành mảng và sắp xếp theo thời gian, sau đó đặt tên "Tiết 1", "Tiết 2"...
-    const timeSlots = Array.from(uniqueTimeSlots.values())
-      .sort((a, b) => a.startTime.localeCompare(b.startTime))
-      .map((slot, index) => ({
-        slotName: `Tiết ${index + 1}`,
-        slotNumber: index + 1,
-        startTime: slot.startTime,
-        endTime: slot.endTime
-      }));
+    const calendarsWithSlots = Object.values(groupedByDate);
+
+    // Lấy danh sách các khung giờ tiết học chuẩn (Slot)
+    const allSlots = await Slot.find().sort({ start_time: 1 });
+    const timeSlots = allSlots.map((slot, index) => ({
+      id: slot._id,
+      slotName: slot.slot_name,
+      slotNumber: index + 1,
+      startTime: slot.start_time,
+      endTime: slot.end_time
+    }));
 
     return res.json({
       success: true,
@@ -119,56 +109,27 @@ const getClassCalendars = async (req, res) => {
   }
 };
 
-// CREATE or UPDATE slot (nội dung môn học cho một ngày cụ thể)
-const createOrUpdateSlot = async (req, res) => {
+// CREATE or UPDATE calendar entry (thêm nội dung activity cho 1 tiết học trong ngày cụ thể)
+const createOrUpdateCalendarEntry = async (req, res) => {
   try {
-    const { slotId } = req.params;
+    const { calendarId } = req.params; // Calendar entry ID (not slot!)
     const { 
       classId,
       date,
-      startTime,
-      endTime,
-      activityId
+      slotId,      // ID của Slot (khung giờ chuẩn)
+      activityId,  // Activity cho tiết học này
+      teacherId    // Teacher (optional, default to class teacher)
     } = req.body;
 
-    // Validate required fields - chỉ cần thời gian
-    if (!classId || !date || !startTime || !endTime) {
+    // Validate required fields
+    if (!classId || !date || !slotId || !activityId) {
       return res.status(400).json({
         success: false,
-        message: 'Vui lòng cung cấp thông tin lớp học, ngày và thời gian'
+        message: 'Vui lòng cung cấp đầy đủ: lớp học, ngày, tiết học và hoạt động'
       });
     }
 
-    // Tính tên tiết học dựa trên thứ tự thời gian (tất cả các lớp dùng chung)
-    const allUniqueSlots = await Slot.find().sort({ start_time: 1 });
-    const uniqueTimeSlotsMap = new Map();
-    allUniqueSlots.forEach(slot => {
-      const key = `${slot.start_time}_${slot.end_time}`;
-      if (!uniqueTimeSlotsMap.has(key)) {
-        uniqueTimeSlotsMap.set(key, {
-          startTime: slot.start_time,
-          endTime: slot.end_time
-        });
-      }
-    });
-
-    // Kiểm tra xem khung giờ này đã tồn tại chưa
-    const currentKey = `${startTime}_${endTime}`;
-    if (!uniqueTimeSlotsMap.has(currentKey)) {
-      uniqueTimeSlotsMap.set(currentKey, {
-        startTime: startTime,
-        endTime: endTime
-      });
-    }
-
-    // Sắp xếp và tính số thứ tự
-    const sortedSlots = Array.from(uniqueTimeSlotsMap.values())
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
-    
-    const slotIndex = sortedSlots.findIndex(s => s.startTime === startTime && s.endTime === endTime);
-    const generatedSlotName = `Tiết ${slotIndex + 1}`;
-
-    // Check if class exists and get teacher
+    // Check if class exists and get default teacher
     const classData = await Class.findById(classId).populate('teacher_id');
     if (!classData) {
       return res.status(404).json({
@@ -177,22 +138,27 @@ const createOrUpdateSlot = async (req, res) => {
       });
     }
 
-    // Check if activity exists (nếu có)
-    if (activityId) {
-      const activity = await Activity.findById(activityId);
-      if (!activity) {
-        return res.status(404).json({
-          success: false,
-          message: 'Không tìm thấy hoạt động'
-        });
-      }
+    // Verify slot exists
+    const slot = await Slot.findById(slotId);
+    if (!slot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy khung giờ tiết học'
+      });
+    }
+
+    // Verify activity exists
+    const activity = await Activity.findById(activityId);
+    if (!activity) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy hoạt động'
+      });
     }
 
     // Get weekday from date
     const dateObj = new Date(date);
     const dayOfWeek = dateObj.getDay();
-    
-    // Get WeekDay document
     const weekDay = await WeekDay.findOne({ day_of_week: dayOfWeek });
     if (!weekDay) {
       return res.status(400).json({
@@ -201,140 +167,137 @@ const createOrUpdateSlot = async (req, res) => {
       });
     }
 
-    // Find or create calendar for this date
-    let calendar = await Calendar.findOne({
-      class_id: classId,
-      date: {
-        $gte: new Date(new Date(date).setHours(0, 0, 0, 0)),
-        $lt: new Date(new Date(date).setHours(23, 59, 59, 999))
-      }
-    });
-
-    if (!calendar) {
-      calendar = await Calendar.create({
-        class_id: classId,
-        weekday_id: weekDay._id,
-        date: new Date(date)
+    // Determine teacher
+    const finalTeacherId = teacherId || (classData.teacher_id ? classData.teacher_id._id : null);
+    if (!finalTeacherId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Lớp học chưa có giáo viên chủ nhiệm'
       });
     }
 
-    let slot;
-    if (slotId && slotId !== 'new') {
-      // Update existing slot
-      const updateData = {
-        slot_name: generatedSlotName,
-        start_time: startTime,
-        end_time: endTime,
-        calendar_id: calendar._id
-      };
-      
-      // Chỉ update activity nếu có
-      if (activityId) {
-        updateData.activity_id = activityId;
-      }
-      
-      // Update teacher nếu class có teacher
-      if (classData.teacher_id) {
-        updateData.teacher_id = classData.teacher_id._id;
-      }
-      
-      slot = await Slot.findByIdAndUpdate(slotId, updateData, { new: true })
+    // Check for overlapping calendar entries (same class, date, overlapping slot time)
+    const dateStart = new Date(new Date(date).setHours(0, 0, 0, 0));
+    const dateEnd = new Date(new Date(date).setHours(23, 59, 59, 999));
+    
+    const existingCalendars = await Calendar.find({
+      class_id: classId,
+      date: { $gte: dateStart, $lt: dateEnd }
+    }).populate('slot_id', 'start_time end_time').lean();
+
+    const conflicting = existingCalendars.find(cal => {
+      // Exclude current calendar when updating
+      if (calendarId && calendarId !== 'new' && cal._id.toString() === String(calendarId)) return false;
+      if (!cal.slot_id) return false;
+      // Check time overlap
+      return slot.start_time < cal.slot_id.end_time && slot.end_time > cal.slot_id.start_time;
+    });
+
+    if (conflicting) {
+      return res.status(400).json({
+        success: false,
+        message: 'Khung giờ tiết học này bị trùng với một tiết học khác trong ngày'
+      });
+    }
+
+    let calendar;
+    if (calendarId && calendarId !== 'new') {
+      // Update existing calendar entry
+      calendar = await Calendar.findByIdAndUpdate(
+        calendarId,
+        {
+          class_id: classId,
+          weekday_id: weekDay._id,
+          date: new Date(date),
+          slot_id: slotId,
+          activity_id: activityId,
+          teacher_id: finalTeacherId
+        },
+        { new: true }
+      )
+        .populate('slot_id', 'slot_name start_time end_time')
         .populate('activity_id', 'activity_name description require_outdoor')
         .populate('teacher_id', 'full_name avatar_url');
 
-      if (!slot) {
+      if (!calendar) {
         return res.status(404).json({
           success: false,
-          message: 'Không tìm thấy tiết học'
+          message: 'Không tìm thấy lịch học'
         });
       }
     } else {
-      // Create new slot
-      const newSlotData = {
-        slot_name: generatedSlotName,
-        start_time: startTime,
-        end_time: endTime,
-        calendar_id: calendar._id
-      };
-      
-      // Chỉ thêm activity nếu có
-      if (activityId) {
-        newSlotData.activity_id = activityId;
-      }
-      
-      // Thêm teacher nếu class có teacher
-      if (classData.teacher_id) {
-        newSlotData.teacher_id = classData.teacher_id._id;
-      }
-      
-      slot = await Slot.create(newSlotData);
+      // Create new calendar entry
+      calendar = await Calendar.create({
+        class_id: classId,
+        weekday_id: weekDay._id,
+        date: new Date(date),
+        slot_id: slotId,
+        activity_id: activityId,
+        teacher_id: finalTeacherId
+      });
 
-      slot = await Slot.findById(slot._id)
+      calendar = await Calendar.findById(calendar._id)
+        .populate('slot_id', 'slot_name start_time end_time')
         .populate('activity_id', 'activity_name description require_outdoor')
         .populate('teacher_id', 'full_name avatar_url');
     }
 
-    return res.status(slotId && slotId !== 'new' ? 200 : 201).json({
+    return res.status(calendarId && calendarId !== 'new' ? 200 : 201).json({
       success: true,
-      message: slotId && slotId !== 'new' ? 'Đã cập nhật tiết học' : 'Đã tạo tiết học mới',
+      message: calendarId && calendarId !== 'new' ? 'Đã cập nhật lịch học' : 'Đã thêm lịch học mới',
       data: {
-        id: slot._id,
-        slotName: slot.slot_name,
-        startTime: slot.start_time,
-        endTime: slot.end_time,
-        activity: slot.activity_id ? {
-          _id: slot.activity_id._id,
-          name: slot.activity_id.activity_name,
-          description: slot.activity_id.description,
-          require_outdoor: slot.activity_id.require_outdoor
+        id: calendar._id,
+        slotId: calendar.slot_id?._id,
+        slotName: calendar.slot_id?.slot_name || '',
+        startTime: calendar.slot_id?.start_time || '',
+        endTime: calendar.slot_id?.end_time || '',
+        activity: calendar.activity_id ? {
+          _id: calendar.activity_id._id,
+          name: calendar.activity_id.activity_name,
+          description: calendar.activity_id.description,
+          require_outdoor: calendar.activity_id.require_outdoor
         } : null,
-        teacher: slot.teacher_id ? {
-          _id: slot.teacher_id._id,
-          fullName: slot.teacher_id.full_name,
-          avatarUrl: slot.teacher_id.avatar_url
+        teacher: calendar.teacher_id ? {
+          _id: calendar.teacher_id._id,
+          fullName: calendar.teacher_id.full_name,
+          avatarUrl: calendar.teacher_id.avatar_url
         } : null
       }
     });
   } catch (error) {
-    console.error('createOrUpdateSlot error:', error);
+    console.error('createOrUpdateCalendarEntry error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lưu tiết học',
+      message: 'Lỗi khi lưu lịch học',
       error: error.message
     });
   }
 };
 
-// DELETE slot
-const deleteSlot = async (req, res) => {
+// DELETE calendar entry (xóa 1 tiết học cụ thể trong ngày)
+const deleteCalendarEntry = async (req, res) => {
   try {
-    const { slotId } = req.params;
+    const { calendarId } = req.params;
 
-    const slot = await Slot.findById(slotId);
-    if (!slot) {
+    const calendar = await Calendar.findById(calendarId);
+    if (!calendar) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy tiết học'
+        message: 'Không tìm thấy lịch học'
       });
     }
 
-    await Slot.findByIdAndDelete(slotId);
-
-    // Check if calendar has no more slots, delete calendar
-    const remainingSlots = await Slot.countDocuments({ calendar_id: slot.calendar_id });
-    if (remainingSlots === 0) {
-      await Calendar.findByIdAndDelete(slot.calendar_id);
-    }
+    await Calendar.findByIdAndDelete(calendarId);
 
     return res.json({
       success: true,
-      message: 'Đã xóa tiết học'
+      message: 'Đã xóa tiết học khỏi lịch'
     });
   } catch (error) {
-    console.error('deleteSlot error:', error);
+    console.error('deleteCalendarEntry error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi xóa tiết học',
+      message: 'Lỗi khi xóa lịch học',
       error: error.message
     });
   }
@@ -457,12 +420,12 @@ const deleteActivity = async (req, res) => {
   try {
     const { activityId } = req.params;
 
-    // Check if activity is being used in any slots
-    const slotsCount = await Slot.countDocuments({ activity_id: activityId });
-    if (slotsCount > 0) {
+    // Check if activity is being used in any calendar entries
+    const calendarsCount = await Calendar.countDocuments({ activity_id: activityId });
+    if (calendarsCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `Không thể xóa hoạt động này vì đang được sử dụng trong ${slotsCount} tiết học`
+        message: `Không thể xóa hoạt động này vì đang được sử dụng trong ${calendarsCount} tiết học`
       });
     }
 
@@ -577,8 +540,8 @@ const updateAllSlotNames = async (req, res) => {
 
 module.exports = {
   getClassCalendars,
-  createOrUpdateSlot,
-  deleteSlot,
+  createOrUpdateCalendarEntry,
+  deleteCalendarEntry,
   getAllActivities,
   createActivity,
   updateActivity,

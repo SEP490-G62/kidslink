@@ -20,8 +20,19 @@ const ManagePost = () => {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [likesOpen, setLikesOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
+    // Lấy thông tin user hiện tại
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setCurrentUserId(user._id || user.id);
+      } catch (e) {
+        console.error("Error parsing user:", e);
+      }
+    }
     fetchPosts();
   }, []);
 
@@ -33,7 +44,14 @@ const ManagePost = () => {
       const postsArray = res.data?.data || res.data || [];
       const postsData = postsArray.map(post => ({
         ...post,
-        id: post._id
+        id: post._id,
+        // Map thông tin tác giả từ user_id
+        author: post.user_id?.full_name || 'Người dùng',
+        authorId: post.user_id?._id || post.user_id,
+        avatar: post.user_id?.avatar_url || '',
+        // Format date và time
+        date: new Date(post.create_at).toLocaleDateString('vi-VN'),
+        time: new Date(post.create_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
       }));
       console.log("Posts data after mapping:", postsData);
       setPosts(postsData);
@@ -121,7 +139,7 @@ const ManagePost = () => {
             <PostCard
               key={post._id}
               post={post}
-              currentUserId={null}
+              currentUserId={currentUserId}
               onLike={() => handleLike(post._id)}
               onComment={() => { setSelectedPost(post); setCommentOpen(true); }}
               onShowLikes={() => { setSelectedPost(post); setLikesOpen(true); }}

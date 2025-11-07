@@ -135,10 +135,7 @@ const ChildrenPage = () => {
   };
 
   const handleCreateStudent = () => {
-    if (!classId) {
-      alert("Vui lòng chọn lớp học trước khi thêm học sinh. Hãy truy cập từ trang Quản lý lớp học.");
-      return;
-    }
+    // Cho phép thêm từ trang "Tất cả học sinh" - modal sẽ yêu cầu chọn lớp
     setSelectedStudent(null);
     setStudentModalOpen(true);
   };
@@ -319,14 +316,16 @@ const ChildrenPage = () => {
                 "& .MuiTableCell-root": {
                   padding: "12px 16px",
                   verticalAlign: "middle",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 },
               }}
             >
               <colgroup>
-                <col style={{ width: "25%" }} />
-                <col style={{ width: "20%" }} />
-                <col style={{ width: "25%" }} />
+                <col style={{ width: "22%" }} />
                 <col style={{ width: "15%" }} />
+                <col style={{ width: "35%" }} />
+                <col style={{ width: "13%" }} />
                 <col style={{ width: "15%" }} />
               </colgroup>
               <TableHead>
@@ -372,32 +371,34 @@ const ChildrenPage = () => {
                           "-"}
                       </ArgonTypography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ overflow: "visible" }}>
                       {s.parents && s.parents.length > 0 ? (
                         <Stack spacing={0.5}>
                           {s.parents.map((parent) => (
-                            <Box key={parent._id} display="flex" alignItems="center" gap={1}>
-                              <ArgonTypography variant="body2" fontSize="0.875rem">
+                            <Box key={parent._id} display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                              <ArgonTypography variant="body2" fontSize="0.8rem" sx={{ flex: "1 1 auto", minWidth: "120px" }}>
                                 {parent.user_id?.full_name || "-"} ({parent.relationship || "-"})
                               </ArgonTypography>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleEditParent(s, parent)}
-                                sx={{ p: 0.5 }}
-                              >
-                                <ArgonTypography variant="caption" color="info">
-                                  Sửa
-                                </ArgonTypography>
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDeleteParent(parent._id, s._id)}
-                                sx={{ p: 0.5 }}
-                              >
-                                <ArgonTypography variant="caption" color="error">
-                                  Xóa
-                                </ArgonTypography>
-                              </IconButton>
+                              <Box display="flex" gap={0.5}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditParent(s, parent)}
+                                  sx={{ p: 0.3 }}
+                                >
+                                  <ArgonTypography variant="caption" color="info" fontSize="0.7rem">
+                                    Sửa
+                                  </ArgonTypography>
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteParent(parent._id, s._id)}
+                                  sx={{ p: 0.3 }}
+                                >
+                                  <ArgonTypography variant="caption" color="error" fontSize="0.7rem">
+                                    Xóa
+                                  </ArgonTypography>
+                                </IconButton>
+                              </Box>
                             </Box>
                           ))}
                         </Stack>

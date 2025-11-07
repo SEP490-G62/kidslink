@@ -11,6 +11,8 @@ import {
   FormControl,
   InputLabel,
   Select,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import ArgonBox from "components/ArgonBox";
 import ArgonButton from "components/ArgonButton";
@@ -28,17 +30,19 @@ const ParentModal = ({ open, onClose, studentId, parentData, onSuccess }) => {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [createAccount, setCreateAccount] = useState(false);
 
   useEffect(() => {
     if (open) {
       if (isEdit && parentData) {
         setFormData({
           full_name: parentData.user_id?.full_name || "",
-          phone: parentData.user_id?.phone || "",
+          phone: parentData.user_id?.phone_number || "", // adjust to schema
           email: parentData.user_id?.email || "",
           address: parentData.user_id?.address || "",
           relationship: parentData.relationship || "father",
         });
+        setCreateAccount(false);
       } else {
         setFormData({
           full_name: "",
@@ -47,6 +51,7 @@ const ParentModal = ({ open, onClose, studentId, parentData, onSuccess }) => {
           address: "",
           relationship: "father",
         });
+        setCreateAccount(false);
       }
       setErrors({});
     }
@@ -82,6 +87,7 @@ const ParentModal = ({ open, onClose, studentId, parentData, onSuccess }) => {
       const payload = {
         ...formData,
         student_id: studentId,
+        createAccount,
       };
 
       if (isEdit) {
@@ -105,14 +111,28 @@ const ParentModal = ({ open, onClose, studentId, parentData, onSuccess }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
+      <DialogTitle sx={{ pb: 1 }}>
         <ArgonTypography variant="h5" fontWeight="bold">
           {isEdit ? "Chỉnh sửa phụ huynh" : "Thêm phụ huynh mới"}
         </ArgonTypography>
       </DialogTitle>
-      <DialogContent>
-        <ArgonBox component="form" p={1}>
+      <DialogContent sx={{ pt: 3 }}>
+        <ArgonBox component="form">
           <Grid container spacing={2}>
+            {!isEdit && (
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={createAccount}
+                      onChange={(e) => setCreateAccount(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label="Tạo tài khoản đăng nhập cho phụ huynh này"
+                />
+              </Grid>
+            )}
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -122,7 +142,6 @@ const ParentModal = ({ open, onClose, studentId, parentData, onSuccess }) => {
                 onChange={handleChange("full_name")}
                 error={!!errors.full_name}
                 helperText={errors.full_name}
-                margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -135,7 +154,6 @@ const ParentModal = ({ open, onClose, studentId, parentData, onSuccess }) => {
                 onChange={handleChange("phone")}
                 error={!!errors.phone}
                 helperText={errors.phone}
-                margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -148,12 +166,11 @@ const ParentModal = ({ open, onClose, studentId, parentData, onSuccess }) => {
                 onChange={handleChange("email")}
                 error={!!errors.email}
                 helperText={errors.email}
-                margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12}>
-              <FormControl fullWidth margin="normal">
+                <FormControl fullWidth>
                 <InputLabel shrink>Quan hệ</InputLabel>
                 <Select
                   value={formData.relationship}
@@ -179,7 +196,6 @@ const ParentModal = ({ open, onClose, studentId, parentData, onSuccess }) => {
                 rows={2}
                 value={formData.address}
                 onChange={handleChange("address")}
-                margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -206,7 +222,7 @@ ParentModal.propTypes = {
     _id: PropTypes.string,
     user_id: PropTypes.shape({
       full_name: PropTypes.string,
-      phone: PropTypes.string,
+      phone_number: PropTypes.string,
       email: PropTypes.string,
       address: PropTypes.string,
     }),

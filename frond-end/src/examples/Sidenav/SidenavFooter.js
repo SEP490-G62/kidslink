@@ -25,6 +25,9 @@ import ArgonTypography from "components/ArgonTypography";
 // Argon Dashboard 2 MUI context
 import { useArgonController } from "context";
 
+// Auth context
+import { useAuth } from "context/AuthContext";
+
 // React Router
 import { useNavigate } from "react-router-dom";
 
@@ -34,14 +37,12 @@ import icon from "assets/images/illustrations/icon-documentation.svg";
 function SidenavFooter() {
   const [controller] = useArgonController();
   const { miniSidenav, darkSidenav } = controller;
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Xóa token và user info
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("role");
-    // Chuyển về trang đăng nhập
+    
+    logout();
     navigate("/authentication/sign-in");
   };
 

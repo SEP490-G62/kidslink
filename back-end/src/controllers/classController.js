@@ -54,7 +54,26 @@ async function getClassById(req, res) {
 async function createClass(req, res) {
   try {
     const payload = req.body || {};
-    if (!payload.class_name) return res.status(400).json({ success: false, message: 'class_name là bắt buộc' });
+    
+    // Validate required fields
+    if (!payload.class_name) {
+      return res.status(400).json({ success: false, message: 'class_name là bắt buộc' });
+    }
+    if (!payload.class_age_id) {
+      return res.status(400).json({ success: false, message: 'class_age_id là bắt buộc' });
+    }
+    if (!payload.teacher_id) {
+      return res.status(400).json({ success: false, message: 'teacher_id là bắt buộc' });
+    }
+    if (!payload.start_date) {
+      return res.status(400).json({ success: false, message: 'start_date là bắt buộc' });
+    }
+    if (!payload.end_date) {
+      return res.status(400).json({ success: false, message: 'end_date là bắt buộc' });
+    }
+    if (!payload.academic_year) {
+      return res.status(400).json({ success: false, message: 'academic_year là bắt buộc' });
+    }
 
     // Get school_id - since system has only one school, get the first one
     let schoolId = payload.school_id;
@@ -73,10 +92,12 @@ async function createClass(req, res) {
     const doc = await ClassModel.create({
       class_name: payload.class_name,
       school_id: schoolId,
-      class_age_id: payload.class_age_id || null,
-      teacher_id: payload.teacher_id || null,
+      class_age_id: payload.class_age_id,
+      teacher_id: payload.teacher_id,
       teacher_id2: payload.teacher_id2 || null,
-      academic_year: payload.academic_year || '',
+      academic_year: payload.academic_year,
+      start_date: payload.start_date,
+      end_date: payload.end_date,
       status: payload.status !== undefined ? payload.status : 1,
     });
 
@@ -106,7 +127,11 @@ async function updateClass(req, res) {
       teacher_id: payload.teacher_id,
       teacher_id2: payload.teacher_id2,
       academic_year: payload.academic_year,
+      status: payload.status !== undefined ? payload.status : undefined,
     };
+
+    // Remove undefined fields
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
     const updated = await ClassModel.findByIdAndUpdate(id, updateData, { new: true })
       .populate('school_id')

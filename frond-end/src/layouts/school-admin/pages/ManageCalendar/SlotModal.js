@@ -5,51 +5,69 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Grid,
   CircularProgress,
-  FormControlLabel,
-  Checkbox
 } from "@mui/material";
 import ArgonButton from "components/ArgonButton";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import schoolAdminService from "services/schoolAdminService";
 
-const SlotModal = ({ open, onClose, slot, date, weekDays = [], classId, onSuccess }) => {
+const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
+  const [slots, setSlots] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [formData, setFormData] = useState({
-    startTime: "",
-    endTime: ""
+    slotId: "",
+    activityId: "",
+    teacherId: ""
   });
 
   useEffect(() => {
     if (open) {
       setSelectedDate(date || "");
+      fetchSlots();
+      fetchActivities();
       
-      if (slot) {
-        // Chỉnh sửa slot có sẵn
+      if (calendarEntry) {
+        // Chỉnh sửa calendar entry có sẵn
         setFormData({
-          startTime: slot.startTime || "",
-          endTime: slot.endTime || ""
+          slotId: calendarEntry.slotId || "",
+          activityId: calendarEntry.activity?._id || "",
+          teacherId: calendarEntry.teacher?._id || ""
         });
       } else {
         // Thêm mới
         setFormData({
-          startTime: "",
-          endTime: ""
+          slotId: "",
+          activityId: "",
+          teacherId: ""
         });
       }
     }
-  }, [open, slot, date]);
+  }, [open, calendarEntry, date]);
+
+  const fetchSlots = async () => {
+    try {
+      const response = await schoolAdminService.getAllSlots();
+      setSlots(response.data || []);
+    } catch (error) {
+      console.error("Error fetching slots:", error);
+    }
+  };
 
   const fetchActivities = async () => {
-    // Không cần fetch activities nữa
+    try {
+      const response = await schoolAdminService.getAllActivities();
+      setActivities(response.data || []);
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -59,9 +77,9 @@ const SlotModal = ({ open, onClose, slot, date, weekDays = [], classId, onSucces
   const handleSubmit = async () => {
     const dateToUse = date || selectedDate;
     
-    // Chỉ cần thời gian
-    if (!formData.startTime || !formData.endTime) {
-      alert("Vui lòng nhập thời gian bắt đầu và kết thúc");
+    // Validate required fields
+    if (!formData.slotId || !formData.activityId) {
+      alert("Vui lòng chọn khung giờ và hoạt động");
       return;
     }
     if (!dateToUse) {
@@ -71,33 +89,38 @@ const SlotModal = ({ open, onClose, slot, date, weekDays = [], classId, onSucces
 
     setLoading(true);
     try {
-      const slotId = slot?.id || 'new';
+      const calendarId = calendarEntry?.id || 'new';
       const requestData = {
         classId: classId,
         date: dateToUse,
-        startTime: formData.startTime,
-        endTime: formData.endTime
+        slotId: formData.slotId,
+        activityId: formData.activityId,
+        teacherId: formData.teacherId || undefined
       };
       
-      await schoolAdminService.createOrUpdateSlot(slotId, requestData);
+      await schoolAdminService.createOrUpdateCalendarEntry(calendarId, requestData);
       onSuccess();
+      onClose();
     } catch (error) {
-      console.error("Error saving slot:", error);
+      console.error("Error saving calendar entry:", error);
       alert("Lỗi khi lưu tiết học: " + (error.message || "Vui lòng thử lại"));
     } finally {
       setLoading(false);
     }
   };
 
+  // Get selected slot info for display
+  const selectedSlot = slots.find(s => s._id === formData.slotId);
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
+      <DialogTitle sx={{ pb: 1 }}>
         <ArgonTypography variant="h5" fontWeight="bold">
-          {slot ? "Chỉnh sửa tiết học" : "Thêm tiết học mới"}
+          {calendarEntry ? "Chỉnh sửa tiết học" : "Thêm tiết học mới"}
         </ArgonTypography>
       </DialogTitle>
-      <DialogContent>
-        <ArgonBox mt={2}>
+      <DialogContent sx={{ pt: 3 }}>
+        <ArgonBox>
           <Grid container spacing={2}>
             {/* Date selector - only show if adding new and weekDays provided */}
             {!date && weekDays.length > 0 && (
@@ -129,28 +152,57 @@ const SlotModal = ({ open, onClose, slot, date, weekDays = [], classId, onSucces
               </Grid>
             )}
 
-            {/* Thời gian tiết học */}
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Giờ bắt đầu"
-                type="time"
-                value={formData.startTime}
-                onChange={(e) => handleChange('startTime', e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                required
-              />
+            {/* Chọn khung giờ tiết học */}
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Chọn khung giờ tiết học *</InputLabel>
+                <Select
+                  value={formData.slotId}
+                  onChange={(e) => handleChange('slotId', e.target.value)}
+                  label="Chọn khung giờ tiết học *"
+                  required
+                >
+                  <MenuItem value="">
+                    <em>-- Chọn khung giờ --</em>
+                  </MenuItem>
+                  {slots.map(slot => (
+                    <MenuItem key={slot._id} value={slot._id}>
+                      {slot.slotName} ({slot.startTime} - {slot.endTime})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {selectedSlot && (
+                <ArgonTypography variant="caption" color="text" mt={0.5}>
+                  Khung giờ: {selectedSlot.startTime} - {selectedSlot.endTime}
+                </ArgonTypography>
+              )}
             </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Giờ kết thúc"
-                type="time"
-                value={formData.endTime}
-                onChange={(e) => handleChange('endTime', e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                required
-              />
+
+            {/* Chọn nội dung hoạt động */}
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Chọn nội dung hoạt động *</InputLabel>
+                <Select
+                  value={formData.activityId}
+                  onChange={(e) => handleChange('activityId', e.target.value)}
+                  label="Chọn nội dung hoạt động *"
+                  required
+                >
+                  <MenuItem value="">
+                    <em>-- Chọn hoạt động --</em>
+                  </MenuItem>
+                  {activities.map(activity => (
+                    <MenuItem key={activity._id} value={activity._id}>
+                      <div>
+                        <strong>{activity.name}</strong>
+                        <br />
+                        <small style={{ color: '#666' }}>{activity.description}</small>
+                      </div>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
         </ArgonBox>
@@ -164,7 +216,7 @@ const SlotModal = ({ open, onClose, slot, date, weekDays = [], classId, onSucces
           color="info" 
           disabled={loading}
         >
-          {loading ? <CircularProgress size={20} color="inherit" /> : (slot ? "Cập nhật" : "Thêm mới")}
+          {loading ? <CircularProgress size={20} color="inherit" /> : (calendarEntry ? "Cập nhật" : "Thêm mới")}
         </ArgonButton>
       </DialogActions>
     </Dialog>
@@ -174,8 +226,9 @@ const SlotModal = ({ open, onClose, slot, date, weekDays = [], classId, onSucces
 SlotModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  slot: PropTypes.shape({
+  calendarEntry: PropTypes.shape({
     id: PropTypes.string,
+    slotId: PropTypes.string,
     slotName: PropTypes.string,
     startTime: PropTypes.string,
     endTime: PropTypes.string,
@@ -184,6 +237,10 @@ SlotModal.propTypes = {
       name: PropTypes.string,
       description: PropTypes.string,
       require_outdoor: PropTypes.number
+    }),
+    teacher: PropTypes.shape({
+      _id: PropTypes.string,
+      fullName: PropTypes.string
     })
   }),
   date: PropTypes.string,

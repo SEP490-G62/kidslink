@@ -115,12 +115,12 @@ const ActivityModal = ({ open, onClose }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
+      <DialogTitle sx={{ pb: 1 }}>
         <ArgonTypography variant="h5" fontWeight="bold">
           Quản lý môn học / Hoạt động
         </ArgonTypography>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ pt: 3 }}>
         <Grid container spacing={3}>
           {/* Form thêm/sửa */}
           <Grid item xs={12} md={6}>

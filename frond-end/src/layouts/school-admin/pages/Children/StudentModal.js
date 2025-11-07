@@ -119,13 +119,13 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
+      <DialogTitle sx={{ pb: 1 }}>
         <ArgonTypography variant="h5" fontWeight="bold">
           {isEdit ? "Chỉnh sửa học sinh" : "Thêm học sinh mới"}
         </ArgonTypography>
       </DialogTitle>
-      <DialogContent>
-        <ArgonBox component="form" p={1}>
+      <DialogContent sx={{ pt: 3 }}>
+        <ArgonBox component="form">
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -136,7 +136,6 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
                 onChange={handleChange("full_name")}
                 error={!!errors.full_name}
                 helperText={errors.full_name}
-                margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -150,35 +149,29 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
                 onChange={handleChange("date_of_birth")}
                 error={!!errors.date_of_birth}
                 helperText={errors.date_of_birth}
-                margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal" error={!!errors.gender}>
-                <InputLabel shrink>Giới tính</InputLabel>
-                <Select
-                  value={formData.gender}
-                  onChange={handleChange("gender")}
-                  label="Giới tính"
-                  displayEmpty
-                  notched
-                >
-                  <MenuItem value="">
-                    <em>-- Chọn giới tính --</em>
-                  </MenuItem>
-                  <MenuItem value="male">Nam</MenuItem>
-                  <MenuItem value="female">Nữ</MenuItem>
-                </Select>
+               <FormControl fullWidth error={!!errors.gender}>
+                 <InputLabel shrink>Giới tính</InputLabel>
+                 <Select
+                   value={formData.gender}
+                   onChange={handleChange("gender")}
+                   label="Giới tính"
+                   displayEmpty
+                   notched
+                 >
+                   <MenuItem value="">
+                     <em>-- Chọn giới tính --</em>
+                   </MenuItem>
+                   <MenuItem value="male">Nam</MenuItem>
+                   <MenuItem value="female">Nữ</MenuItem>
+                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl
-                fullWidth
-                margin="normal"
-                required
-                error={!!errors.class_id}
-              >
+               <FormControl fullWidth error={!!errors.class_id}>
                 <InputLabel shrink>Lớp học *</InputLabel>
                 <Select
                   value={formData.class_id}
@@ -192,7 +185,7 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
                     <em>-- Chọn lớp học --</em>
                   </MenuItem>
                   {classes.map((cls) => (
-                    <MenuItem key={cls._id} value={cls._id}>
+                     <MenuItem key={cls._id} value={cls._id}>
                       {cls.class_name}
                     </MenuItem>
                   ))}
@@ -215,7 +208,6 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
                 label="Địa chỉ"
                 value={formData.address}
                 onChange={handleChange("address")}
-                margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -225,11 +217,10 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
                 label="URL Avatar"
                 value={formData.avatar}
                 onChange={handleChange("avatar")}
-                margin="normal"
                 placeholder="https://example.com/avatar.jpg"
                 InputLabelProps={{ shrink: true }}
               />
-            </Grid>
+             </Grid>
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -238,8 +229,6 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
                 rows={3}
                 value={formData.medical_condition}
                 onChange={handleChange("medical_condition")}
-                margin="normal"
-                placeholder="Ghi chú về bệnh lý, dị ứng..."
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -252,7 +241,7 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
         </ArgonButton>
         <ArgonButton onClick={handleSubmit} color="info" disabled={loading}>
           {loading ? "Đang lưu..." : isEdit ? "Cập nhật" : "Thêm mới"}
-        </ArgonButton>
+         </ArgonButton>
       </DialogActions>
     </Dialog>
   );

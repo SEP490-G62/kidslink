@@ -228,45 +228,45 @@ function ManageCalendar() {
     setSlotModalOpen(true);
   };
 
-  const handleEditSlot = (slot, day) => {
-    setSelectedSlot(slot);
+  const handleEditSlot = (calendarEntry, day) => {
+    setSelectedSlot(calendarEntry);
     setSelectedDate(day.isoDate);
     setSlotModalOpen(true);
   };
 
-  const handleDeleteSlot = async (slotId) => {
+  const handleDeleteSlot = async (calendarId) => {
     if (!window.confirm("Bạn có chắc muốn xóa tiết học này?")) return;
     
     try {
-      await schoolAdminService.deleteSlot(slotId);
+      await schoolAdminService.deleteCalendarEntry(calendarId);
       fetchCalendar();
     } catch (error) {
-      console.error("Error deleting slot:", error);
+      console.error("Error deleting calendar entry:", error);
       alert("Lỗi khi xóa tiết học: " + (error.message || "Vui lòng thử lại"));
     }
   };
 
   const handleDeleteSlotTemplate = async (slotTemplate) => {
     try {
-      // Tìm tất cả các slot có cùng thời gian trong tuần hiện tại và xóa
-      const slotsToDelete = [];
+      // Tìm tất cả các calendar entries có cùng thời gian trong tuần hiện tại và xóa
+      const entriesToDelete = [];
       weekDays.forEach(day => {
-        const slot = getSlotForDay(day, slotTemplate);
-        if (slot) {
-          slotsToDelete.push(slot.id);
+        const entry = getSlotForDay(day, slotTemplate);
+        if (entry) {
+          entriesToDelete.push(entry.id);
         }
       });
 
-      if (slotsToDelete.length === 0) {
+      if (entriesToDelete.length === 0) {
         alert("Không tìm thấy tiết học nào để xóa");
         return;
       }
 
-      // Xóa từng slot
-      await Promise.all(slotsToDelete.map(id => schoolAdminService.deleteSlot(id)));
+      // Xóa từng entry
+      await Promise.all(entriesToDelete.map(id => schoolAdminService.deleteCalendarEntry(id)));
       
       fetchCalendar();
-      alert(`Đã xóa ${slotsToDelete.length} tiết học thành công`);
+      alert(`Đã xóa ${entriesToDelete.length} tiết học thành công`);
     } catch (error) {
       console.error("Error deleting slot template:", error);
       alert("Lỗi khi xóa tiết học: " + (error.message || "Vui lòng thử lại"));
@@ -782,7 +782,7 @@ function ManageCalendar() {
           setSelectedSlot(null);
           setSelectedDate(null);
         }}
-        slot={selectedSlot}
+        calendarEntry={selectedSlot}
         date={selectedDate}
         weekDays={weekDays}
         classId={selectedClass}
