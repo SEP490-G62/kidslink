@@ -2,8 +2,11 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/kidslink';
-    const conn = await mongoose.connect(uri);
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/kidslink1', {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
 
     console.log(`📊 MongoDB kết nối thành công: ${conn.connection.host}/${conn.connection.name}`);
   } catch (error) {
