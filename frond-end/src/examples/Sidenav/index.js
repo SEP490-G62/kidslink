@@ -41,8 +41,55 @@ import sidenavLogoLabel from "examples/Sidenav/styles/sidenav";
 
 // Argon Dashboard 2 MUI context
 import { useArgonController, setMiniSidenav } from "context";
+import io from "socket.io-client";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
+  const [unreadTotal, setUnreadTotal] = useState(() => {
+    const saved = localStorage.getItem('kidslink:unread_total');
+    return saved ? parseInt(saved, 10) || 0 : 0;
+  });
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e && e.detail && typeof e.detail.total !== 'undefined') {
+        setUnreadTotal(e.detail.total || 0);
+      }
+    };
+    window.addEventListener('kidslink:unread_total', handler);
+    return () => window.removeEventListener('kidslink:unread_total', handler);
+  }, []);
+
+  // Background Socket for unread notifications (works even when Chat page not mounted)
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const s = io(API_BASE_URL, { auth: { token }, transports: ['websocket','polling'], reconnection: true });
+    const handleNotify = (data) => {
+      // Increase total unread and emit event
+      setUnreadTotal(prev => {
+        const next = (prev || 0) + 1;
+        localStorage.setItem('kidslink:unread_total', String(next));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: next } }));
+        return next;
+      });
+    };
+    s.on('new_message_notification', handleNotify);
+    // For safety: also listen new_message (in case server emits directly)
+    s.on('new_message', (payload) => {
+      // Only count if message is not from self
+      try {
+        const msg = payload?.message || payload;
+        const userId = JSON.parse(atob(token.split('.')[1] || 'e30='))?.id;
+        const sender = msg?.sender_id?._id || msg?.sender_id?.id || msg?.sender_id;
+        if (sender && userId && String(sender) !== String(userId)) handleNotify(payload);
+      } catch {
+        handleNotify(payload);
+      }
+    });
+    return () => { try { s.close(); } catch {} };
+  }, []);
+
   const [controller, dispatch] = useArgonController();
   const { miniSidenav, darkSidenav, layout } = controller;
   const location = useLocation();
@@ -82,13 +129,19 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               icon={icon}
               active={key === itemName}
               noCollapse={noCollapse}
+              badgeCount={(route === '/teacher/chat' || route === '/parent/chat') ? unreadTotal : 0}
             />
           </Link>
         );
       } else {
         returnValue = (
           <NavLink to={route} key={key}>
-            <SidenavItem name={name} icon={icon} active={key === itemName} />
+            <SidenavItem 
+              name={name} 
+              icon={icon} 
+              active={key === itemName}
+              badgeCount={(route === '/teacher/chat' || route === '/parent/chat') ? unreadTotal : 0}
+            />
           </NavLink>
         );
       }

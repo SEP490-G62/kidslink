@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const { Class, Teacher, StudentClass, Student, DailyReport, Calendar } = require('../models');
+const { Class, Teacher, StudentClass, Student, DailyReport, Calendar, User } = require('../models');
+const cloudinary = require('../utils/cloudinary');
 
 // Helper to get teacher document from authenticated user
 async function getTeacherByReqUser(req) {
@@ -311,5 +312,169 @@ async function getTeacherLatestClassCalendar(req, res) {
 }
 
 module.exports.getTeacherLatestClassCalendar = getTeacherLatestClassCalendar;
+
+
+// GET /teacher/profile
+async function getMyProfile(req, res) {
+  try {
+    const teacher = await getTeacherByReqUser(req);
+    if (!teacher) {
+      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
+    }
+
+    const populated = await Teacher.findById(teacher._id).populate({ path: 'user_id', model: User });
+    if (!populated) {
+      return res.status(404).json({ error: 'Không tìm thấy hồ sơ giáo viên' });
+    }
+
+    const user = populated.user_id;
+    return res.json({
+      teacher: {
+        _id: populated._id,
+        qualification: populated.qualification,
+        major: populated.major,
+        experience_years: populated.experience_years,
+        note: populated.note
+      },
+      user: user ? {
+        _id: user._id,
+        full_name: user.full_name,
+        email: user.email,
+        phone_number: user.phone_number,
+        avatar_url: user.avatar_url,
+        role: user.role,
+        status: user.status
+      } : null
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+}
+
+// PUT /teacher/profile
+async function updateMyProfile(req, res) {
+  try {
+    const teacher = await getTeacherByReqUser(req);
+    if (!teacher) {
+      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
+    }
+
+    const {
+      qualification,
+      major,
+      experience_years,
+      note,
+      full_name,
+      email,
+      phone_number,
+      avatar_url
+    } = req.body || {};
+
+    // Build updates with allowlist
+    const teacherUpdates = {};
+    if (typeof qualification === 'string') teacherUpdates.qualification = qualification.trim();
+    if (typeof major === 'string') teacherUpdates.major = major.trim();
+    if (typeof experience_years !== 'undefined') {
+      const years = Number(experience_years);
+      if (!Number.isFinite(years) || years < 0) {
+        return res.status(400).json({ error: 'experience_years không hợp lệ' });
+      }
+      teacherUpdates.experience_years = years;
+    }
+    if (typeof note === 'string') teacherUpdates.note = note.trim();
+
+    const userUpdates = {};
+    if (typeof full_name === 'string' && full_name.trim()) userUpdates.full_name = full_name.trim();
+    if (typeof email === 'string') userUpdates.email = email.trim();
+    if (typeof phone_number === 'string') userUpdates.phone_number = phone_number.trim();
+    if (typeof avatar_url === 'string') userUpdates.avatar_url = avatar_url.trim();
+
+    // Update teacher
+    const updatedTeacher = await Teacher.findByIdAndUpdate(
+      teacher._id,
+      { $set: teacherUpdates },
+      { new: true }
+    );
+
+    // Update linked user if any fields provided
+    let updatedUser = null;
+    if (Object.keys(userUpdates).length > 0) {
+      updatedUser = await User.findByIdAndUpdate(teacher.user_id, { $set: userUpdates }, { new: true });
+    } else {
+      updatedUser = await User.findById(teacher.user_id);
+    }
+
+    return res.json({
+      message: 'Cập nhật hồ sơ thành công',
+      teacher: {
+        _id: updatedTeacher._id,
+        qualification: updatedTeacher.qualification,
+        major: updatedTeacher.major,
+        experience_years: updatedTeacher.experience_years,
+        note: updatedTeacher.note
+      },
+      user: updatedUser ? {
+        _id: updatedUser._id,
+        full_name: updatedUser.full_name,
+        email: updatedUser.email,
+        phone_number: updatedUser.phone_number,
+        avatar_url: updatedUser.avatar_url,
+        role: updatedUser.role,
+        status: updatedUser.status
+      } : null
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+}
+
+module.exports.getMyProfile = getMyProfile;
+module.exports.updateMyProfile = updateMyProfile;
+
+// POST /teacher/profile/avatar
+// Body: { image: <data_url or http url> }
+async function uploadMyAvatar(req, res) {
+  try {
+    const teacher = await getTeacherByReqUser(req);
+    if (!teacher) {
+      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
+    }
+
+    const { image } = req.body || {};
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Thiếu ảnh tải lên' });
+    }
+
+    // Upload to Cloudinary (supports data URLs or remote URLs)
+    const publicIdBase = `kidslink/avatars/user_${teacher.user_id}_${Date.now()}`;
+    const uploadResult = await cloudinary.uploader.upload(image, {
+      public_id: publicIdBase,
+      folder: 'kidslink/avatars',
+      overwrite: true,
+      transformation: [{ quality: 'auto', fetch_format: 'auto' }]
+    });
+
+    // Persist to user profile
+    const updatedUser = await User.findByIdAndUpdate(
+      teacher.user_id,
+      { $set: { avatar_url: uploadResult.secure_url } },
+      { new: true }
+    );
+
+    return res.json({
+      message: 'Tải ảnh thành công',
+      avatar_url: uploadResult.secure_url,
+      user: updatedUser ? {
+        _id: updatedUser._id,
+        full_name: updatedUser.full_name,
+        avatar_url: updatedUser.avatar_url
+      } : null
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+}
+
+module.exports.uploadMyAvatar = uploadMyAvatar;
 
 

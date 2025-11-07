@@ -35,6 +35,7 @@ import parentRoutes from "routes/parentRoutes";
 // Argon Dashboard 2 MUI contexts
 import { useArgonController, setMiniSidenav } from "context";
 import { AuthProvider } from "context/AuthContext";
+import messagingService from "services/messagingService";
 
 // Images
 import brand from "assets/images/kll3.png";
@@ -90,6 +91,24 @@ export default function App() {
     document.documentElement.scrollTop = 0;
     document.scrollingElement.scrollTop = 0;
   }, [pathname]);
+
+  // Fetch unread count on app load so Sidenav badge hiển thị ngay
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    (async () => {
+      try {
+        const res = await messagingService.getUnreadCount();
+        if (res && res.success && res.data) {
+          const total = parseInt(res.data.total || 0, 10) || 0;
+          localStorage.setItem('kidslink:unread_total', String(total));
+          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total } }));
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, []);
 
   const getRoutes = (allRoutes) =>
     allRoutes.map((route) => {

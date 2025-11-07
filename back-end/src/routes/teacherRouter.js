@@ -12,7 +12,10 @@ const {
   getTeacherClasses,
   getClassStudents,
   getStudentsAttendanceByDate,
-  getTeacherLatestClassCalendar
+  getTeacherLatestClassCalendar,
+  getMyProfile,
+  updateMyProfile,
+  uploadMyAvatar
 } = require('../controllers/teacherController');
 const { getClassTimeSlots } = require('../controllers/parent/calendarController');
 const { getStudentDetail } = require('../controllers/studentController');
@@ -24,6 +27,11 @@ router.use(authenticate);
 // Chỉ cho phép teacher thực hiện check in/out và cập nhật comments
 router.post('/daily-reports/checkin', authorize(['teacher']), studentValidators, checkIn);
 router.put('/daily-reports/checkout', authorize(['teacher']), studentValidators, checkOut);
+
+// Hồ sơ giáo viên
+router.get('/profile', authorize(['teacher']), getMyProfile);
+router.put('/profile', authorize(['teacher']), updateMyProfile);
+router.post('/profile/avatar', authorize(['teacher']), uploadMyAvatar);
 
 // Đánh giá học sinh - cập nhật comments cuối ngày
 router.put('/daily-reports/:id/comment', authorize(['teacher']), require('../controllers/dailyReportController').updateComment);

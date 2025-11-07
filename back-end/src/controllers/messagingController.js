@@ -128,7 +128,7 @@ exports.getConversations = async (req, res) => {
       .populate('class_id', 'class_name')
       .sort({ last_message_at: -1 });
 
-    // Lấy tin nhắn cuối cùng của mỗi conversation
+    // Lấy tin nhắn cuối cùng và danh sách participants của mỗi conversation
     const conversationsWithLastMessage = await Promise.all(
       conversations.map(async (conv) => {
         const lastMessage = await Message.findOne({
@@ -142,10 +142,21 @@ exports.getConversations = async (req, res) => {
           conversation_id: conv._id
         });
 
+        // Lấy danh sách participants để frontend có thể hiển thị tên đối phương
+        const participants = await ConversationParticipant.find({ conversation_id: conv._id })
+          .populate('user_id', 'full_name avatar_url role')
+          .select('user_id');
+
         return {
           ...conv.toObject(),
           lastMessage: lastMessage || null,
-          participants_count
+          participants_count,
+          participants: participants.map(p => ({
+            _id: p.user_id?._id || p.user_id,
+            full_name: p.user_id?.full_name,
+            avatar_url: p.user_id?.avatar_url,
+            role: p.user_id?.role
+          }))
         };
       })
     );
@@ -442,15 +453,31 @@ exports.createDirectConversationWithTeacher = async (req, res) => {
       for (const conv of candidates) {
         const count = await ConversationParticipant.countDocuments({ conversation_id: conv._id });
         if (count === 2) {
-          return res.status(200).json({ message: 'Đã có cuộc trò chuyện', conversation: conv });
+          // Populate participants để trả về cho frontend
+          const participants = await ConversationParticipant.find({ conversation_id: conv._id })
+            .populate('user_id', 'full_name avatar_url role')
+            .select('user_id');
+
+          const conversationObj = conv.toObject();
+          conversationObj.participants_count = 2;
+          conversationObj.participants = participants.map(p => ({
+            _id: p.user_id?._id || p.user_id,
+            full_name: p.user_id?.full_name,
+            avatar_url: p.user_id?.avatar_url,
+            role: p.user_id?.role
+          }));
+
+          return res.status(200).json({ message: 'Đã có cuộc trò chuyện', conversation: conversationObj });
         }
       }
     }
 
-    // Tạo conversation mới thuộc lớp mới nhất, tiêu đề: "Tên giáo viên - Tên lớp"
+    // Tạo conversation mới thuộc lớp mới nhất, tiêu đề: "Tên parent - Tên teacher"
     const teacherUserDoc = await User.findById(teacher_user_id).select('full_name');
+    const parentUserDoc = await User.findById(requester_user_id).select('full_name');
     const teacherName = teacherUserDoc?.full_name || 'Giáo viên';
-    const title = `${teacherName} - ${clazz.class_name}`;
+    const parentName = parentUserDoc?.full_name || 'Phụ huynh';
+    const title = `${parentName} - ${teacherName}`;
     const conversation = new Conversation({
       title,
       class_id: clazz._id,
@@ -463,7 +490,21 @@ exports.createDirectConversationWithTeacher = async (req, res) => {
     await ConversationParticipant.create({ user_id: requester_user_id, conversation_id: conversation._id });
     await ConversationParticipant.create({ user_id: teacher_user_id, conversation_id: conversation._id });
 
-    res.status(201).json({ message: 'Tạo trò chuyện thành công', conversation });
+    // Populate participants để trả về cho frontend
+    const participants = await ConversationParticipant.find({ conversation_id: conversation._id })
+      .populate('user_id', 'full_name avatar_url role')
+      .select('user_id');
+
+    const conversationObj = conversation.toObject();
+    conversationObj.participants_count = 2;
+    conversationObj.participants = participants.map(p => ({
+      _id: p.user_id?._id || p.user_id,
+      full_name: p.user_id?.full_name,
+      avatar_url: p.user_id?.avatar_url,
+      role: p.user_id?.role
+    }));
+
+    res.status(201).json({ message: 'Tạo trò chuyện thành công', conversation: conversationObj });
   } catch (error) {
     console.error('Error creating direct conversation:', error);
     res.status(500).json({ error: 'Lỗi khi tạo trò chuyện', details: error.message });

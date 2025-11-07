@@ -22,6 +22,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Icon from "@mui/material/Icon";
+import Badge from "@mui/material/Badge";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -32,7 +33,7 @@ import { item, itemIcon, itemText, itemIconBox } from "examples/Sidenav/styles/s
 // Argon Dashboard 2 MUI context
 import { useArgonController } from "context";
 
-function SidenavItem({ icon, name, active, open, ...rest }) {
+function SidenavItem({ icon, name, active, open, badgeCount, ...rest }) {
   const [controller] = useArgonController();
   const { miniSidenav, darkSidenav, sidenavColor } = controller;
 
@@ -44,11 +45,18 @@ function SidenavItem({ icon, name, active, open, ...rest }) {
           sx={(theme) => item(theme, { active, darkSidenav, sidenavColor, miniSidenav })}
         >
           <ListItemIcon sx={(theme) => itemIconBox(theme, { active, darkSidenav, sidenavColor })}>
-            {typeof icon === "string" ? (
-              <Icon sx={(theme) => itemIcon(theme, { active })}>{icon}</Icon>
-            ) : (
-              icon
-            )}
+            <Badge
+              color="error"
+              badgeContent={badgeCount && badgeCount > 0 ? (badgeCount > 99 ? "99+" : badgeCount) : 0}
+              overlap="circular"
+              invisible={!badgeCount || badgeCount <= 0}
+            >
+              {typeof icon === "string" ? (
+                <Icon sx={(theme) => itemIcon(theme, { active })}>{icon}</Icon>
+              ) : (
+                icon
+              )}
+            </Badge>
           </ListItemIcon>
 
           <ListItemText
@@ -75,6 +83,7 @@ SidenavItem.propTypes = {
   name: PropTypes.string.isRequired,
   active: PropTypes.bool,
   open: PropTypes.bool,
+  badgeCount: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 };
 
 export default SidenavItem;
