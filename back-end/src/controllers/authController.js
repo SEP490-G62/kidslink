@@ -7,7 +7,8 @@ const allowedRoles = ['school_admin', 'teacher', 'parent', 'health_care_staff', 
 
 function signToken(user) {
   const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+  // Thời hạn token: mặc định 24 giờ, có thể cấu hình qua JWT_EXPIRES_IN trong .env
+  const expiresIn = process.env.JWT_EXPIRES_IN || '11h';
   return jwt.sign(
     { id: user._id, role: user.role, username: user.username, full_name: user.full_name },
     secret,

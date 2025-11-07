@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import authService from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -25,8 +26,34 @@ export const AuthProvider = ({ children }) => {
     
     if (storedToken && storedUser) {
       try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        // Kiểm tra token có hết hạn không
+        if (authService.isTokenExpired(storedToken)) {
+          console.log('Token đã hết hạn khi khởi tạo, xóa dữ liệu đăng nhập');
+          authService.checkAndClearExpiredToken();
+          setToken(null);
+          setUser(null);
+        } else {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+          
+          // Thiết lập timer để kiểm tra token định kỳ (mỗi phút)
+          const checkTokenInterval = setInterval(() => {
+            const currentToken = localStorage.getItem('token');
+            if (currentToken && authService.isTokenExpired(currentToken)) {
+              console.log('Token đã hết hạn, đăng xuất tự động');
+              authService.checkAndClearExpiredToken();
+              setToken(null);
+              setUser(null);
+              if (window.location.pathname !== '/authentication/sign-in') {
+                window.location.href = '/authentication/sign-in';
+              }
+              clearInterval(checkTokenInterval);
+            }
+          }, 60000); // Kiểm tra mỗi 60 giây
+          
+          // Cleanup interval khi component unmount
+          return () => clearInterval(checkTokenInterval);
+        }
       } catch (error) {
         console.error('Lỗi khi parse user data từ localStorage:', error);
         localStorage.removeItem('token');

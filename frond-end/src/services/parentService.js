@@ -416,10 +416,12 @@ class ParentService {
     } catch (error) {
       console.error('ParentService.getClassTimeSlots Error:', error);
       return [];
-   * Lấy thực đơn tuần theo con và ngày bắt đầu tuần (Thứ 2)
-   * @param {string} studentId - optional, để chọn con cụ thể
-   * @param {string} startDateISO - YYYY-MM-DD (ngày bất kỳ trong tuần; backend sẽ tự tính Thứ 2)
-   */
+    }
+  }
+  //  * Lấy thực đơn tuần theo con và ngày bắt đầu tuần (Thứ 2)
+  //  * @param {string} studentId - optional, để chọn con cụ thể
+  //  * @param {string} startDateISO - YYYY-MM-DD (ngày bất kỳ trong tuần; backend sẽ tự tính Thứ 2)
+  //  */
   async getWeeklyMenu(studentId) {
     try {
       const params = new URLSearchParams();
