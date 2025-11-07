@@ -2,16 +2,10 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-<<<<<<< HEAD
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/kidslink1', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-=======
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/kidslink');
->>>>>>> 6567548c7afd8fa08704a8dea3ffb093aec8abda
+    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/kidslink';
+    const conn = await mongoose.connect(uri);
 
-    console.log(`📊 MongoDB kết nối thành công: ${conn.connection.host}`);
+    console.log(`📊 MongoDB kết nối thành công: ${conn.connection.host}/${conn.connection.name}`);
   } catch (error) {
     console.error('❌ Lỗi kết nối MongoDB:', error.message);
     process.exit(1);
