@@ -49,7 +49,12 @@ function Footer({ company = {}, links = [] }) {
       flexDirection={{ xs: "column", lg: "row" }}
       justifyContent="space-between"
       alignItems="center"
-      px={1.5}
+      px={3}
+      py={2}
+      sx={{
+        borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+        backgroundColor: (theme) => theme.palette.background.paper,
+      }}
     >
       <ArgonBox
         display="flex"

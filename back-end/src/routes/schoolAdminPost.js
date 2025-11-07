@@ -14,7 +14,8 @@ const {
   getComments,
   createComment,
   deleteComment, 
-  getLikes 
+  getLikes,
+  toggleLike
 } = require('../controllers/schoolAdminCommentController');
 
 // Áp dụng xác thực và authorization cho tất cả routes
@@ -36,5 +37,6 @@ router.delete('/comments/:commentId', deleteComment);
 
 // Like Routes
 router.get('/:postId/likes', getLikes);
+router.post('/:postId/like', toggleLike);
 
 module.exports = router;

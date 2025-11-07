@@ -18,11 +18,18 @@ import {
   MenuItem,
   Stack,
   Tooltip,
+  TextField,
+  InputAdornment,
+  Select,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import SearchIcon from "@mui/icons-material/Search";
+import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import api from "services/api";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import StudentModal from "./StudentModal";
 import ParentModal from "./ParentModal";
 
@@ -67,10 +74,22 @@ const ChildrenPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuStudent, setMenuStudent] = useState(null);
 
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterClass, setFilterClass] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [classes, setClasses] = useState([]);
+  const [classSelectOpen, setClassSelectOpen] = useState(false);
+  const [statusSelectOpen, setStatusSelectOpen] = useState(false);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const cid = params.get("classId");
     setClassId(cid);
+    
+    // Fetch classes for filter
+    fetchClasses();
+    
     // Fetch tất cả học sinh nếu không có classId, hoặc fetch theo classId
     if (cid) {
       fetchStudents(cid);
@@ -78,6 +97,16 @@ const ChildrenPage = () => {
       fetchAllStudents();
     }
   }, []);
+
+  const fetchClasses = async () => {
+    try {
+      const res = await api.get('/classes', true);
+      const classList = Array.isArray(res) ? res : (res.data || []);
+      setClasses(classList);
+    } catch (e) {
+      console.error('Error fetching classes:', e);
+    }
+  };
 
   const fetchAllStudents = async () => {
     try {
@@ -106,10 +135,7 @@ const ChildrenPage = () => {
   };
 
   const handleCreateStudent = () => {
-    if (!classId) {
-      alert("Vui lòng chọn lớp học trước khi thêm học sinh. Hãy truy cập từ trang Quản lý lớp học.");
-      return;
-    }
+    // Cho phép thêm từ trang "Tất cả học sinh" - modal sẽ yêu cầu chọn lớp
     setSelectedStudent(null);
     setStudentModalOpen(true);
   };
@@ -190,8 +216,22 @@ const ChildrenPage = () => {
     }
   };
 
+  // Filter students based on search query, class, and status
+  const filteredStudents = students.filter((student) => {
+    const matchesSearch = searchQuery === "" || 
+      (student.full_name && student.full_name.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const studentClass = student.class_name || student.class?.class_name || student.class_id?.class_name || "";
+    const matchesClass = filterClass === "" || studentClass === filterClass;
+    
+    const matchesStatus = filterStatus === "" || student.status === Number(filterStatus);
+    
+    return matchesSearch && matchesClass && matchesStatus;
+  });
+
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <ArgonBox py={3} position="relative" zIndex={3}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <ArgonTypography variant="h5" fontWeight="bold" color="white">
@@ -206,6 +246,59 @@ const ChildrenPage = () => {
             Thêm học sinh
           </ArgonButton>
         </Box>
+
+        {/* Filter Section */}
+        <ArgonBox display="flex" gap={2} mb={2} flexWrap="wrap" alignItems="center">
+          <TextField
+            size="small"
+            placeholder="Tìm kiếm tên học sinh..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ width: 300, bgcolor: 'white', borderRadius: 1 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Select
+            size="small"
+            value={filterClass}
+            onChange={(e) => setFilterClass(e.target.value)}
+            displayEmpty
+            onOpen={() => setClassSelectOpen(true)}
+            onClose={() => setClassSelectOpen(false)}
+            IconComponent={classSelectOpen ? KeyboardArrowUp : KeyboardArrowDown}
+            sx={{ width: 200, bgcolor: 'white', borderRadius: 1 }}
+          >
+            <MenuItem value="">Tất cả lớp</MenuItem>
+            {classes.map((cls) => (
+              <MenuItem key={cls._id} value={cls.class_name}>
+                {cls.class_name}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select
+            size="small"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            displayEmpty
+            onOpen={() => setStatusSelectOpen(true)}
+            onClose={() => setStatusSelectOpen(false)}
+            IconComponent={statusSelectOpen ? KeyboardArrowUp : KeyboardArrowDown}
+            sx={{ width: 180, bgcolor: 'white', borderRadius: 1 }}
+          >
+            <MenuItem value="">Tất cả trạng thái</MenuItem>
+            <MenuItem value="1">Hoạt động</MenuItem>
+            <MenuItem value="0">Không hoạt động</MenuItem>
+          </Select>
+          <ArgonTypography variant="caption" color="white" ml={2}>
+            Tìm thấy: {filteredStudents.length} học sinh
+          </ArgonTypography>
+        </ArgonBox>
+
         {loading ? (
           <ArgonBox p={3} bgcolor="white" borderRadius={2}>
             <ArgonTypography variant="body2">Đang tải…</ArgonTypography>
@@ -223,14 +316,16 @@ const ChildrenPage = () => {
                 "& .MuiTableCell-root": {
                   padding: "12px 16px",
                   verticalAlign: "middle",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 },
               }}
             >
               <colgroup>
-                <col style={{ width: "25%" }} />
-                <col style={{ width: "20%" }} />
-                <col style={{ width: "25%" }} />
+                <col style={{ width: "22%" }} />
                 <col style={{ width: "15%" }} />
+                <col style={{ width: "35%" }} />
+                <col style={{ width: "13%" }} />
                 <col style={{ width: "15%" }} />
               </colgroup>
               <TableHead>
@@ -253,15 +348,15 @@ const ChildrenPage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {students.map((s) => (
+                {filteredStudents.map((s) => (
                   <TableRow key={s._id || s.id} hover>
                     <TableCell>
                       <Box display="flex" alignItems="center">
                         <Avatar
-                          src={s?.avatar || ""}
-                          sx={{ width: 32, height: 32, mr: 2 }}
+                          src={s?.avatar_url || s?.avatar || ""}
+                          sx={{ width: 40, height: 40, mr: 2 }}
                         >
-                          {s?.full_name ? s.full_name.charAt(0) : "?"}
+                          {s?.full_name ? s.full_name.charAt(0).toUpperCase() : "?"}
                         </Avatar>
                         <ArgonTypography variant="body2" fontWeight="medium">
                           {s.full_name || "-"}
@@ -276,32 +371,34 @@ const ChildrenPage = () => {
                           "-"}
                       </ArgonTypography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ overflow: "visible" }}>
                       {s.parents && s.parents.length > 0 ? (
                         <Stack spacing={0.5}>
                           {s.parents.map((parent) => (
-                            <Box key={parent._id} display="flex" alignItems="center" gap={1}>
-                              <ArgonTypography variant="body2" fontSize="0.875rem">
+                            <Box key={parent._id} display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                              <ArgonTypography variant="body2" fontSize="0.8rem" sx={{ flex: "1 1 auto", minWidth: "120px" }}>
                                 {parent.user_id?.full_name || "-"} ({parent.relationship || "-"})
                               </ArgonTypography>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleEditParent(s, parent)}
-                                sx={{ p: 0.5 }}
-                              >
-                                <ArgonTypography variant="caption" color="info">
-                                  Sửa
-                                </ArgonTypography>
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDeleteParent(parent._id, s._id)}
-                                sx={{ p: 0.5 }}
-                              >
-                                <ArgonTypography variant="caption" color="error">
-                                  Xóa
-                                </ArgonTypography>
-                              </IconButton>
+                              <Box display="flex" gap={0.5}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditParent(s, parent)}
+                                  sx={{ p: 0.3 }}
+                                >
+                                  <ArgonTypography variant="caption" color="info" fontSize="0.7rem">
+                                    Sửa
+                                  </ArgonTypography>
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteParent(parent._id, s._id)}
+                                  sx={{ p: 0.3 }}
+                                >
+                                  <ArgonTypography variant="caption" color="error" fontSize="0.7rem">
+                                    Xóa
+                                  </ArgonTypography>
+                                </IconButton>
+                              </Box>
                             </Box>
                           ))}
                         </Stack>
@@ -328,11 +425,11 @@ const ChildrenPage = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {students.length === 0 && (
+                {filteredStudents.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} align="center">
                       <ArgonTypography variant="body2" color="text">
-                        Không có dữ liệu
+                        {searchQuery || filterClass || filterStatus ? "Không tìm thấy học sinh phù hợp" : "Không có dữ liệu"}
                       </ArgonTypography>
                     </TableCell>
                   </TableRow>

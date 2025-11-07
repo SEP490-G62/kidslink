@@ -25,6 +25,8 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
     teacher_id: "",
     teacher_id2: "",
     academic_year: "",
+    start_date: "",
+    end_date: "",
     status: 1,
   });
   const [teachers, setTeachers] = useState([]);
@@ -66,6 +68,8 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
             teacher_id: classData.teacher_id?._id || "",
             teacher_id2: classData.teacher_id2?._id || "",
             academic_year: classData.academic_year || "",
+            start_date: classData.start_date ? classData.start_date.split('T')[0] : "",
+            end_date: classData.end_date ? classData.end_date.split('T')[0] : "",
             status: classData.status !== undefined ? classData.status : 1,
           });
         } else {
@@ -77,6 +81,8 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
             teacher_id: "",
             teacher_id2: "",
             academic_year: `${currentYear}-${currentYear + 1}`,
+            start_date: `${currentYear}-09-01`,
+            end_date: `${currentYear + 1}-05-31`,
             status: 1,
           });
         }
@@ -127,8 +133,17 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
     if (!formData.class_age_id) {
       newErrors.class_age_id = "Khối tuổi là bắt buộc";
     }
+    if (!formData.teacher_id) {
+      newErrors.teacher_id = "Giáo viên chính là bắt buộc";
+    }
     if (!formData.academic_year.trim()) {
       newErrors.academic_year = "Năm học là bắt buộc";
+    }
+    if (!formData.start_date) {
+      newErrors.start_date = "Ngày bắt đầu là bắt buộc";
+    }
+    if (!formData.end_date) {
+      newErrors.end_date = "Ngày kết thúc là bắt buộc";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -158,12 +173,12 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
+      <DialogTitle sx={{ pb: 1 }}>
         <ArgonTypography variant="h5" fontWeight="bold">
           {isEdit ? "Chỉnh sửa lớp học" : "Tạo lớp học mới"}
         </ArgonTypography>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ pt: 3 }}>
         {dataLoading ? (
           <ArgonBox p={3} textAlign="center">
             <ArgonTypography variant="body2">
@@ -171,7 +186,7 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
             </ArgonTypography>
           </ArgonBox>
         ) : (
-          <ArgonBox component="form" p={1}>
+          <ArgonBox component="form">
             <ArgonBox mb={2}>
               <ArgonTypography variant="caption" color="text">
                 Giáo viên: {teachers.length} | Khối tuổi: {classAges.length}
@@ -187,11 +202,10 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
                 onChange={handleChange("class_name")}
                 error={!!errors.class_name}
                 helperText={errors.class_name}
-                margin="normal"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal" error={!!errors.class_age_id}>
+              <FormControl fullWidth error={!!errors.class_age_id}>
                 <InputLabel>Khối tuổi *</InputLabel>
                 <Select
                   value={formData.class_age_id}
@@ -213,13 +227,13 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal">
-                <InputLabel id="teacher-label" shrink>Giáo viên chính</InputLabel>
+              <FormControl fullWidth required error={!!errors.teacher_id}>
+                <InputLabel id="teacher-label" shrink>Giáo viên chính *</InputLabel>
                 <Select
                   labelId="teacher-label"
                   value={formData.teacher_id}
                   onChange={handleChange("teacher_id")}
-                  label="Giáo viên chính"
+                  label="Giáo viên chính *"
                   displayEmpty
                   notched
                 >
@@ -232,10 +246,15 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
                     </MenuItem>
                   ))}
                 </Select>
+                {errors.teacher_id && (
+                  <ArgonTypography variant="caption" color="error">
+                    {errors.teacher_id}
+                  </ArgonTypography>
+                )}
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal">
+              <FormControl fullWidth>
                 <InputLabel id="teacher2-label" shrink>Giáo viên phụ</InputLabel>
                 <Select
                   labelId="teacher2-label"
@@ -257,7 +276,7 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal" required error={!!errors.academic_year}>
+              <FormControl fullWidth required error={!!errors.academic_year}>
                 <InputLabel>Năm học *</InputLabel>
                 <Select
                   value={formData.academic_year}
@@ -278,7 +297,33 @@ const ClassModal = ({ open, onClose, classData, onSuccess }) => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal">
+              <TextField
+                fullWidth
+                label="Ngày bắt đầu"
+                type="date"
+                required
+                value={formData.start_date}
+                onChange={handleChange("start_date")}
+                error={!!errors.start_date}
+                helperText={errors.start_date}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Ngày kết thúc"
+                type="date"
+                required
+                value={formData.end_date}
+                onChange={handleChange("end_date")}
+                error={!!errors.end_date}
+                helperText={errors.end_date}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
                 <InputLabel>Trạng thái</InputLabel>
                 <Select
                   value={formData.status}

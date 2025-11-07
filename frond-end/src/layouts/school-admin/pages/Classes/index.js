@@ -9,15 +9,21 @@ import {
   Paper,
   IconButton,
   TextField,
-  Chip,
+  Select,
+  MenuItem,
+  InputAdornment,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import SearchIcon from "@mui/icons-material/Search";
+import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import ArgonButton from "components/ArgonButton";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import api from "services/api";
 import { useNavigate } from "react-router-dom";
 import ClassModal from "./ClassModal";
@@ -26,6 +32,8 @@ const ClassesPage = () => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [filterYear, setFilterYear] = useState("");
+  const [yearSelectOpen, setYearSelectOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
   const navigate = useNavigate();
@@ -34,7 +42,10 @@ const ClassesPage = () => {
     try {
       setLoading(true);
       const res = await api.get("/classes", true);
-      const rows = Array.isArray(res) ? res : res.data || [];
+      console.log('Classes API response:', res); // Debug log
+      // Backend trả về { success: true, data: [...], pagination: {...} }
+      const rows = res.data || [];
+      console.log('Parsed classes:', rows); // Debug log
       setClasses(rows);
     } catch (e) {
       console.error("Lỗi khi tải danh sách lớp:", e);
@@ -49,18 +60,28 @@ const ClassesPage = () => {
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    if (!s) return classes;
     return classes.filter((c) => {
       const n = c.class_name || "";
       const t1 = c?.teacher_id?.user_id?.full_name || "";
       const t2 = c?.teacher_id2?.user_id?.full_name || "";
-      return (
+      
+      const matchesSearch = !s || (
         n.toLowerCase().includes(s) ||
         t1.toLowerCase().includes(s) ||
         t2.toLowerCase().includes(s)
       );
+      
+      const matchesYear = filterYear === "" || c.academic_year === filterYear;
+      
+      return matchesSearch && matchesYear;
     });
-  }, [classes, search]);
+  }, [classes, search, filterYear]);
+
+  // Get unique academic years for filter
+  const academicYears = useMemo(() => {
+    const years = [...new Set(classes.map(c => c.academic_year).filter(Boolean))];
+    return years.sort().reverse();
+  }, [classes]);
 
   const goChildren = (id) => {
     navigate(`/school-admin/children?classId=${id}`);
@@ -98,6 +119,7 @@ const ClassesPage = () => {
 
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <ArgonBox py={3} position="relative" zIndex={3}>
         <ArgonBox
           mb={3}
@@ -118,19 +140,45 @@ const ClassesPage = () => {
           </ArgonButton>
         </ArgonBox>
 
-        <ArgonBox mb={2}>
+        <ArgonBox mb={2} display="flex" gap={2} flexWrap="wrap" alignItems="center">
           <TextField
             size="small"
             placeholder="Tìm kiếm theo tên lớp hoặc giáo viên..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             sx={{
-              maxWidth: 480,
-              width: "100%",
+              width: 360,
               backgroundColor: "white",
               borderRadius: 1,
             }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
           />
+          <Select
+            size="small"
+            value={filterYear}
+            onChange={(e) => setFilterYear(e.target.value)}
+            displayEmpty
+            onOpen={() => setYearSelectOpen(true)}
+            onClose={() => setYearSelectOpen(false)}
+            IconComponent={yearSelectOpen ? KeyboardArrowUp : KeyboardArrowDown}
+            sx={{ width: 200, bgcolor: 'white', borderRadius: 1 }}
+          >
+            <MenuItem value="">Tất cả năm học</MenuItem>
+            {academicYears.map((year) => (
+              <MenuItem key={year} value={year}>
+                {year}
+              </MenuItem>
+            ))}
+          </Select>
+          <ArgonTypography variant="caption" color="white" ml={1}>
+            Tìm thấy: {filtered.length} lớp
+          </ArgonTypography>
         </ArgonBox>
 
         {loading ? (
@@ -156,13 +204,12 @@ const ClassesPage = () => {
               }}
             >
               <colgroup>
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "20%" }} />
-                <col style={{ width: "20%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "12%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "11%" }} />
               </colgroup>
               <TableHead>
                 <TableRow>
@@ -180,9 +227,6 @@ const ClassesPage = () => {
                   </TableCell>
                   <TableCell>
                     <strong>Giáo viên phụ</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Trạng thái</strong>
                   </TableCell>
                   <TableCell>
                     <strong>Thao tác</strong>
@@ -219,15 +263,6 @@ const ClassesPage = () => {
                         </ArgonTypography>
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          label={
-                            c.status === 1 ? "Hoạt động" : "Không hoạt động"
-                          }
-                          color={c.status === 1 ? "success" : "default"}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
                         <IconButton
                           size="small"
                           color="primary"
@@ -257,7 +292,7 @@ const ClassesPage = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={6} align="center">
                       <ArgonTypography variant="body2" color="text">
                         {search
                           ? "Không tìm thấy lớp học nào phù hợp"

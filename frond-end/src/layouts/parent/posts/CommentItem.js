@@ -125,6 +125,7 @@ function CommentItem({
   };
 
   const isOwnComment = currentUserId && comment.user_id?._id && comment.user_id._id === currentUserId;
+  const canEditComment = isOwnComment;
   const canDeleteComment = isAdmin || isOwnComment;
 
   const handleMenuOpen = (event) => {
@@ -151,7 +152,8 @@ function CommentItem({
     
     try {
       setIsUpdating(true);
-      const response = await parentService.updateComment(comment._id, editText);
+      const service = isAdmin ? schoolAdminService : parentService;
+      const response = await service.updateComment(comment._id, editText);
       if (response.success) {
         setIsEditing(false);
         if (onCommentUpdate) {
@@ -339,7 +341,7 @@ function CommentItem({
             <ArgonTypography variant="caption" color="text.secondary" fontSize="11px">
               {new Date(comment.create_at).toLocaleString('vi-VN')}
             </ArgonTypography>
-            {canDeleteComment && (
+            {(canEditComment || canDeleteComment) && (
               <>
                 <IconButton size="small" onClick={handleMenuOpen} sx={{ color: 'text.secondary' }}>
                   <i className="ni ni-settings-gear-65" style={{ fontSize: '14px' }} />
@@ -352,7 +354,7 @@ function CommentItem({
                   transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                   anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 >
-                  {isOwnComment && (
+                  {canEditComment && (
                     <>
                       <MenuItem onClick={handleEditClick} sx={{ py: 1, px: 2 }}>
                         <ListItemIcon sx={{ minWidth: 32 }}>
@@ -360,15 +362,17 @@ function CommentItem({
                         </ListItemIcon>
                         <ListItemText primary="Chỉnh sửa" primaryTypographyProps={{ fontSize: '13px', fontWeight: 500 }} />
                       </MenuItem>
-                      <Divider sx={{ my: 0.5 }} />
+                      {canDeleteComment && <Divider sx={{ my: 0.5 }} />}
                     </>
                   )}
-                  <MenuItem onClick={handleDeleteClick} sx={{ py: 1, px: 2 }}>
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      <i className="ni ni-fat-remove" style={{ fontSize: '16px', color: '#f44336' }} />
-                    </ListItemIcon>
-                    <ListItemText primary="Xóa" primaryTypographyProps={{ fontSize: '13px', fontWeight: 500, color: '#f44336' }} />
-                  </MenuItem>
+                  {canDeleteComment && (
+                    <MenuItem onClick={handleDeleteClick} sx={{ py: 1, px: 2 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <i className="ni ni-fat-remove" style={{ fontSize: '16px', color: '#f44336' }} />
+                      </ListItemIcon>
+                      <ListItemText primary="Xóa" primaryTypographyProps={{ fontSize: '13px', fontWeight: 500, color: '#f44336' }} />
+                    </MenuItem>
+                  )}
                 </Menu>
               </>
             )}

@@ -185,9 +185,61 @@ const createComment = async (req, res) => {
   }
 };
 
+// TOGGLE like for a post (school admin can like posts)
+const toggleLike = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const PostLike = require('../models/PostLike');
+
+    // Check if post exists
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy bài đăng'
+      });
+    }
+
+    // Check if user already liked
+    const existingLike = await PostLike.findOne({
+      post_id: postId,
+      user_id: req.user.id
+    });
+
+    if (existingLike) {
+      // Unlike
+      await PostLike.findByIdAndDelete(existingLike._id);
+      return res.json({
+        success: true,
+        message: 'Đã bỏ thích',
+        isLiked: false
+      });
+    } else {
+      // Like
+      await PostLike.create({
+        post_id: postId,
+        user_id: req.user.id
+      });
+      return res.json({
+        success: true,
+        message: 'Đã thích bài đăng',
+        isLiked: true
+      });
+    }
+  } catch (error) {
+    console.error('toggleLike error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi khi thích bài đăng',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getComments,
   createComment,
   deleteComment,
-  getLikes
+  getLikes,
+  toggleLike
 };

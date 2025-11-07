@@ -37,8 +37,8 @@ import icon from "assets/images/illustrations/icon-documentation.svg";
 function SidenavFooter() {
   const [controller] = useArgonController();
   const { miniSidenav, darkSidenav } = controller;
-  const navigate = useNavigate();
   const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
@@ -51,6 +51,7 @@ function SidenavFooter() {
       // Ngay cả khi có lỗi, vẫn chuyển về trang đăng nhập
       navigate("/authentication/sign-in");
     }
+
   };
 
   return (

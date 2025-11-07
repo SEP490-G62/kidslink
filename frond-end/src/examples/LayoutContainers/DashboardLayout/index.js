@@ -42,6 +42,8 @@ function DashboardLayout({ bgColor, children, ...rest }) {
     <ArgonBox
       sx={({ breakpoints, transitions, functions: { pxToRem } }) => ({
         p: 3,
+        minHeight: '100vh',
+        pb: 10, // leave space for footer
 
         [breakpoints.up("xl")]: {
           marginLeft: miniSidenav ? pxToRem(120) : pxToRem(274),
