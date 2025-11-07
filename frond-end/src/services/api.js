@@ -5,63 +5,9 @@ class ApiService {
     this.baseURL = API_BASE_URL;
   }
 
-  // Kiểm tra token có hết hạn không (tránh circular dependency)
-  isTokenExpired(token) {
-    if (!token) {
-      return true;
-    }
-
-    try {
-      // Decode JWT token (không cần verify, chỉ lấy payload)
-      const base64Url = token.split('.')[1];
-      if (!base64Url) {
-        return true;
-      }
-
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-
-      const payload = JSON.parse(jsonPayload);
-      const currentTime = Math.floor(Date.now() / 1000);
-
-      // Kiểm tra nếu token không có exp hoặc đã hết hạn
-      if (!payload.exp) {
-        return true; // Token không có thời gian hết hạn, coi như đã hết hạn
-      }
-
-      // Kiểm tra với buffer 60 giây (token hết hạn trong 60 giây tới cũng coi như hết hạn)
-      return payload.exp < currentTime + 60;
-    } catch (error) {
-      console.error('Lỗi khi kiểm tra token:', error);
-      return true; // Nếu có lỗi, coi như token đã hết hạn
-    }
-  }
-
-  // Xóa token và dữ liệu đăng nhập
-  clearAuthData() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('role');
-    localStorage.removeItem('selectedChild');
-  }
-
-  // Lấy token từ localStorage và kiểm tra hết hạn
+  // Lấy token từ localStorage
   getToken() {
-    const token = localStorage.getItem('token');
-    
-    // Kiểm tra token hết hạn trước khi trả về
-    if (token && this.isTokenExpired(token)) {
-      console.warn('Token đã hết hạn, xóa token');
-      this.clearAuthData();
-      return null;
-    }
-    
-    return token;
+    return localStorage.getItem('token');
   }
 
   // Tạo headers với token nếu có
@@ -76,12 +22,6 @@ class ApiService {
       const token = this.getToken();
       if (token) {
         headers.Authorization = `Bearer ${token}`;
-      } else {
-        // Token không hợp lệ hoặc đã hết hạn, redirect đến trang đăng nhập
-        if (window.location.pathname !== '/authentication/sign-in') {
-          console.warn('Token không hợp lệ, chuyển hướng đến trang đăng nhập');
-          window.location.href = '/authentication/sign-in';
-        }
       }
     }
 
