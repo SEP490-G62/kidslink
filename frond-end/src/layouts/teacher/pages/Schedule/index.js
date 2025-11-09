@@ -109,6 +109,15 @@ const TeacherSchedule = () => {
     return selectedMonday;
   };
 
+  // Helper: format date to local ISO yyyy-mm-dd (avoid UTC shift)
+  const toLocalISO = (inputDate) => {
+    const d = new Date(inputDate);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Danh sách năm +/- 2 năm quanh năm hiện tại
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -144,12 +153,12 @@ const TeacherSchedule = () => {
     for (let i = 0; i < 7; i++) {
       const dayDate = new Date(monday);
       dayDate.setDate(monday.getDate() + i);
-      const iso = dayDate.toISOString().split('T')[0];
+      const iso = toLocalISO(dayDate);
       arr.push({
         label: dayNames[i],
         short: dayShort[i],
         iso,
-        isToday: iso === new Date().toISOString().split('T')[0],
+        isToday: iso === toLocalISO(new Date()),
         display: `${String(dayDate.getDate()).padStart(2,'0')}/${String(dayDate.getMonth()+1).padStart(2,'0')}`
       });
     }
@@ -163,7 +172,7 @@ const TeacherSchedule = () => {
     weekDays.forEach(day => {
       const calendarsOfDay = calendarData.calendars.filter(c => {
         const calDate = new Date(c.date);
-        const calDateStr = calDate.toISOString().split('T')[0];
+        const calDateStr = toLocalISO(calDate);
         return calDateStr === day.iso;
       });
       const slots = calendarsOfDay.flatMap(c => Array.isArray(c.slots) ? c.slots : []);

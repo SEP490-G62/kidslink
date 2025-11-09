@@ -1,0 +1,90 @@
+[{
+  "_id": {
+    "$oid": "671000000000000000000361"
+  },
+  "qualification": "Bachelor of Education",
+  "major": "Early Childhood",
+  "experience_years": 5,
+  "note": "Homeroom A1",
+  "user_id": {
+    "$oid": "671000000000000000000311"
+  },
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-06T11:30:21.508Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000362"
+  },
+  "qualification": "Bachelor of Education",
+  "major": "Early Childhood",
+  "experience_years": 4,
+  "note": "Homeroom B1",
+  "user_id": {
+    "$oid": "671000000000000000000312"
+  },
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000363"
+  },
+  "qualification": "Diploma",
+  "major": "Music",
+  "experience_years": 3,
+  "note": "Music support",
+  "user_id": {
+    "$oid": "671000000000000000000313"
+  },
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000364"
+  },
+  "qualification": "Bachelor of Education",
+  "major": "Physical Education",
+  "experience_years": 6,
+  "note": "PE support",
+  "user_id": {
+    "$oid": "671000000000000000000314"
+  },
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000365"
+  },
+  "qualification": "Master",
+  "major": "Early Childhood",
+  "experience_years": 7,
+  "note": "Homeroom C1",
+  "user_id": {
+    "$oid": "671000000000000000000315"
+  },
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+}]

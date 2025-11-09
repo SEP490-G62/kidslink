@@ -237,20 +237,7 @@ function Illustration() {
               )}
             </ArgonButton>
           </ArgonBox>
-          <ArgonBox mt={3} textAlign="center">
-            <ArgonTypography variant="button" color="text" fontWeight="regular">
-              Chưa có tài khoản?{" "}
-              <ArgonTypography
-                component={Link}
-                to="/authentication/sign-up"
-                variant="button"
-                color="info"
-                fontWeight="medium"
-              >
-                Đăng ký
-              </ArgonTypography>
-            </ArgonTypography>
-          </ArgonBox>
+
           <ArgonBox mt={2} textAlign="center">
             <ArgonTypography
               component={Link}

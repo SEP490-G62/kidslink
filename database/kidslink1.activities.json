@@ -1,0 +1,42 @@
+[{
+  "_id": {
+    "$oid": "671000000000000000000581"
+  },
+  "activity_name": "Reading Time",
+  "description": "Story reading",
+  "require_outdoor": 0,
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000582"
+  },
+  "activity_name": "Outdoor Play",
+  "description": "Play at playground",
+  "require_outdoor": 1,
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000583"
+  },
+  "activity_name": "Nap Time",
+  "description": "Afternoon nap",
+  "require_outdoor": 0,
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+}]
