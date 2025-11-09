@@ -74,4 +74,8 @@ const { getClassCalendarLatest, getClassTimeSlots } = require('../controllers/pa
 router.get('/class-calendar', getClassCalendarLatest);
 router.get('/class-calendar/slots', getClassTimeSlots);
 
+// Routes cho weekly menu
+const { getWeeklyMenuLatest } = require('../controllers/parent/menuController');
+router.get('/menu', getWeeklyMenuLatest);
+
 module.exports = router;

@@ -170,6 +170,9 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     return returnValue;
   });
 
+  // Hide built-in footer logout if routes already includes a logout route
+  const hasCustomLogout = Array.isArray(routes) && routes.some((r) => r.route === "/logout");
+
   return (
     <SidenavRoot {...rest} variant="permanent" ownerState={{ darkSidenav, miniSidenav, layout }}>
       <ArgonBox pt={3} pb={1} px={4} textAlign="center">
@@ -208,9 +211,11 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
       <Divider light={darkSidenav} />
       <List>{renderRoutes}</List>
 
-      <ArgonBox pt={1} mt="auto" mb={2} mx={2}>
-        <SidenavFooter />
-      </ArgonBox>
+      {!hasCustomLogout && (
+        <ArgonBox pt={1} mt="auto" mb={2} mx={2}>
+          <SidenavFooter />
+        </ArgonBox>
+      )}
     </SidenavRoot>
   );
 }

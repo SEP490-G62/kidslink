@@ -36,7 +36,15 @@ const userSchema = new mongoose.Schema({
   phone_number: {
     type: String,
     trim: true
-  }
+   },
+   school_id: {
+     type: mongoose.Schema.Types.ObjectId,
+     ref: 'School'
+   },
+   address: {
+     type: String,
+     trim: true
+   }
 }, {
   timestamps: true
 });
