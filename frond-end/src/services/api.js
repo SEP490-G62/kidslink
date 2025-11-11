@@ -56,8 +56,8 @@ class ApiService {
         // Clear invalid token
         localStorage.removeItem('token');
         // Redirect to login if not already there
-        if (window.location.pathname !== '/auth/login') {
-          window.location.href = '/auth/login';
+        if (window.location.pathname !== '/authentication/sign-in') {
+          window.location.href = '/authentication/sign-in';
         }
         throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       }

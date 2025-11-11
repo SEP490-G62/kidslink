@@ -20,6 +20,7 @@ import { useLocation, NavLink } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
+import SidenavFooter from "examples/Sidenav/SidenavFooter";
 
 // @mui material components
 import List from "@mui/material/List";
@@ -215,6 +216,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           <ArgonTypography variant="h6" color="secondary">
             <Icon sx={{ fontWeight: "bold" }}>close</Icon>
           </ArgonTypography>
+          
         </ArgonBox>
         <ArgonBox 
           display="flex" 
@@ -238,10 +240,15 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               {brandName}
             </ArgonTypography>
           </ArgonBox>
+
         </ArgonBox>
+        
       </ArgonBox>
       <Divider light={darkSidenav} />
       <List>{renderRoutes}</List>
+      <ArgonBox pt={1} mt="auto" mb={2} mx={2}>
+        <SidenavFooter />
+      </ArgonBox>
     </SidenavRoot>
   );
 }

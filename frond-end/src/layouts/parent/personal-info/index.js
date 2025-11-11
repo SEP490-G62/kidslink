@@ -748,6 +748,8 @@ function PersonalInformation() {
           </DialogActions>
         </Dialog>
       </ArgonBox>
+            <Footer />
+
     </DashboardLayout>
   );
 }

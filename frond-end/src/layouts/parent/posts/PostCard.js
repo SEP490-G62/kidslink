@@ -40,8 +40,8 @@ function PostCard({
   onEditPost,
   onDeletePost
 }) {
-  const [isLiked, setIsLiked] = useState(post.isLiked);
-  const [likesCount, setLikesCount] = useState(post.likes);
+  const [isLiked, setIsLiked] = useState(post.isLiked || post.is_liked);
+  const [likesCount, setLikesCount] = useState(post.like_count || post.likes_count || post.likes || 0);
   const [anchorEl, setAnchorEl] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -575,7 +575,7 @@ function PostCard({
               transition: 'all 0.2s ease-in-out'
             }}
           >
-            Bình luận ({post.comments || 0})
+            Bình luận ({post.comment_count || post.comments_count || post.comments || 0})
           </Button>
         </ArgonBox>
       </ArgonBox>
@@ -689,8 +689,13 @@ PostCard.propTypes = {
     date: PropTypes.string.isRequired,
     time: PropTypes.string.isRequired,
     likes: PropTypes.number,
+    like_count: PropTypes.number,
+    likes_count: PropTypes.number,
     comments: PropTypes.number,
+    comment_count: PropTypes.number,
+    comments_count: PropTypes.number,
     isLiked: PropTypes.bool,
+    is_liked: PropTypes.bool,
     status: PropTypes.string
   }).isRequired,
   currentUserId: PropTypes.string,

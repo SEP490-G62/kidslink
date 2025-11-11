@@ -7,9 +7,10 @@ const User = require('../models/User');
 const PickupStudent = require('../models/PickupStudent');
 const Pickup = require('../models/Pickup');
 // Nếu có StudentClass và Class, bạn có thể mở comment và dùng thêm
-// const StudentClass = require('../models/StudentClass');
-// const ClassModel = require('../models/Class');
+const StudentClass = require('../models/StudentClass');
+const ClassModel = require('../models/Class');
 
+// --- Lấy chi tiết 1 học sinh (giữ nguyên) ---
 exports.getStudentDetail = async (req, res) => {
   try {
     const { id } = req.params;
@@ -23,7 +24,7 @@ exports.getStudentDetail = async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy học sinh' });
     }
 
-    // Lấy danh sách phụ huynh của học sinh (qua bảng trung gian ParentStudent)
+    // Lấy danh sách phụ huynh
     const parentLinks = await ParentStudent.find({ student_id: id }).lean();
     const parentIds = parentLinks.map((p) => p.parent_id);
 
@@ -55,7 +56,7 @@ exports.getStudentDetail = async (req, res) => {
       });
     }
 
-    // Lấy danh sách người đón của học sinh (PickupStudent → Pickup)
+    // Lấy danh sách người đón
     const pickupLinks = await PickupStudent.find({ student_id: id }).lean();
     const pickupIds = pickupLinks.map((l) => l.pickup_id);
 
@@ -73,12 +74,12 @@ exports.getStudentDetail = async (req, res) => {
     }
 
     // Nếu muốn trả cả lớp đang theo học (mở comment nếu có model)
-    // const studentClasses = await StudentClass.find({ student_id: id }).lean();
-    // const classIds = studentClasses.map((sc) => sc.class_id);
-    // let classes = [];
-    // if (classIds.length > 0) {
-    //   classes = await ClassModel.find({ _id: { $in: classIds } }).lean();
-    // }
+    const studentClasses = await StudentClass.find({ student_id: id }).lean();
+    const classIds = studentClasses.map((sc) => sc.class_id);
+    let classes = [];
+    if (classIds.length > 0) {
+      classes = await ClassModel.find({ _id: { $in: classIds } }).lean();
+    }
 
     return res.json({
       student: {
@@ -94,11 +95,231 @@ exports.getStudentDetail = async (req, res) => {
       },
       parents,
       pickups,
-      // classes,
+      classes,
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('getStudentDetail error:', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
+  }
+};
+
+// --- Lấy tất cả học sinh ---
+exports.getAllStudents = async (req, res) => {
+  try {
+    const students = await Student.find().lean();
+
+    // Populate parents and class for each student
+    const studentsWithDetails = await Promise.all(
+      students.map(async (student) => {
+        const parentLinks = await ParentStudent.find({ student_id: student._id }).lean();
+        const parentIds = parentLinks.map((p) => p.parent_id);
+        const parents = await Parent.find({ _id: { $in: parentIds } })
+          .populate('user_id', 'full_name email phone_number address')
+          .lean();
+        
+        const parentsWithRelationship = parents.map((parent) => {
+          const link = parentLinks.find((l) => String(l.parent_id) === String(parent._id));
+          return {
+            ...parent,
+            relationship: link?.relationship || null,
+          };
+        });
+
+        // Get class info
+        const studentClass = await StudentClass.findOne({ student_id: student._id }).lean();
+        const classInfo = studentClass ? await ClassModel.findById(studentClass.class_id).lean() : null;
+
+        // Convert gender number to string for frontend
+        const genderString = student.gender === 1 ? 'female' : 'male';
+
+        return {
+          ...student,
+          gender: genderString,
+          parents: parentsWithRelationship,
+          class_id: classInfo,
+        };
+      })
+    );
+
+    return res.json({ students: studentsWithDetails });
+  } catch (err) {
+    console.error('getAllStudents error:', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
+  }
+};
+
+// --- Lấy danh sách học sinh theo lớp ---
+exports.getStudentsByClass = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    if (!mongoose.isValidObjectId(classId)) {
+      return res.status(400).json({ message: 'class_id không hợp lệ' });
+    }
+
+    const studentLinks = await StudentClass.find({ class_id: classId }).lean();
+    const studentIds = studentLinks.map((s) => s.student_id);
+
+    const students = await Student.find({ _id: { $in: studentIds } }).lean();
+
+    // Populate parents for each student
+    const studentsWithParents = await Promise.all(
+      students.map(async (student) => {
+        const parentLinks = await ParentStudent.find({ student_id: student._id }).lean();
+        const parentIds = parentLinks.map((p) => p.parent_id);
+        const parents = await Parent.find({ _id: { $in: parentIds } })
+          .populate('user_id', 'full_name email phone_number address')
+          .lean();
+        
+        const parentsWithRelationship = parents.map((parent) => {
+          const link = parentLinks.find((l) => String(l.parent_id) === String(parent._id));
+          return {
+            ...parent,
+            relationship: link?.relationship || null,
+          };
+        });
+
+        const classInfo = await ClassModel.findById(classId).lean();
+
+        // Convert gender number to string for frontend
+        const genderString = student.gender === 1 ? 'female' : 'male';
+
+        return {
+          ...student,
+          gender: genderString,
+          parents: parentsWithRelationship,
+          class_id: classInfo,
+        };
+      })
+    );
+
+    return res.json({ students: studentsWithParents });
+  } catch (err) {
+    console.error('getStudentsByClass error:', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
+  }
+};
+
+// --- Tạo mới học sinh ---
+exports.createStudent = async (req, res) => {
+  try {
+    const {
+      full_name,
+      date_of_birth,
+      gender,
+      address,
+      avatar,
+      medical_condition,
+      class_id,
+    } = req.body;
+
+    if (!full_name || !date_of_birth || !class_id) {
+      return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+    }
+
+    // Convert gender string to number (0: male, 1: female)
+    let genderValue = 0; // default male
+    if (gender === 'female' || gender === 1) {
+      genderValue = 1;
+    }
+
+    const newStudent = await Student.create({
+      full_name,
+      dob: date_of_birth,
+      gender: genderValue,
+      avatar_url: avatar || 'https://via.placeholder.com/150',
+      allergy: medical_condition || '',
+      status: 1,
+    });
+
+    // Thêm vào StudentClass
+    await StudentClass.create({
+      student_id: newStudent._id,
+      class_id: class_id,
+    });
+
+    return res.status(201).json({ message: 'Tạo học sinh thành công', student: newStudent });
+  } catch (err) {
+    console.error('createStudent error:', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
+  }
+};
+
+// --- Cập nhật học sinh ---
+exports.updateStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      full_name,
+      date_of_birth,
+      gender,
+      address,
+      avatar,
+      medical_condition,
+      class_id,
+    } = req.body;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'student_id không hợp lệ' });
+    }
+
+    // Convert gender string to number
+    let genderValue = gender;
+    if (typeof gender === 'string') {
+      genderValue = gender === 'female' ? 1 : 0;
+    }
+
+    const updateData = {
+      full_name,
+      dob: date_of_birth,
+      gender: genderValue,
+      avatar_url: avatar,
+      allergy: medical_condition,
+    };
+
+    // Remove undefined fields
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+    const student = await Student.findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Không tìm thấy học sinh' });
+    }
+
+    // Cập nhật lớp học nếu có thay đổi
+    if (class_id) {
+      await StudentClass.findOneAndUpdate(
+        { student_id: id },
+        { class_id: class_id },
+        { upsert: true }
+      );
+    }
+
+    return res.json({ message: 'Cập nhật thành công', student });
+  } catch (err) {
+    console.error('updateStudent error:', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
+  }
+};
+
+// --- Xóa học sinh ---
+exports.deleteStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'student_id không hợp lệ' });
+    }
+
+    // Soft delete
+    const student = await Student.findByIdAndUpdate(id, { status: 0 }, { new: true });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Không tìm thấy học sinh' });
+    }
+
+    return res.json({ message: 'Xóa học sinh thành công' });
+  } catch (err) {
+    console.error('deleteStudent error:', err);
     return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
   }
 };

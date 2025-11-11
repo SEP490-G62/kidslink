@@ -125,14 +125,7 @@ const parentRoutes = [
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
     component: <ProtectedRoute requiredRoles={['parent']}><ParentChat /></ProtectedRoute>,
   },
-  {
-    type: "route",
-    name: "Đăng xuất",
-    key: "parent-logout",
-    route: "/logout",
-    icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-user-run" />,
-    component: <ProtectedRoute requiredRoles={['parent']}><Logout /></ProtectedRoute>,
-  },
+
 ];
 
 export default parentRoutes;
