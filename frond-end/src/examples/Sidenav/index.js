@@ -13,7 +13,7 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // react-router-dom components
 import { useLocation, NavLink } from "react-router-dom";
@@ -42,53 +42,89 @@ import sidenavLogoLabel from "examples/Sidenav/styles/sidenav";
 // Argon Dashboard 2 MUI context
 import { useArgonController, setMiniSidenav } from "context";
 import io from "socket.io-client";
+import messagingService from "services/messagingService";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [unreadTotal, setUnreadTotal] = useState(() => {
-    const saved = localStorage.getItem('kidslink:unread_total');
+    const saved = localStorage.getItem("kidslink:unread_total");
     return saved ? parseInt(saved, 10) || 0 : 0;
   });
+  const socketRef = useRef(null);
+
+  const broadcastUnread = useCallback((total) => {
+    localStorage.setItem("kidslink:unread_total", String(total));
+    window.dispatchEvent(
+      new CustomEvent("kidslink:unread_total", { detail: { total } })
+    );
+  }, []);
+
+  const refreshUnread = useCallback(async () => {
+    try {
+      // Fetch conversations và đếm số conversation có tin nhắn mới
+      const res = await messagingService.getConversations(1, 50);
+      if (res?.success && res.data && Array.isArray(res.data.conversations)) {
+        const conversationsWithUnread = res.data.conversations.filter(c => (c.unread_count || 0) > 0).length;
+        setUnreadTotal(conversationsWithUnread);
+        broadcastUnread(conversationsWithUnread);
+      }
+    } catch (error) {
+      console.error("Sidenav refreshUnread error:", error);
+    }
+  }, [broadcastUnread]);
 
   useEffect(() => {
     const handler = (e) => {
-      if (e && e.detail && typeof e.detail.total !== 'undefined') {
+      if (e && e.detail && typeof e.detail.total !== "undefined") {
         setUnreadTotal(e.detail.total || 0);
       }
     };
-    window.addEventListener('kidslink:unread_total', handler);
-    return () => window.removeEventListener('kidslink:unread_total', handler);
+    window.addEventListener("kidslink:unread_total", handler);
+    return () => window.removeEventListener("kidslink:unread_total", handler);
   }, []);
+
+  useEffect(() => {
+    // Gọi API khi mount để đảm bảo badge đồng bộ
+    refreshUnread();
+  }, [refreshUnread]);
 
   // Background Socket for unread notifications (works even when Chat page not mounted)
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-    const s = io(API_BASE_URL, { auth: { token }, transports: ['websocket','polling'], reconnection: true });
-    const handleNotify = (data) => {
-      // Increase total unread and emit event
-      setUnreadTotal(prev => {
-        const next = (prev || 0) + 1;
-        localStorage.setItem('kidslink:unread_total', String(next));
-        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: next } }));
-        return next;
-      });
+    const token = localStorage.getItem("token");
+    if (!token || socketRef.current) return;
+    const API_BASE_URL =
+      process.env.REACT_APP_API_URL || "http://localhost:5000";
+    const socket = io(API_BASE_URL, {
+      auth: { token },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+    });
+    socketRef.current = socket;
+
+    const handleNotify = () => {
+      refreshUnread();
     };
-    s.on('new_message_notification', handleNotify);
-    // For safety: also listen new_message (in case server emits directly)
-    s.on('new_message', (payload) => {
-      // Only count if message is not from self
-      try {
-        const msg = payload?.message || payload;
-        const userId = JSON.parse(atob(token.split('.')[1] || 'e30='))?.id;
-        const sender = msg?.sender_id?._id || msg?.sender_id?.id || msg?.sender_id;
-        if (sender && userId && String(sender) !== String(userId)) handleNotify(payload);
-      } catch {
-        handleNotify(payload);
+
+    socket.on("new_message_notification", handleNotify);
+    socket.on("new_message", handleNotify);
+
+    socket.on("disconnect", (reason) => {
+      if (reason === "io server disconnect") {
+        socket.connect();
       }
     });
-    return () => { try { s.close(); } catch {} };
-  }, []);
+
+    return () => {
+      if (socketRef.current) {
+        try {
+          socketRef.current.close();
+        } catch (error) {
+          console.error("Sidenav socket close error:", error);
+        } finally {
+          socketRef.current = null;
+        }
+      }
+    };
+  }, [refreshUnread]);
 
   const [controller, dispatch] = useArgonController();
   const { miniSidenav, darkSidenav, layout } = controller;
@@ -129,7 +165,11 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               icon={icon}
               active={key === itemName}
               noCollapse={noCollapse}
-              badgeCount={(route === '/teacher/chat' || route === '/parent/chat') ? unreadTotal : 0}
+              badgeCount={
+                route === "/teacher/chat" || route === "/parent/chat"
+                  ? unreadTotal
+                  : 0
+              }
             />
           </Link>
         );
@@ -140,7 +180,11 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name} 
               icon={icon} 
               active={key === itemName}
-              badgeCount={(route === '/teacher/chat' || route === '/parent/chat') ? unreadTotal : 0}
+              badgeCount={
+                route === "/teacher/chat" || route === "/parent/chat"
+                  ? unreadTotal
+                  : 0
+              }
             />
           </NavLink>
         );

@@ -5,7 +5,7 @@
 */
 
 // React
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // @mui material components
 import Grid from "@mui/material/Grid";
@@ -77,6 +77,56 @@ function ParentChat() {
   const selectedConversationRef = useRef(null);
   const currentUserIdRef = useRef(null);
 
+  const fetchConversations = useCallback(async () => {
+    try {
+      setLoading(true); setError(null);
+      const [convRes, unreadRes] = await Promise.all([
+        messagingService.getConversations(1, 50),
+        messagingService.getUnreadCount()
+      ]);
+      if (convRes.success) {
+        let conversationsData = convRes.data.conversations || [];
+        const unreadMap = new Map();
+        let totalUnread = 0;
+        if (unreadRes && unreadRes.success && unreadRes.data) {
+          totalUnread = parseInt(unreadRes.data.total || 0, 10) || 0;
+          const byConv = Array.isArray(unreadRes.data.byConversation) ? unreadRes.data.byConversation : [];
+          byConv.forEach(item => {
+            const id = (item._id?._id || item._id || '').toString();
+            unreadMap.set(id, item.count || 0);
+          });
+        }
+        // Sort by last_message_at desc - sử dụng helper function để lấy timestamp chính xác
+        const getTimeForSort = (conv) => {
+          if (conv.last_message_at) {
+            const date = new Date(conv.last_message_at);
+            return isNaN(date.getTime()) ? 0 : date.getTime();
+          }
+          if (conv.lastMessage && conv.lastMessage.send_at) {
+            const date = new Date(conv.lastMessage.send_at);
+            return isNaN(date.getTime()) ? 0 : date.getTime();
+          }
+          return 0;
+        };
+        conversationsData = [...conversationsData].sort((a, b) => {
+          const timeA = getTimeForSort(a);
+          const timeB = getTimeForSort(b);
+          return timeB - timeA; // Mới nhất lên đầu
+        });
+        const merged = conversationsData.map(c => {
+          const id = (c._id?._id || c._id || '').toString();
+          return { ...c, unread_count: unreadMap.get(id) || 0 };
+        });
+        setConversations(merged);
+        // Đồng bộ badge trên sidenav
+        localStorage.setItem('kidslink:unread_total', String(totalUnread));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+        if (merged.length) setSelectedConversation(merged[0]);
+      } else setError(convRes.error);
+    } catch (e) { setError(e.message || 'Không thể tải danh sách cuộc trò chuyện'); }
+    finally { setLoading(false); }
+  }, [setSelectedConversation, setConversations]);
+
   useEffect(() => { selectedConversationRef.current = selectedConversation; }, [selectedConversation]);
   useEffect(() => { currentUserIdRef.current = currentUserId; }, [currentUserId]);
 
@@ -116,6 +166,7 @@ function ParentChat() {
           return [...prev, message];
         });
       }
+      let conversationExists = false;
       setConversations(prev => {
         let updated = prev.map(c => {
           const id = (c._id?.toString() || c._id)?.toString();
@@ -124,10 +175,14 @@ function ParentChat() {
             const isMine = senderId && senderId.toString() === currentUserIdRef.current?.toString();
             const unreadInc = (!isActive && !isMine) ? 1 : 0;
             const newLastMessageAt = message.send_at ? new Date(message.send_at) : new Date();
+            conversationExists = true;
             return { ...c, lastMessage: message, last_message_at: newLastMessageAt, unread_count: Math.max(0, (c.unread_count || 0) + unreadInc) };
           }
           return c;
         });
+        if (!conversationExists) {
+          return prev;
+        }
         // Sắp xếp lại theo last_message_at mới nhất (desc)
         updated = [...updated].sort((a, b) => {
           // Lấy timestamp từ last_message_at hoặc từ lastMessage.send_at
@@ -146,30 +201,49 @@ function ParentChat() {
           const timeB = getTime(b);
           return timeB - timeA; // Mới nhất lên đầu
         });
-        const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-        localStorage.setItem('kidslink:unread_total', String(totalUnread));
-        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+        // Đếm số conversation có tin nhắn mới (unread_count > 0)
+        const conversationsWithUnread = updated.filter(c => (c.unread_count || 0) > 0).length;
+        localStorage.setItem('kidslink:unread_total', String(conversationsWithUnread));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationsWithUnread } }));
         return updated;
       });
+      if (!conversationExists) {
+        fetchConversations();
+      }
     });
 
     // Nhận thông báo tin nhắn mới từ conv khác (ví dụ nhóm) khi không ở trong conv đó
     s.on('new_message_notification', (data) => {
+      const targetIdStr = (data.conversation_id?._id || data.conversation_id || data.conversation_id?.toString() || '').toString();
+      const cur = selectedConversationRef.current;
+      const curStr = cur?._id?.toString();
+      const isActive = cur && targetIdStr && curStr && targetIdStr === curStr;
+      
       setConversations(prev => {
+        let conversationExists = false;
         let updated = prev.map(c => {
           const idStr = (c._id?.toString() || c._id)?.toString();
-          const targetIdStr = (data.conversation_id?._id || data.conversation_id || '').toString();
           if (idStr === targetIdStr) {
+            conversationExists = true;
             const newLastMessageAt = data.message.send_at ? new Date(data.message.send_at) : new Date();
+            // Chỉ tăng unread nếu không phải conversation đang mở
+            const unreadInc = !isActive ? 1 : 0;
             return {
               ...c,
               lastMessage: data.message,
               last_message_at: newLastMessageAt,
-              unread_count: Math.max(0, (c.unread_count || 0) + 1)
+              unread_count: Math.max(0, (c.unread_count || 0) + unreadInc)
             };
           }
           return c;
         });
+        
+        // Nếu conversation chưa có trong danh sách, fetch lại toàn bộ
+        if (!conversationExists) {
+          fetchConversations();
+          return prev;
+        }
+        
         // Sắp xếp lại theo last_message_at mới nhất (desc)
         updated = [...updated].sort((a, b) => {
           // Lấy timestamp từ last_message_at hoặc từ lastMessage.send_at
@@ -188,9 +262,10 @@ function ParentChat() {
           const timeB = getTime(b);
           return timeB - timeA; // Mới nhất lên đầu
         });
-        const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-        localStorage.setItem('kidslink:unread_total', String(totalUnread));
-        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+        // Đếm số conversation có tin nhắn mới (unread_count > 0)
+        const conversationsWithUnread = updated.filter(c => (c.unread_count || 0) > 0).length;
+        localStorage.setItem('kidslink:unread_total', String(conversationsWithUnread));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationsWithUnread } }));
         return updated;
       });
     });
@@ -216,56 +291,8 @@ function ParentChat() {
 
   // Load conversations
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true); setError(null);
-        const [convRes, unreadRes] = await Promise.all([
-          messagingService.getConversations(1, 50),
-          messagingService.getUnreadCount()
-        ]);
-        if (convRes.success) {
-          let conversationsData = convRes.data.conversations || [];
-          const unreadMap = new Map();
-          let totalUnread = 0;
-          if (unreadRes && unreadRes.success && unreadRes.data) {
-            totalUnread = parseInt(unreadRes.data.total || 0, 10) || 0;
-            const byConv = Array.isArray(unreadRes.data.byConversation) ? unreadRes.data.byConversation : [];
-            byConv.forEach(item => {
-              const id = (item._id?._id || item._id || '').toString();
-              unreadMap.set(id, item.count || 0);
-            });
-          }
-          // Sort by last_message_at desc - sử dụng helper function để lấy timestamp chính xác
-          const getTimeForSort = (conv) => {
-            if (conv.last_message_at) {
-              const date = new Date(conv.last_message_at);
-              return isNaN(date.getTime()) ? 0 : date.getTime();
-            }
-            if (conv.lastMessage && conv.lastMessage.send_at) {
-              const date = new Date(conv.lastMessage.send_at);
-              return isNaN(date.getTime()) ? 0 : date.getTime();
-            }
-            return 0;
-          };
-          conversationsData = [...conversationsData].sort((a, b) => {
-            const timeA = getTimeForSort(a);
-            const timeB = getTimeForSort(b);
-            return timeB - timeA; // Mới nhất lên đầu
-          });
-          const merged = conversationsData.map(c => {
-            const id = (c._id?._id || c._id || '').toString();
-            return { ...c, unread_count: unreadMap.get(id) || 0 };
-          });
-          setConversations(merged);
-          // Đồng bộ badge trên sidenav
-          localStorage.setItem('kidslink:unread_total', String(totalUnread));
-          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
-          if (merged.length) setSelectedConversation(merged[0]);
-        } else setError(convRes.error);
-      } catch (e) { setError(e.message || 'Không thể tải danh sách cuộc trò chuyện'); }
-      finally { setLoading(false); }
-    })();
-  }, []);
+    fetchConversations();
+  }, [fetchConversations]);
 
   // Join rooms when socket ready
   useEffect(() => { if (socket && socket.connected && conversations.length > 0) conversations.forEach(c => socket.emit('join_conversation', { conversation_id: c._id })); }, [socket, conversations]);
@@ -295,9 +322,10 @@ function ParentChat() {
           if (id === selId) return { ...c, unread_count: 0 };
           return c;
         });
-        const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-        localStorage.setItem('kidslink:unread_total', String(totalUnread));
-        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+        // Đếm số conversation có tin nhắn mới (unread_count > 0)
+        const conversationsWithUnread = updated.filter(c => (c.unread_count || 0) > 0).length;
+        localStorage.setItem('kidslink:unread_total', String(conversationsWithUnread));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationsWithUnread } }));
         return updated;
       });
     })();

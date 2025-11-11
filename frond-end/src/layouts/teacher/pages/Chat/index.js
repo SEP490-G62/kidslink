@@ -11,7 +11,7 @@ Coded by KidsLink Team
  =========================================================
 */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Box,
   Grid,
@@ -94,6 +94,63 @@ const TeacherChat = () => {
   const messagesContainerRef = useRef(null);
   const selectedConversationRef = useRef(null);
   const currentUserIdRef = useRef(null);
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [convRes, unreadRes] = await Promise.all([
+        messagingService.getConversations(1, 50),
+        messagingService.getUnreadCount()
+      ]);
+      if (convRes.success) {
+        let conversationsData = convRes.data.conversations || [];
+        const unreadMap = new Map();
+        let totalUnread = 0;
+        if (unreadRes && unreadRes.success && unreadRes.data) {
+          totalUnread = parseInt(unreadRes.data.total || 0, 10) || 0;
+          const byConv = Array.isArray(unreadRes.data.byConversation) ? unreadRes.data.byConversation : [];
+          byConv.forEach(item => {
+            const id = (item._id?._id || item._id || '').toString();
+            unreadMap.set(id, item.count || 0);
+          });
+        }
+        const getTimeForSort = (conv) => {
+          if (conv.last_message_at) {
+            const date = new Date(conv.last_message_at);
+            return isNaN(date.getTime()) ? 0 : date.getTime();
+          }
+          if (conv.lastMessage && conv.lastMessage.send_at) {
+            const date = new Date(conv.lastMessage.send_at);
+            return isNaN(date.getTime()) ? 0 : date.getTime();
+          }
+          return 0;
+        };
+        conversationsData = [...conversationsData].sort((a, b) => {
+          const timeA = getTimeForSort(a);
+          const timeB = getTimeForSort(b);
+          return timeB - timeA;
+        });
+        const merged = conversationsData.map(c => {
+          const id = (c._id?._id || c._id || '').toString();
+          return { ...c, unread_count: unreadMap.get(id) || 0 };
+        });
+        setConversations(merged);
+        localStorage.setItem('kidslink:unread_total', String(totalUnread));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+        if (merged.length > 0) {
+          setSelectedConversation(merged[0]);
+        }
+      } else {
+        setError(convRes.error);
+      }
+    } catch (err) {
+      console.error('Error fetching conversations:', err);
+      setError(err.message || 'Không thể tải danh sách cuộc trò chuyện');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
   
   const currentUserId = user?.id || user?._id;
   
@@ -321,6 +378,7 @@ const TeacherChat = () => {
       }
       
       // Cập nhật lastMessage và unread trong conversations, sắp xếp lại theo last_message_at
+      let conversationExists = false;
       setConversations(prev => {
         let updated = prev.map(conv => {
           const convIdStr = (conv._id?.toString() || conv._id)?.toString();
@@ -329,6 +387,7 @@ const TeacherChat = () => {
             const isMine = senderId && senderId.toString() === currentUserIdRef.current?.toString();
             const unreadInc = (!isActiveConv && !isMine) ? 1 : 0;
             const newLastMessageAt = message.send_at ? new Date(message.send_at) : new Date();
+            conversationExists = true;
             return {
               ...conv,
               lastMessage: message,
@@ -338,46 +397,81 @@ const TeacherChat = () => {
           }
           return conv;
         });
+        if (!conversationExists) {
+          return prev;
+        }
         // Sắp xếp lại theo last_message_at mới nhất (desc)
         updated = [...updated].sort((a, b) => {
           const timeA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
           const timeB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
           return timeB - timeA; // Mới nhất lên đầu
         });
-        const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-        localStorage.setItem('kidslink:unread_total', String(totalUnread));
-        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+        // Đếm số conversation có tin nhắn mới (unread_count > 0)
+        const conversationsWithUnread = updated.filter(c => (c.unread_count || 0) > 0).length;
+        localStorage.setItem('kidslink:unread_total', String(conversationsWithUnread));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationsWithUnread } }));
         return updated;
       });
+      if (!conversationExists) {
+        fetchConversations();
+      }
     });
 
     // Lắng nghe thông báo tin nhắn mới (từ conversation khác)
     newSocket.on('new_message_notification', (data) => {
+      const targetIdStr = (data.conversation_id?._id || data.conversation_id || data.conversation_id?.toString() || '').toString();
+      const currentSelectedConv = selectedConversationRef.current;
+      const currentConvIdStr = currentSelectedConv?._id?.toString();
+      const isActiveConv = currentSelectedConv && targetIdStr && currentConvIdStr && targetIdStr === currentConvIdStr;
+      
       // Cập nhật conversations list và tăng unread cho conv tương ứng, sắp xếp lại theo last_message_at
       setConversations(prev => {
+        let conversationExists = false;
         let updated = prev.map(conv => {
           const idStr = (conv._id?.toString() || conv._id)?.toString();
-          const targetIdStr = (data.conversation_id?._id || data.conversation_id || '').toString();
           if (idStr === targetIdStr) {
+            conversationExists = true;
             const newLastMessageAt = data.message.send_at ? new Date(data.message.send_at) : new Date();
+            // Chỉ tăng unread nếu không phải conversation đang mở
+            const unreadInc = !isActiveConv ? 1 : 0;
             return { 
               ...conv, 
               lastMessage: data.message, 
               last_message_at: newLastMessageAt,
-              unread_count: Math.max(0, (conv.unread_count || 0) + 1)
+              unread_count: Math.max(0, (conv.unread_count || 0) + unreadInc)
             };
           }
           return conv;
         });
+        
+        // Nếu conversation chưa có trong danh sách, fetch lại toàn bộ
+        if (!conversationExists) {
+          fetchConversations();
+          return prev;
+        }
+        
         // Sắp xếp lại theo last_message_at mới nhất (desc)
         updated = [...updated].sort((a, b) => {
-          const timeA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
-          const timeB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+          // Lấy timestamp từ last_message_at hoặc từ lastMessage.send_at
+          const getTime = (conv) => {
+            if (conv.last_message_at) {
+              const date = new Date(conv.last_message_at);
+              return isNaN(date.getTime()) ? 0 : date.getTime();
+            }
+            if (conv.lastMessage && conv.lastMessage.send_at) {
+              const date = new Date(conv.lastMessage.send_at);
+              return isNaN(date.getTime()) ? 0 : date.getTime();
+            }
+            return 0;
+          };
+          const timeA = getTime(a);
+          const timeB = getTime(b);
           return timeB - timeA; // Mới nhất lên đầu
         });
-        const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-        localStorage.setItem('kidslink:unread_total', String(totalUnread));
-        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+        // Đếm số conversation có tin nhắn mới (unread_count > 0)
+        const conversationsWithUnread = updated.filter(c => (c.unread_count || 0) > 0).length;
+        localStorage.setItem('kidslink:unread_total', String(conversationsWithUnread));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationsWithUnread } }));
         return updated;
       });
     });
@@ -412,7 +506,7 @@ const TeacherChat = () => {
   // Fetch conversations on mount - Tự động load khi vào trang
   useEffect(() => {
     fetchConversations();
-  }, []); // Chạy ngay khi component mount
+  }, [fetchConversations]); // Chạy ngay khi component mount
 
   // Join conversation room when selecting a conversation
   useEffect(() => {
@@ -480,65 +574,6 @@ const TeacherChat = () => {
       });
     }
   }, [socket, conversations]);
-
-  const fetchConversations = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const [convRes, unreadRes] = await Promise.all([
-        messagingService.getConversations(1, 50),
-        messagingService.getUnreadCount()
-      ]);
-      if (convRes.success) {
-        let conversationsData = convRes.data.conversations || [];
-        const unreadMap = new Map();
-        let totalUnread = 0;
-        if (unreadRes && unreadRes.success && unreadRes.data) {
-          totalUnread = parseInt(unreadRes.data.total || 0, 10) || 0;
-          const byConv = Array.isArray(unreadRes.data.byConversation) ? unreadRes.data.byConversation : [];
-          byConv.forEach(item => {
-            const id = (item._id?._id || item._id || '').toString();
-            unreadMap.set(id, item.count || 0);
-          });
-        }
-        // Sort by last_message_at desc - sử dụng helper function để lấy timestamp chính xác
-        const getTimeForSort = (conv) => {
-          if (conv.last_message_at) {
-            const date = new Date(conv.last_message_at);
-            return isNaN(date.getTime()) ? 0 : date.getTime();
-          }
-          if (conv.lastMessage && conv.lastMessage.send_at) {
-            const date = new Date(conv.lastMessage.send_at);
-            return isNaN(date.getTime()) ? 0 : date.getTime();
-          }
-          return 0;
-        };
-        conversationsData = [...conversationsData].sort((a, b) => {
-          const timeA = getTimeForSort(a);
-          const timeB = getTimeForSort(b);
-          return timeB - timeA; // Mới nhất lên đầu
-        });
-        const merged = conversationsData.map(c => {
-          const id = (c._id?._id || c._id || '').toString();
-          return { ...c, unread_count: unreadMap.get(id) || 0 };
-        });
-        setConversations(merged);
-        // đồng bộ badge sidenav
-        localStorage.setItem('kidslink:unread_total', String(totalUnread));
-        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
-        if (merged.length > 0) {
-          setSelectedConversation(merged[0]);
-        }
-      } else {
-        setError(convRes.error);
-      }
-    } catch (err) {
-      console.error('Error fetching conversations:', err);
-      setError(err.message || 'Không thể tải danh sách cuộc trò chuyện');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchMessages = async (conversationId) => {
     try {

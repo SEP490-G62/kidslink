@@ -13,7 +13,7 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // react-router-dom components
 import { useLocation, NavLink } from "react-router-dom";
@@ -41,6 +41,7 @@ import sidenavLogoLabel from "examples/Sidenav/styles/sidenav";
 // Argon Dashboard 2 MUI context
 import { useArgonController, setMiniSidenav } from "context";
 import io from "socket.io-client";
+import messagingService from "services/messagingService";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useArgonController();
@@ -49,9 +50,10 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const { pathname } = location;
   const itemName = pathname.split("/").slice(1)[0];
   const [unreadTotal, setUnreadTotal] = useState(() => {
-    const saved = localStorage.getItem('kidslink:unread_total');
+    const saved = localStorage.getItem("kidslink:unread_total");
     return saved ? parseInt(saved, 10) || 0 : 0;
   });
+  const socketRef = useRef(null);
 
   const closeSidenav = () => setMiniSidenav(dispatch, true);
 
@@ -73,45 +75,77 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     return () => window.removeEventListener("resize", handleMiniSidenav);
   }, [dispatch, location]);
 
-  // Listen total unread updates and background socket notifications
-  useEffect(() => {
-    const evt = (e) => {
-      if (e && e.detail && typeof e.detail.total !== 'undefined') {
-        setUnreadTotal(e.detail.total || 0);
-      }
-    };
-    window.addEventListener('kidslink:unread_total', evt);
-    const token = localStorage.getItem('token');
-    let s;
-    if (token) {
-      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      s = io(API_BASE_URL, { auth: { token }, transports: ['websocket','polling'], reconnection: true });
-      const handleNotify = () => {
-        setUnreadTotal(prev => {
-          const next = (prev || 0) + 1;
-          localStorage.setItem('kidslink:unread_total', String(next));
-          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: next } }));
-          return next;
-        });
-      };
-      s.on('new_message_notification', handleNotify);
-      s.on('new_message', handleNotify);
-    }
-    return () => {
-      window.removeEventListener('kidslink:unread_total', evt);
-      try { s && s.close(); } catch {}
-    };
+  const broadcastUnread = useCallback((total) => {
+    localStorage.setItem("kidslink:unread_total", String(total));
+    window.dispatchEvent(
+      new CustomEvent("kidslink:unread_total", { detail: { total } })
+    );
   }, []);
+
+  const refreshUnread = useCallback(async () => {
+    try {
+      // Fetch conversations và đếm số conversation có tin nhắn mới
+      const res = await messagingService.getConversations(1, 50);
+      if (res?.success && res.data && Array.isArray(res.data.conversations)) {
+        const conversationsWithUnread = res.data.conversations.filter(c => (c.unread_count || 0) > 0).length;
+        setUnreadTotal(conversationsWithUnread);
+        broadcastUnread(conversationsWithUnread);
+      }
+    } catch (error) {
+      console.error("Parent Sidenav refreshUnread error:", error);
+    }
+  }, [broadcastUnread]);
 
   useEffect(() => {
     const handler = (e) => {
-      if (e && e.detail && typeof e.detail.total !== 'undefined') {
+      if (e && e.detail && typeof e.detail.total !== "undefined") {
         setUnreadTotal(e.detail.total || 0);
       }
     };
-    window.addEventListener('kidslink:unread_total', handler);
-    return () => window.removeEventListener('kidslink:unread_total', handler);
+    window.addEventListener("kidslink:unread_total", handler);
+    return () => window.removeEventListener("kidslink:unread_total", handler);
   }, []);
+
+  useEffect(() => {
+    refreshUnread();
+  }, [refreshUnread]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token || socketRef.current) return;
+    const API_BASE_URL =
+      process.env.REACT_APP_API_URL || "http://localhost:5000";
+    const socket = io(API_BASE_URL, {
+      auth: { token },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+    });
+    socketRef.current = socket;
+
+    const handleNotify = () => {
+      refreshUnread();
+    };
+
+    socket.on("new_message_notification", handleNotify);
+    socket.on("new_message", handleNotify);
+    socket.on("disconnect", (reason) => {
+      if (reason === "io server disconnect") {
+        socket.connect();
+      }
+    });
+
+    return () => {
+      if (socketRef.current) {
+        try {
+          socketRef.current.close();
+        } catch (error) {
+          console.error("Parent Sidenav socket close error:", error);
+        } finally {
+          socketRef.current = null;
+        }
+      }
+    };
+  }, [refreshUnread]);
 
   // Render all the routes from the routes.js (All the visible items on the Sidenav)
   const renderRoutes = routes.map(({ type, name, icon, title, key, href, route }) => {
@@ -125,7 +159,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name}
               icon={icon}
               active={key === itemName}
-              badgeCount={(route === '/parent/chat') ? unreadTotal : 0}
+              badgeCount={route === "/parent/chat" ? unreadTotal : 0}
             />
           </Link>
         );
@@ -136,7 +170,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name} 
               icon={icon} 
               active={key === itemName}
-              badgeCount={(route === '/parent/chat') ? unreadTotal : 0}
+              badgeCount={route === "/parent/chat" ? unreadTotal : 0}
             />
           </NavLink>
         );

@@ -92,17 +92,17 @@ export default function App() {
     document.scrollingElement.scrollTop = 0;
   }, [pathname]);
 
-  // Fetch unread count on app load so Sidenav badge hiển thị ngay
+  // Fetch conversations và đếm số conversation có tin nhắn mới khi app load
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
     (async () => {
       try {
-        const res = await messagingService.getUnreadCount();
-        if (res && res.success && res.data) {
-          const total = parseInt(res.data.total || 0, 10) || 0;
-          localStorage.setItem('kidslink:unread_total', String(total));
-          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total } }));
+        const res = await messagingService.getConversations(1, 50);
+        if (res && res.success && res.data && Array.isArray(res.data.conversations)) {
+          const conversationsWithUnread = res.data.conversations.filter(c => (c.unread_count || 0) > 0).length;
+          localStorage.setItem('kidslink:unread_total', String(conversationsWithUnread));
+          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationsWithUnread } }));
         }
       } catch (e) {
         // ignore
