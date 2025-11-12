@@ -437,6 +437,93 @@ class ParentService {
       return { success: false, error: error.message || 'Lỗi lấy thực đơn tuần' };
     }
   }
+
+  /**
+   * Lấy danh sách loại đơn (complaint types) cho parent
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getComplaintTypes() {
+    try {
+      const response = await apiService.get('/parent/complaints/types');
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('ParentService.getComplaintTypes Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy danh sách loại đơn',
+        data: []
+      };
+    }
+  }
+
+  /**
+   * Tạo đơn khiếu nại/góp ý mới
+   * @param {string} complaint_type_id - ID của loại đơn
+   * @param {string} reason - Nội dung khiếu nại/góp ý
+   * @param {string} image - Base64 string của ảnh (tùy chọn)
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async createComplaint(complaint_type_id, reason, image = null) {
+    try {
+      const data = { complaint_type_id, reason };
+      if (image) {
+        data.image = image;
+      }
+      const response = await apiService.post('/parent/complaints', data, true);
+      return response;
+    } catch (error) {
+      console.error('ParentService.createComplaint Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi gửi đơn'
+      };
+    }
+  }
+
+  /**
+   * Lấy danh sách đơn của parent
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getMyComplaints() {
+    try {
+      const response = await apiService.get('/parent/complaints');
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('ParentService.getMyComplaints Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy danh sách đơn',
+        data: []
+      };
+    }
+  }
+
+  /**
+   * Lấy chi tiết một đơn
+   * @param {string} complaintId - ID của đơn
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getComplaintById(complaintId) {
+    try {
+      const response = await apiService.get(`/parent/complaints/${complaintId}`);
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('ParentService.getComplaintById Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy chi tiết đơn'
+      };
+    }
+  }
 }
 
 const parentService = new ParentService();

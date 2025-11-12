@@ -78,4 +78,16 @@ router.get('/class-calendar/slots', getClassTimeSlots);
 const { getWeeklyMenuLatest } = require('../controllers/parent/menuController');
 router.get('/menu', getWeeklyMenuLatest);
 
+// Routes cho complaints
+const {
+  getComplaintTypes,
+  createComplaint,
+  getMyComplaints,
+  getComplaintById
+} = require('../controllers/parent/complaintController');
+router.get('/complaints/types', getComplaintTypes);
+router.post('/complaints', createComplaint);
+router.get('/complaints', getMyComplaints);
+router.get('/complaints/:complaintId', getComplaintById);
+
 module.exports = router;
