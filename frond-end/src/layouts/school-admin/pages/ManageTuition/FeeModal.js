@@ -27,7 +27,7 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedClassIds, setSelectedClassIds] = useState([]);
-  const [form, setForm] = useState({ ten_khoan_thu: "", so_tien: "", mo_ta: "", han_nop: "", bat_buoc: false, trang_thai: "dang_ap_dung" });
+  const [form, setForm] = useState({ ten_khoan_thu: "", so_tien: "", mo_ta: "", han_nop: "", bat_buoc: false, trang_thai: "dang_ap_dung", nam_hoc: "" });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -61,6 +61,7 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
         han_nop: feeData.han_nop ? new Date(feeData.han_nop).toISOString().substring(0,10) : "",
         bat_buoc: !!feeData.bat_buoc,
         trang_thai: normalizeStatus(feeData.trang_thai),
+        nam_hoc: feeData.nam_hoc || "",
       });
       // Prefill class selections when editing
       if (Array.isArray(feeData.classIds)) {
@@ -75,7 +76,7 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
         setSelectedClassIds([]);
       }
     } else {
-      setForm({ ten_khoan_thu: "", so_tien: "", mo_ta: "", han_nop: "", bat_buoc: false, trang_thai: "đang áp dụng" });
+      setForm({ ten_khoan_thu: "", so_tien: "", mo_ta: "", han_nop: "", bat_buoc: false, trang_thai: "đang áp dụng", nam_hoc: "" });
       setSelectedClassIds([]);
     }
   }, [feeData, open]);
@@ -116,6 +117,7 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
         han_nop: form.han_nop || null,
         bat_buoc: !!form.bat_buoc,
         trang_thai: form.trang_thai,
+        nam_hoc: form.nam_hoc || undefined,
       };
       if (feeData && feeData._id) await api.put(`/fees/${feeData._id}`, payload, true);
       else await api.post("/fees", payload, true);
@@ -153,6 +155,20 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
               Mô tả (tuỳ chọn)
             </Typography>
             <TextField fullWidth size="small" multiline minRows={3} placeholder="Ghi chú hoặc mô tả chi tiết về khoản phí" name="mo_ta" value={form.mo_ta} onChange={onChangeForm} />
+          </Box>
+
+          <Box mb={2}>
+            <Typography variant="caption" fontWeight={600} display="block" mb={0.75}>
+              Năm học
+            </Typography>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="VD: 2024-2025"
+              name="nam_hoc"
+              value={form.nam_hoc}
+              onChange={onChangeForm}
+            />
           </Box>
 
           <Box mb={2} display="flex" alignItems="center" justifyContent="space-between" gap={2}>
@@ -243,6 +259,7 @@ FeeModal.propTypes = {
     han_nop: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
     bat_buoc: PropTypes.bool,
     trang_thai: PropTypes.string,
+    nam_hoc: PropTypes.string,
     classIds: PropTypes.arrayOf(PropTypes.string),
     class_ids: PropTypes.arrayOf(
       PropTypes.oneOfType([

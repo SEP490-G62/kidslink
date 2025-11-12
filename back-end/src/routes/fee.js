@@ -14,3 +14,6 @@ router.delete('/:id', authorize(['school_admin','admin']), deleteFee);
 module.exports = router;
 
 
+
+
+

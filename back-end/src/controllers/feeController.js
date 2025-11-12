@@ -4,7 +4,13 @@ const Fee = require('../models/Fee');
 // GET /fees - list all fees
 exports.listFees = async (req, res) => {
   try {
-    const fees = await Fee.find({})
+    const { nam_hoc, school_year, schoolYear } = req.query || {};
+    const filter = {};
+    const year = nam_hoc || school_year || schoolYear;
+    if (year) {
+      filter.nam_hoc = year;
+    }
+    const fees = await Fee.find(filter)
       .populate('lop_ids', 'class_name')
       .sort({ createdAt: -1 });
     res.json(fees);
@@ -25,6 +31,7 @@ exports.createFee = async (req, res) => {
       han_nop,
       bat_buoc,
       trang_thai,
+      nam_hoc,
     } = req.body || {};
     if (!ten_khoan_thu || so_tien === undefined || so_tien === null || so_tien === '') {
       return res.status(400).json({ error: 'Thiếu ten_khoan_thu hoặc so_tien' });
@@ -37,6 +44,7 @@ exports.createFee = async (req, res) => {
       han_nop,
       bat_buoc: !!bat_buoc,
       trang_thai: trang_thai || 'đang áp dụng',
+      nam_hoc,
     });
     const saved = await Fee.findById(fee._id).populate('lop_ids', 'class_name');
     res.status(201).json(saved);
@@ -60,6 +68,7 @@ exports.updateFee = async (req, res) => {
     if (req.body.han_nop !== undefined) update.han_nop = req.body.han_nop;
     if (req.body.bat_buoc !== undefined) update.bat_buoc = !!req.body.bat_buoc;
     if (req.body.trang_thai !== undefined) update.trang_thai = req.body.trang_thai;
+    if (req.body.nam_hoc !== undefined) update.nam_hoc = req.body.nam_hoc;
     const fee = await Fee.findByIdAndUpdate(id, update, { new: true }).populate('lop_ids', 'class_name');
     if (!fee) return res.status(404).json({ error: 'Không tìm thấy khoản phí' });
     res.json(fee);

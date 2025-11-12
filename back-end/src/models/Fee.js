@@ -7,10 +7,22 @@ const feeSchema = new mongoose.Schema({
   lop_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }],
   han_nop: { type: Date },
   bat_buoc: { type: Boolean, default: false },
+  nam_hoc: { type: String, trim: true },
   // Hỗ trợ cả giá trị cũ (không dấu) và mới (có dấu, khoảng trắng)
   trang_thai: {
     type: String,
-    enum: ['dang_ap_dung', 'tam_ngung', 'ket_thuc', 'đang áp dụng', 'tạm ngừng', 'kết thúc'],
+    enum: [
+      'dang_ap_dung',
+      'tam_ngung',
+      'ket_thuc',
+      'da_hoan_thanh',
+      'chua_ap_dung',
+      'đang áp dụng',
+      'tạm ngừng',
+      'kết thúc',
+      'đã hoàn thành',
+      'chưa áp dụng',
+    ],
     default: 'đang áp dụng'
   }
 }, {
