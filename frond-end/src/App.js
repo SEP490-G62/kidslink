@@ -31,12 +31,6 @@ import routes from "routes";
 import healthCareStaffRoutes from "routes/healthCareStaffRoutes";
 import teacherRoutes from "routes/teacherRoutes";
 import parentRoutes from "routes/parentRoutes";
-import schoolAdminRoutes from "routes/schoolAdminRoutes";
-import Landing from "layouts/landing";
-import SignIn from "layouts/authentication/sign-in";
-import SignUp from "layouts/authentication/sign-up";
-import ForgotPassword from "layouts/authentication/forgot-password";
-import Unauthorized from "layouts/authentication/unauthorized";
 
 // Argon Dashboard 2 MUI contexts
 import { useArgonController, setMiniSidenav } from "context";
@@ -98,17 +92,19 @@ export default function App() {
     document.scrollingElement.scrollTop = 0;
   }, [pathname]);
 
-  // Fetch conversations và đếm số conversation có tin nhắn mới khi app load
+  // Fetch unread count on app load so Sidenav badge hiển thị ngay
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
     (async () => {
       try {
-        const res = await messagingService.getConversations(1, 50);
-        if (res && res.success && res.data && Array.isArray(res.data.conversations)) {
-          const conversationsWithUnread = res.data.conversations.filter(c => (c.unread_count || 0) > 0).length;
-          localStorage.setItem('kidslink:unread_total', String(conversationsWithUnread));
-          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationsWithUnread } }));
+        const res = await messagingService.getUnreadCount();
+        if (res && res.success && res.data) {
+          // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+          const byConversation = Array.isArray(res.data.byConversation) ? res.data.byConversation : [];
+          const conversationCount = byConversation.length;
+          localStorage.setItem('kidslink:unread_total', String(conversationCount));
+          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationCount } }));
         }
       } catch (e) {
         // ignore
@@ -132,33 +128,7 @@ export default function App() {
   const isTeacherPath = pathname.startsWith("/teacher");
   const isParentPath = pathname.startsWith("/parent");
   const isHealthCareStaffPath = pathname.startsWith("/health-care");
-  // Determine role from localStorage to support role-based sidenav (school_admin)
-  let userRole = null;
-  try {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      userRole = JSON.parse(storedUser)?.role || null;
-    }
-  } catch (e) {
-    userRole = null;
-  }
-  const isSchoolAdmin = userRole === "school_admin";
-  const activeRoutes = isTeacherPath
-    ? teacherRoutes
-    : isParentPath
-    ? parentRoutes
-    : isHealthCareStaffPath
-    ? healthCareStaffRoutes
-    : isSchoolAdmin
-    ? schoolAdminRoutes
-    : routes;
-
-  // Ensure sidenav is not in mini overlay mode on desktop
-  useEffect(() => {
-    setMiniSidenav(dispatch, window.innerWidth < 1200 ? true : false);
-  }, [dispatch]);
-
-  // Keep root "/" as public Landing regardless of role
+  const activeRoutes = isTeacherPath ? teacherRoutes : isParentPath ? parentRoutes : isHealthCareStaffPath ? healthCareStaffRoutes : routes;
   const SidenavComponent = isParentPath ? ParentSidenav : Sidenav;
 
   // Removed floating configurator button
@@ -176,19 +146,14 @@ export default function App() {
                   brand={darkSidenav || darkMode ? brand : brandDark}
                   brandName="KidsLink"
                   routes={activeRoutes}
+                  onMouseEnter={handleOnMouseEnter}
+                  onMouseLeave={handleOnMouseLeave}
                 />
                 {/* Configurator removed */}
               </>
             )}
             {layout === "vr" && null}
             <Routes>
-              {/* Public landing page at root */}
-              <Route exact path="/" element={<Landing />} />
-              {/* Auth routes always available */}
-              <Route path="/authentication/sign-in" element={<SignIn />} />
-              <Route path="/authentication/sign-up" element={<SignUp />} />
-              <Route path="/authentication/forgot-password" element={<ForgotPassword />} />
-              <Route path="/unauthorized" element={<Unauthorized />} />
               {getRoutes(activeRoutes)}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
@@ -204,17 +169,14 @@ export default function App() {
                 brand={darkSidenav || darkMode ? brand : brandDark}
                 brandName="KidsLink"
                 routes={activeRoutes}
+                onMouseEnter={handleOnMouseEnter}
+                onMouseLeave={handleOnMouseLeave}
               />
               {/* Configurator removed */}
             </>
           )}
           {layout === "vr" && null}
           <Routes>
-            <Route exact path="/" element={<Landing />} />
-            <Route path="/authentication/sign-in" element={<SignIn />} />
-            <Route path="/authentication/sign-up" element={<SignUp />} />
-            <Route path="/authentication/forgot-password" element={<ForgotPassword />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
             {getRoutes(activeRoutes)}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

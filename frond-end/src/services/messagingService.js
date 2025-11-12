@@ -167,12 +167,14 @@ class MessagingService {
   /**
    * Tạo trò chuyện riêng giữa parent và teacher
    * Nếu không truyền teacherUserId, server sẽ tự tìm giáo viên chủ nhiệm mới nhất
+   * Nếu truyền parentUserId (cho teacher), sẽ tạo conversation với parent đó
    */
-  async createDirectConversation(teacherUserId = null, studentId = null) {
+  async createDirectConversation(teacherUserId = null, studentId = null, parentUserId = null) {
     try {
       const body = {};
       if (teacherUserId) body.teacher_user_id = teacherUserId;
       if (studentId) body.student_id = studentId;
+      if (parentUserId) body.parent_user_id = parentUserId;
       const data = await apiService.post('/api/messaging/conversations/direct', body);
       return { success: true, data };
     } catch (error) {
@@ -191,6 +193,19 @@ class MessagingService {
     } catch (error) {
       console.error('MessagingService.getTeachersByStudent Error:', error);
       return { success: false, error: error.message || 'Có lỗi xảy ra khi lấy danh sách giáo viên' };
+    }
+  }
+
+  /**
+   * Lấy danh sách phụ huynh theo lớp của giáo viên (lớp có academic_year mới nhất)
+   */
+  async getParentsByTeacherClass() {
+    try {
+      const data = await apiService.get('/api/messaging/parents-by-teacher-class');
+      return { success: true, data };
+    } catch (error) {
+      console.error('MessagingService.getParentsByTeacherClass Error:', error);
+      return { success: false, error: error.message || 'Có lỗi xảy ra khi lấy danh sách phụ huynh' };
     }
   }
 }

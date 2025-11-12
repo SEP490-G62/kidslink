@@ -20,13 +20,13 @@ import { useLocation, NavLink } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
-import SidenavFooter from "examples/Sidenav/SidenavFooter";
 
 // @mui material components
 import List from "@mui/material/List";
 import Divider from "@mui/material/Divider";
 import Link from "@mui/material/Link";
 import Icon from "@mui/material/Icon";
+import SidenavFooter from "examples/Sidenav/SidenavFooter";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -85,15 +85,24 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
 
   const refreshUnread = useCallback(async () => {
     try {
-      // Fetch conversations và đếm số conversation có tin nhắn mới
-      const res = await messagingService.getConversations(1, 50);
-      if (res?.success && res.data && Array.isArray(res.data.conversations)) {
-        const conversationsWithUnread = res.data.conversations.filter(c => (c.unread_count || 0) > 0).length;
-        setUnreadTotal(conversationsWithUnread);
-        broadcastUnread(conversationsWithUnread);
+      const res = await messagingService.getUnreadCount();
+      if (res?.success && res.data) {
+        // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+        const byConversation = Array.isArray(res.data.byConversation) ? res.data.byConversation : [];
+        // Chỉ đếm những conversation có count > 0 (thực sự có tin nhắn chưa đọc)
+        const conversationCount = byConversation.filter(item => (item.count || 0) > 0).length;
+        setUnreadTotal(conversationCount);
+        broadcastUnread(conversationCount);
+      } else {
+        // Nếu không có data, set về 0
+        setUnreadTotal(0);
+        broadcastUnread(0);
       }
     } catch (error) {
       console.error("Parent Sidenav refreshUnread error:", error);
+      // Khi có lỗi, set về 0 để tránh hiển thị sai
+      setUnreadTotal(0);
+      broadcastUnread(0);
     }
   }, [broadcastUnread]);
 
@@ -123,8 +132,31 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     });
     socketRef.current = socket;
 
-    const handleNotify = () => {
-      refreshUnread();
+    // Lấy user_id từ token để kiểm tra
+    let currentUserId = null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1] || 'e30='));
+      currentUserId = payload?.id || payload?._id;
+    } catch (e) {
+      console.error('Parent Sidenav: Cannot parse token', e);
+    }
+
+    const handleNotify = (data) => {
+      // Chỉ refresh nếu tin nhắn không phải từ chính mình
+      const message = data?.message || data;
+      if (message && currentUserId) {
+        const senderId = message.sender_id?._id || message.sender_id?.id || message.sender_id;
+        if (senderId && String(senderId) === String(currentUserId)) {
+          // Tin nhắn từ chính mình, không cần refresh
+          return;
+        }
+      }
+      // Nếu đang ở trang chat, chat page sẽ tự cập nhật badge, không cần refresh ở đây
+      // Chỉ refresh khi không ở trang chat
+      const isOnChatPage = window.location.pathname.includes('/chat');
+      if (!isOnChatPage) {
+        refreshUnread();
+      }
     };
 
     socket.on("new_message_notification", handleNotify);
@@ -160,7 +192,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name}
               icon={icon}
               active={key === itemName}
-              badgeCount={route === "/parent/chat" ? unreadTotal : 0}
+              badgeCount={route === "/parent/chat" && unreadTotal > 0 ? unreadTotal : 0}
             />
           </Link>
         );
@@ -171,7 +203,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name} 
               icon={icon} 
               active={key === itemName}
-              badgeCount={route === "/parent/chat" ? unreadTotal : 0}
+              badgeCount={route === "/parent/chat" && unreadTotal > 0 ? unreadTotal : 0}
             />
           </NavLink>
         );
@@ -216,7 +248,6 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           <ArgonTypography variant="h6" color="secondary">
             <Icon sx={{ fontWeight: "bold" }}>close</Icon>
           </ArgonTypography>
-          
         </ArgonBox>
         <ArgonBox 
           display="flex" 
@@ -240,12 +271,11 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               {brandName}
             </ArgonTypography>
           </ArgonBox>
-
         </ArgonBox>
-        
       </ArgonBox>
       <Divider light={darkSidenav} />
       <List>{renderRoutes}</List>
+      
       <ArgonBox pt={1} mt="auto" mb={2} mx={2}>
         <SidenavFooter />
       </ArgonBox>
