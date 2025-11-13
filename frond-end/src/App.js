@@ -130,7 +130,6 @@ export default function App() {
   const isParentPath = pathname.startsWith("/parent");
   const isHealthCareStaffPath = pathname.startsWith("/health-care");
   const isNutritionStaffPath = pathname.startsWith("/nutrition");
-  const activeRoutes = isTeacherPath ? teacherRoutes : isParentPath ? parentRoutes : isHealthCareStaffPath ? healthCareStaffRoutes : isNutritionStaffPath ? nutritionStaffRoutes : routes;
   // Determine role from localStorage to support role-based sidenav (school_admin)
   let userRole = null;
   try {
@@ -148,6 +147,8 @@ export default function App() {
     ? parentRoutes
     : isHealthCareStaffPath
     ? healthCareStaffRoutes
+    : isNutritionStaffPath 
+    ? nutritionStaffRoutes
     : isSchoolAdmin
     ? schoolAdminRoutes
     : routes;
