@@ -4,6 +4,40 @@ const ParentStudent = require('../models/ParentStudent');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
+function sanitizeUsername(base) {
+  return (base || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, '');
+}
+
+async function generateUniqueUsername({ email, phone }) {
+  // Prefer phone digits, else email local part, else timestamp
+  const phoneDigits = (phone || '').replace(/\D/g, '');
+  let base = '';
+  if (phoneDigits) {
+    base = `ph${phoneDigits.slice(-9)}`; // last digits
+  } else if (email) {
+    base = email.split('@')[0];
+  } else {
+    base = `parent${Date.now()}`;
+  }
+  base = sanitizeUsername(base) || `parent${Date.now()}`;
+
+  // Ensure uniqueness
+  let username = base;
+  let suffix = 0;
+  // Loop with a cap to avoid infinite
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const exists = await User.findOne({ username }).select('_id').lean();
+    if (!exists) return username;
+    suffix += 1;
+    username = `${base}${suffix}`;
+  }
+}
+
 // --- Tạo mới phụ huynh ---
 exports.createParent = async (req, res) => {
   try {
@@ -14,6 +48,7 @@ exports.createParent = async (req, res) => {
       address,
       relationship,
       student_id,
+      createAccount,
     } = req.body;
 
     if (!full_name || !phone || !student_id || !relationship) {
@@ -42,15 +77,19 @@ exports.createParent = async (req, res) => {
       }
     } else {
       // Tạo user mới cho parent
-      const defaultPassword = await bcrypt.hash('123456', 10);
+      const username = await generateUniqueUsername({ email, phone });
+      const defaultPasswordHash = await bcrypt.hash('123456', 10);
+      const userStatus = createAccount ? 1 : 0; // nếu không tạo account thì để inactive
       const newUser = await User.create({
         full_name,
+        username,
+        password_hash: defaultPasswordHash,
+        role: 'parent',
+        avatar_url: '',
+        status: userStatus,
         email: email || null,
         phone_number: phone,
-        address,
-        role: 'parent',
-        status: 1,
-        password: defaultPassword,
+        address
       });
 
       // Tạo parent

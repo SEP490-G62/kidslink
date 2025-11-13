@@ -13,7 +13,7 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // react-router-dom components
 import { useLocation, NavLink } from "react-router-dom";
@@ -41,8 +41,126 @@ import sidenavLogoLabel from "examples/Sidenav/styles/sidenav";
 
 // Argon Dashboard 2 MUI context
 import { useArgonController, setMiniSidenav } from "context";
+import io from "socket.io-client";
+import messagingService from "services/messagingService";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
+  const [unreadTotal, setUnreadTotal] = useState(() => {
+    const saved = localStorage.getItem("kidslink:unread_total");
+    const parsed = saved ? parseInt(saved, 10) : 0;
+    return Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
+  });
+  const socketRef = useRef(null);
+
+  const broadcastUnread = useCallback((total) => {
+    const numTotal = Math.max(0, Number(total) || 0);
+    localStorage.setItem("kidslink:unread_total", String(numTotal));
+    window.dispatchEvent(
+      new CustomEvent("kidslink:unread_total", { detail: { total: numTotal } })
+    );
+  }, []);
+
+  const refreshUnread = useCallback(async () => {
+    try {
+      const res = await messagingService.getUnreadCount();
+      if (res?.success && res.data) {
+        // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+        const byConversation = Array.isArray(res.data.byConversation) ? res.data.byConversation : [];
+        // Chỉ đếm những conversation có count > 0 (thực sự có tin nhắn chưa đọc)
+        const conversationCount = byConversation.filter(item => (item.count || 0) > 0).length;
+        setUnreadTotal(conversationCount);
+        broadcastUnread(conversationCount);
+      } else {
+        // Nếu không có data, set về 0
+        setUnreadTotal(0);
+        broadcastUnread(0);
+      }
+    } catch (error) {
+      console.error("Sidenav refreshUnread error:", error);
+      // Khi có lỗi, set về 0 để tránh hiển thị sai
+      setUnreadTotal(0);
+      broadcastUnread(0);
+    }
+  }, [broadcastUnread]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e && e.detail && typeof e.detail.total !== "undefined") {
+        const total = Number(e.detail.total) || 0;
+        setUnreadTotal(total);
+      }
+    };
+    window.addEventListener("kidslink:unread_total", handler);
+    return () => window.removeEventListener("kidslink:unread_total", handler);
+  }, []);
+
+  useEffect(() => {
+    // Gọi API khi mount để đảm bảo badge đồng bộ
+    refreshUnread();
+  }, [refreshUnread]);
+
+  // Background Socket for unread notifications (works even when Chat page not mounted)
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token || socketRef.current) return;
+    const API_BASE_URL =
+      process.env.REACT_APP_API_URL || "http://localhost:5000";
+    const socket = io(API_BASE_URL, {
+      auth: { token },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+    });
+    socketRef.current = socket;
+
+    // Lấy user_id từ token để kiểm tra
+    let currentUserId = null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1] || 'e30='));
+      currentUserId = payload?.id || payload?._id;
+    } catch (e) {
+      console.error('Sidenav: Cannot parse token', e);
+    }
+
+    const handleNotify = (data) => {
+      // Chỉ refresh nếu tin nhắn không phải từ chính mình
+      const message = data?.message || data;
+      if (message && currentUserId) {
+        const senderId = message.sender_id?._id || message.sender_id?.id || message.sender_id;
+        if (senderId && String(senderId) === String(currentUserId)) {
+          // Tin nhắn từ chính mình, không cần refresh
+          return;
+        }
+      }
+      // Nếu đang ở trang chat, chat page sẽ tự cập nhật badge, không cần refresh ở đây
+      // Chỉ refresh khi không ở trang chat
+      const isOnChatPage = window.location.pathname.includes('/chat');
+      if (!isOnChatPage) {
+        refreshUnread();
+      }
+    };
+
+    socket.on("new_message_notification", handleNotify);
+    socket.on("new_message", handleNotify);
+
+    socket.on("disconnect", (reason) => {
+      if (reason === "io server disconnect") {
+        socket.connect();
+      }
+    });
+
+    return () => {
+      if (socketRef.current) {
+        try {
+          socketRef.current.close();
+        } catch (error) {
+          console.error("Sidenav socket close error:", error);
+        } finally {
+          socketRef.current = null;
+        }
+      }
+    };
+  }, [refreshUnread]);
+
   const [controller, dispatch] = useArgonController();
   const { miniSidenav, darkSidenav, layout } = controller;
   const location = useLocation();
@@ -81,14 +199,27 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name}
               icon={icon}
               active={key === itemName}
-              noCollapse={noCollapse}
+              badgeCount={
+                route === "/teacher/chat" && Number(unreadTotal) > 0
+                  ? Number(unreadTotal)
+                  : 0
+              }
             />
           </Link>
         );
       } else {
         returnValue = (
           <NavLink to={route} key={key}>
-            <SidenavItem name={name} icon={icon} active={key === itemName} />
+            <SidenavItem 
+              name={name} 
+              icon={icon} 
+              active={key === itemName}
+              badgeCount={
+                route === "/teacher/chat" && Number(unreadTotal) > 0
+                  ? Number(unreadTotal)
+                  : 0
+              }
+            />
           </NavLink>
         );
       }
@@ -116,9 +247,6 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
 
     return returnValue;
   });
-
-  // Hide built-in footer logout if routes already includes a logout route
-  const hasCustomLogout = Array.isArray(routes) && routes.some((r) => r.route === "/logout");
 
   return (
     <SidenavRoot {...rest} variant="permanent" ownerState={{ darkSidenav, miniSidenav, layout }}>
@@ -158,11 +286,9 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
       <Divider light={darkSidenav} />
       <List>{renderRoutes}</List>
 
-      {!hasCustomLogout && (
-        <ArgonBox pt={1} mt="auto" mb={2} mx={2}>
-          <SidenavFooter />
-        </ArgonBox>
-      )}
+      <ArgonBox pt={1} mt="auto" mb={2} mx={2}>
+        <SidenavFooter />
+      </ArgonBox>
     </SidenavRoot>
   );
 }

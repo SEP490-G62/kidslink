@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, Select, TextField, InputLabel, FormControl, Avatar, Stack } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, Select, TextField, InputLabel, FormControl, Avatar, Stack, Typography } from "@mui/material";
 import ArgonButton from "components/ArgonButton";
+import ArgonTypography from "components/ArgonTypography";
 import api from "services/api";
 
 const ROLES = [
@@ -127,8 +128,12 @@ const UserFormModal = ({ open, onClose, onSuccess, user }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{isEdit ? "Cập nhật tài khoản" : "Tạo tài khoản"}</DialogTitle>
-      <DialogContent dividers>
+      <DialogTitle sx={{ pb: 1 }}>
+        <ArgonTypography variant="h5" fontWeight="bold">
+          {isEdit ? "Cập nhật tài khoản" : "Tạo tài khoản"}
+        </ArgonTypography>
+      </DialogTitle>
+      <DialogContent dividers sx={{ pt: 3 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={3}>
             <Stack direction="column" alignItems="center" spacing={1}>

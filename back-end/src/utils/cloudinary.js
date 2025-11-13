@@ -7,6 +7,10 @@ cloudinary.config({
   secure: true
 });
 
+if (!process.env.CLOUDINARY_URL) {
+  console.warn('⚠️ CLOUDINARY_URL chưa được cấu hình. Upload ảnh sẽ thất bại.');
+}
+
 module.exports = cloudinary;
 
 

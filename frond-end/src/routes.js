@@ -49,6 +49,8 @@ import ForgotPassword from "layouts/authentication/forgot-password";
 import Unauthorized from "layouts/authentication/unauthorized";
 import HealthCareStaffHome from "layouts/health-care";
 import HealthCareProfile from "layouts/health-care/Profile";
+import NutritionStaffHome from "layouts/nutrition";
+
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
 import ProtectedRoute from "components/ProtectedRoute";
@@ -127,6 +129,14 @@ const routes = [
     route: "/health-care",
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-favourite-28" />,
     component: <ProtectedRoute requiredRoles={['health_care_staff']}><HealthCareStaffHome /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Quản lý thực đơn",
+    key: "nutrition-dishes",
+    route: "/nutrition",
+    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-basket" />,
+    component: <ProtectedRoute requiredRoles={['nutrition_staff']}><NutritionStaffHome /></ProtectedRoute>,
   },
   {
     type: "route",

@@ -133,8 +133,12 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{feeData ? "Chỉnh sửa học phí" : "Tạo học phí"}</DialogTitle>
-      <DialogContent>
+      <DialogTitle sx={{ pb: 1 }}>
+        <Typography variant="h5" fontWeight="bold">
+          {feeData ? "Chỉnh sửa học phí" : "Tạo học phí"}
+        </Typography>
+      </DialogTitle>
+      <DialogContent sx={{ pt: 3 }}>
         <Box component="form" onSubmit={handleSubmit}>
           <Box mb={2}>
             <Typography variant="caption" fontWeight={600} display="block" mb={0.75}>

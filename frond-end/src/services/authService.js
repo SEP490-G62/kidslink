@@ -99,6 +99,42 @@ class AuthService {
       };
     }
   }
+
+  // Đăng xuất - xóa token và dữ liệu người dùng
+  async logout() {
+    try {
+      // Gọi API logout nếu backend có endpoint (optional)
+      // Nếu backend không có endpoint, vẫn tiếp tục xóa token ở frontend
+      try {
+        await apiService.post('/auth/logout', {}, true);
+      } catch (error) {
+        // Nếu endpoint không tồn tại, bỏ qua lỗi và tiếp tục xóa token ở frontend
+        console.log('Backend logout endpoint không khả dụng, tiếp tục xóa token ở frontend');
+      }
+
+      // Xóa tất cả dữ liệu authentication từ localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      localStorage.removeItem('selectedChild');
+
+      return {
+        success: true,
+        message: 'Đăng xuất thành công'
+      };
+    } catch (error) {
+      // Ngay cả khi có lỗi, vẫn xóa token ở frontend để đảm bảo đăng xuất
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      localStorage.removeItem('selectedChild');
+
+      return {
+        success: true,
+        message: 'Đã xóa token và đăng xuất'
+      };
+    }
+  }
 }
 
 // Tạo instance duy nhất
