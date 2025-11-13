@@ -9,29 +9,32 @@ const {
   hardDeleteUser,
   restoreUser
 } = require('../controllers/userController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 
 // Routes
 
+// Áp dụng xác thực và phân quyền School Admin cho toàn bộ user management
+router.use(authenticate, authorize(['school_admin']));
+
 // GET /api/users - Lấy danh sách users (có phân trang và filter)
-router.get('/', authenticate, getAllUsers);
+router.get('/', getAllUsers);
 
 // GET /api/users/:id - Lấy thông tin user theo ID
-router.get('/:id', authenticate, getUserById);
+router.get('/:id', getUserById);
 
 // POST /api/users - Tạo user mới
-router.post('/', authenticate, createUser);
+router.post('/', createUser);
 
 // PUT /api/users/:id - Cập nhật user
-router.put('/:id', authenticate, updateUser);
+router.put('/:id', updateUser);
 
 // DELETE /api/users/:id - Xóa user (soft delete)
-router.delete('/:id', authenticate, deleteUser);
+router.delete('/:id', deleteUser);
 
 // DELETE /api/users/:id/hard - Xóa user vĩnh viễn
-router.delete('/:id/hard', authenticate, hardDeleteUser);
+router.delete('/:id/hard', hardDeleteUser);
 
 // PUT /api/users/:id/restore - Khôi phục user đã bị xóa
-router.put('/:id/restore', authenticate, restoreUser);
+router.put('/:id/restore', restoreUser);
 
 module.exports = router;

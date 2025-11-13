@@ -44,12 +44,12 @@ const StudentDetail = () => {
     fetchDetail();
   }, [id]);
 
-  // Cập nhật tiêu đề trang (document.title) theo tên học sinh để Breadcrumbs có thể hiển thị đẹp khi refresh sâu
-  useEffect(() => {
-    if (data?.student?.full_name) {
-      document.title = `${data.student.full_name} - KidsLink`;
-    }
-  }, [data]);
+  // Đoạn dưới này bỏ vì không cần cập nhật document.title động nữa
+  // useEffect(() => {
+  //   if (data?.student?.full_name) {
+  //     document.title = `${data.student.full_name} - KidsLink`;
+  //   }
+  // }, [data]);
 
   const getGenderText = (gender) => (gender === 0 ? 'Nam' : 'Nữ');
   const getGenderIcon = (gender) => (gender === 0 ? <Male color="action" /> : <Female color="action" />);

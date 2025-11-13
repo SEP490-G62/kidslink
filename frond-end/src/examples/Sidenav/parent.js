@@ -20,6 +20,7 @@ import { useLocation, NavLink } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
+import SidenavFooter from "examples/Sidenav/SidenavFooter";
 
 // @mui material components
 import List from "@mui/material/List";
@@ -40,6 +41,7 @@ import sidenavLogoLabel from "examples/Sidenav/styles/sidenav";
 
 // Argon Dashboard 2 MUI context
 import { useArgonController, setMiniSidenav } from "context";
+import io from "socket.io-client";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useArgonController();
@@ -47,6 +49,10 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const location = useLocation();
   const { pathname } = location;
   const itemName = pathname.split("/").slice(1)[0];
+  const [unreadTotal, setUnreadTotal] = useState(() => {
+    const saved = localStorage.getItem('kidslink:unread_total');
+    return saved ? parseInt(saved, 10) || 0 : 0;
+  });
 
   const closeSidenav = () => setMiniSidenav(dispatch, true);
 
@@ -68,6 +74,46 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     return () => window.removeEventListener("resize", handleMiniSidenav);
   }, [dispatch, location]);
 
+  // Listen total unread updates and background socket notifications
+  useEffect(() => {
+    const evt = (e) => {
+      if (e && e.detail && typeof e.detail.total !== 'undefined') {
+        setUnreadTotal(e.detail.total || 0);
+      }
+    };
+    window.addEventListener('kidslink:unread_total', evt);
+    const token = localStorage.getItem('token');
+    let s;
+    if (token) {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      s = io(API_BASE_URL, { auth: { token }, transports: ['websocket','polling'], reconnection: true });
+      const handleNotify = () => {
+        setUnreadTotal(prev => {
+          const next = (prev || 0) + 1;
+          localStorage.setItem('kidslink:unread_total', String(next));
+          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: next } }));
+          return next;
+        });
+      };
+      s.on('new_message_notification', handleNotify);
+      s.on('new_message', handleNotify);
+    }
+    return () => {
+      window.removeEventListener('kidslink:unread_total', evt);
+      try { s && s.close(); } catch {}
+    };
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e && e.detail && typeof e.detail.total !== 'undefined') {
+        setUnreadTotal(e.detail.total || 0);
+      }
+    };
+    window.addEventListener('kidslink:unread_total', handler);
+    return () => window.removeEventListener('kidslink:unread_total', handler);
+  }, []);
+
   // Render all the routes from the routes.js (All the visible items on the Sidenav)
   const renderRoutes = routes.map(({ type, name, icon, title, key, href, route }) => {
     let returnValue;
@@ -80,13 +126,19 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name}
               icon={icon}
               active={key === itemName}
+              badgeCount={(route === '/parent/chat') ? unreadTotal : 0}
             />
           </Link>
         );
       } else {
         returnValue = (
           <NavLink to={route} key={key}>
-            <SidenavItem name={name} icon={icon} active={key === itemName} />
+            <SidenavItem 
+              name={name} 
+              icon={icon} 
+              active={key === itemName}
+              badgeCount={(route === '/parent/chat') ? unreadTotal : 0}
+            />
           </NavLink>
         );
       }
@@ -130,6 +182,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           <ArgonTypography variant="h6" color="secondary">
             <Icon sx={{ fontWeight: "bold" }}>close</Icon>
           </ArgonTypography>
+          
         </ArgonBox>
         <ArgonBox 
           display="flex" 
@@ -153,10 +206,15 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               {brandName}
             </ArgonTypography>
           </ArgonBox>
+
         </ArgonBox>
+        
       </ArgonBox>
       <Divider light={darkSidenav} />
       <List>{renderRoutes}</List>
+      <ArgonBox pt={1} mt="auto" mb={2} mx={2}>
+        <SidenavFooter />
+      </ArgonBox>
     </SidenavRoot>
   );
 }

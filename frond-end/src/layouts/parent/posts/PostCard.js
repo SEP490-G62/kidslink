@@ -21,6 +21,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
+import Chip from "@mui/material/Chip";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -39,8 +40,8 @@ function PostCard({
   onEditPost,
   onDeletePost
 }) {
-  const [isLiked, setIsLiked] = useState(post.isLiked);
-  const [likesCount, setLikesCount] = useState(post.likes);
+  const [isLiked, setIsLiked] = useState(post.isLiked || post.is_liked);
+  const [likesCount, setLikesCount] = useState(post.like_count || post.likes_count || post.likes || 0);
   const [anchorEl, setAnchorEl] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -104,127 +105,208 @@ function PostCard({
   const renderImages = () => {
     if (!post.images || post.images.length === 0) return null;
 
+    const imageContainerStyle = {
+      position: 'relative',
+      overflow: 'hidden',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      transition: 'opacity 0.2s ease',
+      '&:hover': {
+        opacity: 0.95
+      }
+    };
+
+    const imageStyle = {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      display: 'block'
+    };
+
+    // 1 ảnh: Hiển thị to, tự điều chỉnh theo tỷ lệ gốc
     if (post.images.length === 1) {
       return (
-        <img
-          src={post.images[0]}
-          alt={post.title}
-          style={{
+        <ArgonBox
+          sx={{
+            ...imageContainerStyle,
             width: '100%',
-            height: 'auto',
-            maxHeight: 'none',
-            objectFit: 'contain',
-            borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            cursor: 'pointer'
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            maxHeight: { xs: '500px', sm: '600px', md: '700px' },
+            borderRadius: '8px',
+            backgroundColor: '#f0f0f0'
           }}
           onClick={() => onOpenGallery(post.images)}
-        />
-      );
-    }
-
-    if (post.images.length === 2) {
-      return (
-        <ArgonBox display="flex" gap={1}>
-          {post.images.map((image, index) => (
-            <img
-              key={index}
-              src={image}
-              alt={`${post.title} ${index + 1}`}
-              style={{
-                width: '50%',
-                height: 'auto',
-                maxHeight: 'none',
-                objectFit: 'contain',
-                borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                cursor: 'pointer'
-              }}
-              onClick={() => onOpenGallery(post.images, index)}
-            />
-          ))}
-        </ArgonBox>
-      );
-    }
-
-    if (post.images.length === 3) {
-      return (
-        <ArgonBox>
-          <ArgonBox display="flex" gap={1} mb={1}>
-            {post.images.slice(0, 2).map((image, index) => (
-              <img
-                key={index}
-                src={image}
-                alt={`${post.title} ${index + 1}`}
-                style={{
-                  width: '50%',
-                  height: 'auto',
-                  maxHeight: window.innerWidth < 600 ? '300px' : '400px',
-                  objectFit: 'cover',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  cursor: 'pointer'
-                }}
-                onClick={() => onOpenGallery(post.images, index)}
-              />
-            ))}
-          </ArgonBox>
+        >
           <img
-            src={post.images[2]}
-            alt={`${post.title} 3`}
+            src={post.images[0]}
+            alt={post.title}
             style={{
-              width: '100%',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              width: 'auto',
               height: 'auto',
-              maxHeight: window.innerWidth < 600 ? '300px' : '400px',
-              objectFit: 'cover',
-              borderRadius: '12px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              cursor: 'pointer'
+              objectFit: 'contain',
+              borderRadius: '8px',
+              display: 'block'
             }}
-            onClick={() => onOpenGallery(post.images, 2)}
           />
         </ArgonBox>
       );
     }
 
-    // Four or more images: 2x2 grid with "more" indicator
-    return (
-      <ArgonBox>
-        <ArgonBox display="flex" gap={1} mb={1}>
-          {post.images.slice(0, 2).map((image, index) => (
-            <img
+    // 2 ảnh: Chia đôi, cùng chiều cao
+    if (post.images.length === 2) {
+      return (
+        <ArgonBox display="flex" gap={0.5} sx={{ borderRadius: '8px', overflow: 'hidden' }}>
+          {post.images.map((image, index) => (
+            <ArgonBox
               key={index}
-              src={image}
-              alt={`${post.title} ${index + 1}`}
-              style={{
+              sx={{
+                ...imageContainerStyle,
                 width: '50%',
-                height: 'auto',
-                maxHeight: window.innerWidth < 600 ? '300px' : '400px',
-                objectFit: 'cover',
-                borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                cursor: 'pointer'
+                aspectRatio: '1 / 1'
               }}
               onClick={() => onOpenGallery(post.images, index)}
-            />
+            >
+              <img
+                src={image}
+                alt={`${post.title} ${index + 1}`}
+                style={imageStyle}
+              />
+            </ArgonBox>
           ))}
         </ArgonBox>
-        <ArgonBox display="flex" gap={1}>
+      );
+    }
+
+    // 3 ảnh: 1 ảnh lớn bên trái, 2 ảnh nhỏ bên phải
+    if (post.images.length === 3) {
+      return (
+        <ArgonBox display="flex" gap={0.5} sx={{ borderRadius: '8px', overflow: 'hidden' }}>
+          <ArgonBox
+            sx={{
+              ...imageContainerStyle,
+              width: '50%',
+              aspectRatio: '1 / 1'
+            }}
+            onClick={() => onOpenGallery(post.images, 0)}
+          >
+            <img
+              src={post.images[0]}
+              alt={`${post.title} 1`}
+              style={imageStyle}
+            />
+          </ArgonBox>
+          <ArgonBox sx={{ width: '50%', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            {post.images.slice(1, 3).map((image, index) => (
+              <ArgonBox
+                key={index}
+                sx={{
+                  ...imageContainerStyle,
+                  width: '100%',
+                  aspectRatio: '1 / 1',
+                  flex: 1
+                }}
+                onClick={() => onOpenGallery(post.images, index + 1)}
+              >
+                <img
+                  src={image}
+                  alt={`${post.title} ${index + 2}`}
+                  style={imageStyle}
+                />
+              </ArgonBox>
+            ))}
+          </ArgonBox>
+        </ArgonBox>
+      );
+    }
+
+    // 4 ảnh: Grid 2x2
+    if (post.images.length === 4) {
+      return (
+        <ArgonBox sx={{ borderRadius: '8px', overflow: 'hidden' }}>
+          <ArgonBox display="flex" gap={0.5} mb={0.5}>
+            {post.images.slice(0, 2).map((image, index) => (
+              <ArgonBox
+                key={index}
+                sx={{
+                  ...imageContainerStyle,
+                  width: '50%',
+                  aspectRatio: '1 / 1'
+                }}
+                onClick={() => onOpenGallery(post.images, index)}
+              >
+                <img
+                  src={image}
+                  alt={`${post.title} ${index + 1}`}
+                  style={imageStyle}
+                />
+              </ArgonBox>
+            ))}
+          </ArgonBox>
+          <ArgonBox display="flex" gap={0.5}>
+            {post.images.slice(2, 4).map((image, index) => (
+              <ArgonBox
+                key={index}
+                sx={{
+                  ...imageContainerStyle,
+                  width: '50%',
+                  aspectRatio: '1 / 1'
+                }}
+                onClick={() => onOpenGallery(post.images, index + 2)}
+              >
+                <img
+                  src={image}
+                  alt={`${post.title} ${index + 3}`}
+                  style={imageStyle}
+                />
+              </ArgonBox>
+            ))}
+          </ArgonBox>
+        </ArgonBox>
+      );
+    }
+
+    // 5+ ảnh: Grid 2x2 với overlay hiển thị số ảnh còn lại
+    return (
+      <ArgonBox sx={{ borderRadius: '8px', overflow: 'hidden' }}>
+        <ArgonBox display="flex" gap={0.5} mb={0.5}>
+          {post.images.slice(0, 2).map((image, index) => (
+            <ArgonBox
+              key={index}
+              sx={{
+                ...imageContainerStyle,
+                width: '50%',
+                aspectRatio: '1 / 1'
+              }}
+              onClick={() => onOpenGallery(post.images, index)}
+            >
+              <img
+                src={image}
+                alt={`${post.title} ${index + 1}`}
+                style={imageStyle}
+              />
+            </ArgonBox>
+          ))}
+        </ArgonBox>
+        <ArgonBox display="flex" gap={0.5}>
           {post.images.slice(2, 4).map((image, index) => (
-            <ArgonBox key={index} position="relative" width="50%">
+            <ArgonBox
+              key={index}
+              sx={{
+                ...imageContainerStyle,
+                width: '50%',
+                aspectRatio: '1 / 1',
+                position: 'relative'
+              }}
+              onClick={() => onOpenGallery(post.images, index + 2)}
+            >
               <img
                 src={image}
                 alt={`${post.title} ${index + 3}`}
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  maxHeight: window.innerWidth < 600 ? '300px' : '400px',
-                  objectFit: 'cover',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  cursor: 'pointer'
-                }}
-                onClick={() => onOpenGallery(post.images, index + 2)}
+                style={imageStyle}
               />
               {index === 1 && post.images.length > 4 && (
                 <ArgonBox
@@ -236,26 +318,26 @@ function PostCard({
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
-                  bgcolor="rgba(0,0,0,0.7)"
-                  borderRadius="12px"
-                  sx={{ 
+                  bgcolor="rgba(0,0,0,0.6)"
+                  sx={{
                     cursor: 'pointer',
-                    backdropFilter: 'blur(2px)',
-                    transition: 'all 0.3s ease',
+                    transition: 'background-color 0.2s ease',
                     '&:hover': {
-                      bgcolor: 'rgba(0,0,0,0.8)',
-                      transform: 'scale(1.02)'
+                      bgcolor: 'rgba(0,0,0,0.7)'
                     }
                   }}
-                  onClick={() => onOpenGallery(post.images, 3)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenGallery(post.images, 3);
+                  }}
                 >
-                  <ArgonTypography 
-                    variant="h4" 
-                    color="white" 
+                  <ArgonTypography
+                    variant="h4"
+                    color="white"
                     fontWeight="bold"
                     sx={{
-                      textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-                      fontSize: { xs: '24px', sm: '32px' }
+                      fontSize: { xs: '28px', sm: '36px' },
+                      textShadow: '0 2px 8px rgba(0,0,0,0.5)'
                     }}
                   >
                     +{post.images.length - 4}
@@ -269,16 +351,28 @@ function PostCard({
     );
   };
 
+  // Kiểm tra trạng thái post
+  const isPending = post.status === 'pending';
+  const isApproved = post.status === 'approved';
+
   return (
     <Card 
       sx={{ 
         mb: 3, 
         borderRadius: 3, 
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: '1px solid rgba(0,0,0,0.05)',
+        boxShadow: isPending 
+          ? '0 4px 20px rgba(255, 152, 0, 0.15)' 
+          : '0 4px 20px rgba(0,0,0,0.08)',
+        border: isPending 
+          ? '2px solid rgba(255, 152, 0, 0.3)' 
+          : '1px solid rgba(0,0,0,0.05)',
         overflow: 'hidden',
+        backgroundColor: isPending ? 'rgba(255, 152, 0, 0.02)' : 'white',
+        opacity: isPending ? 0.95 : 1,
         '&:hover': { 
-          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          boxShadow: isPending
+            ? '0 8px 30px rgba(255, 152, 0, 0.25)'
+            : '0 8px 30px rgba(0,0,0,0.12)',
           transform: 'translateY(-2px)',
           transition: 'all 0.3s ease-in-out'
         }
@@ -287,7 +381,7 @@ function PostCard({
       {/* Post Header */}
       <ArgonBox p={{ xs: 2, sm: 3 }} pb={2}>
         <ArgonBox display="flex" alignItems="center" justifyContent="space-between">
-          <ArgonBox display="flex" alignItems="center">
+          <ArgonBox display="flex" alignItems="center" sx={{ flex: 1 }}>
             <Avatar
               src={post.avatar}
               alt={post.author}
@@ -295,20 +389,70 @@ function PostCard({
                 width: { xs: 40, sm: 48 }, 
                 height: { xs: 40, sm: 48 }, 
                 mr: 2,
-                border: '2px solid #e3f2fd',
+                border: isPending 
+                  ? '2px solid rgba(255, 152, 0, 0.4)' 
+                  : '2px solid #e3f2fd',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
               }}
             />
-            <ArgonBox>
-              <ArgonTypography 
-                variant="h6" 
-                fontWeight="bold" 
-                color="dark" 
-                mb={0.5}
-                sx={{ fontSize: { xs: '14px', sm: '16px' } }}
-              >
-                {post.author}
-              </ArgonTypography>
+            <ArgonBox sx={{ flex: 1 }}>
+              <ArgonBox display="flex" alignItems="center" gap={1} flexWrap="wrap" mb={0.5}>
+                <ArgonTypography 
+                  variant="h6" 
+                  fontWeight="bold" 
+                  color="dark" 
+                  sx={{ fontSize: { xs: '14px', sm: '16px' } }}
+                >
+                  {post.author}
+                </ArgonTypography>
+                {/* Status Badge */}
+                {isPending && (
+                  <Chip
+                    icon={<i className="ni ni-time-alarm" style={{ fontSize: '12px' }} />}
+                    label="Đang chờ duyệt"
+                    size="small"
+                    sx={{
+                      height: 22,
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      backgroundColor: 'rgba(255, 152, 0, 0.15)',
+                      color: '#f57c00',
+                      border: '1px solid rgba(255, 152, 0, 0.4)',
+                      '& .MuiChip-icon': {
+                        color: '#f57c00',
+                        marginLeft: '6px'
+                      },
+                      '& .MuiChip-label': {
+                        paddingLeft: '4px',
+                        paddingRight: '8px'
+                      }
+                    }}
+                  />
+                )}
+                {isApproved && post.authorId === currentUserId && (
+                  <Chip
+                    icon={<i className="ni ni-check-bold" style={{ fontSize: '12px' }} />}
+                    label="Đã duyệt"
+                    size="small"
+                    sx={{
+                      height: 22,
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      backgroundColor: 'rgba(76, 175, 80, 0.15)',
+                      color: '#388e3c',
+                      border: '1px solid rgba(76, 175, 80, 0.4)',
+                      '& .MuiChip-icon': {
+                        color: '#388e3c',
+                        marginLeft: '6px'
+                      },
+                      '& .MuiChip-label': {
+                        paddingLeft: '4px',
+                        paddingRight: '8px'
+                      }
+                    }}
+                  />
+                )}
+              </ArgonBox>
               <ArgonBox display="flex" alignItems="center" gap={1} flexWrap="wrap">
                 <ArgonTypography 
                   variant="caption" 
@@ -509,7 +653,7 @@ function PostCard({
               transition: 'all 0.2s ease-in-out'
             }}
           >
-            Bình luận ({post.comments || 0})
+            Bình luận ({post.comment_count || post.comments_count || post.comments || 0})
           </Button>
         </ArgonBox>
       </ArgonBox>
@@ -623,8 +767,14 @@ PostCard.propTypes = {
     date: PropTypes.string.isRequired,
     time: PropTypes.string.isRequired,
     likes: PropTypes.number,
+    like_count: PropTypes.number,
+    likes_count: PropTypes.number,
     comments: PropTypes.number,
-    isLiked: PropTypes.bool
+    comment_count: PropTypes.number,
+    comments_count: PropTypes.number,
+    isLiked: PropTypes.bool,
+    is_liked: PropTypes.bool,
+    status: PropTypes.string
   }).isRequired,
   currentUserId: PropTypes.string,
   onLike: PropTypes.func.isRequired,

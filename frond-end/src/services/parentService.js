@@ -28,6 +28,39 @@ class ParentService {
   }
 
   /**
+   * Lấy tất cả bài post của user hiện tại (bao gồm pending và approved)
+   * @param {string} userId - ID của user
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getMyPosts(userId) {
+    if (!userId) {
+      return {
+        success: false,
+        error: 'User ID không hợp lệ',
+        data: { data: [] }
+      };
+    }
+    
+    try {
+      const response = await apiService.get(`/parent/posts/my-posts?user_id=${userId}`);
+      
+      // Backend trả về { success: true, data: [...] } hoặc { data: [...] }
+      return {
+        success: response.success !== false,
+        data: response.data ? { data: response.data } : response
+      };
+    } catch (error) {
+      console.error('ParentService.getMyPosts Error:', error);
+      // Nếu API không tồn tại, trả về empty array thay vì error
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy bài viết của bạn',
+        data: { data: [] }
+      };
+    }
+  }
+
+  /**
    * Like/Unlike bài post
    * @param {string} postId - ID của bài post
    * @returns {Promise<Object>} - Kết quả API call
@@ -369,6 +402,126 @@ class ParentService {
     } catch (error) {
       console.error('ParentService.getLatestClassCalendar Error:', error);
       return { success: false, error: error.message || 'Lỗi lấy lịch lớp' };
+    }
+  }
+
+  /**
+   * Lấy danh sách khung giờ (slots) chuẩn để render cột thời gian
+   */
+  async getClassTimeSlots() {
+    try {
+      const response = await apiService.get('/parent/class-calendar/slots');
+      // Chuẩn hóa trả về mảng
+      return Array.isArray(response?.data) ? response.data : (response?.data?.data || []);
+    } catch (error) {
+      console.error('ParentService.getClassTimeSlots Error:', error);
+      return [];
+    }
+  }
+
+
+  /**
+   * Lấy thực đơn tuần theo con và ngày bắt đầu tuần (Thứ 2)
+   * @param {string} studentId - optional, để chọn con cụ thể
+   * @param {string} startDateISO - YYYY-MM-DD (ngày bất kỳ trong tuần; backend sẽ tự tính Thứ 2)
+   */
+  async getWeeklyMenu(studentId) {
+    try {
+      const params = new URLSearchParams();
+      if (studentId) params.append('student_id', studentId);
+      const url = `/parent/menu?${params.toString()}`;
+      const response = await apiService.get(url);
+      return response;
+    } catch (error) {
+      console.error('ParentService.getWeeklyMenu Error:', error);
+      return { success: false, error: error.message || 'Lỗi lấy thực đơn tuần' };
+    }
+  }
+
+  /**
+   * Lấy danh sách loại đơn (complaint types) cho parent
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getComplaintTypes() {
+    try {
+      const response = await apiService.get('/parent/complaints/types');
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('ParentService.getComplaintTypes Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy danh sách loại đơn',
+        data: []
+      };
+    }
+  }
+
+  /**
+   * Tạo đơn khiếu nại/góp ý mới
+   * @param {string} complaint_type_id - ID của loại đơn
+   * @param {string} reason - Nội dung khiếu nại/góp ý
+   * @param {string} image - Base64 string của ảnh (tùy chọn)
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async createComplaint(complaint_type_id, reason, image = null) {
+    try {
+      const data = { complaint_type_id, reason };
+      if (image) {
+        data.image = image;
+      }
+      const response = await apiService.post('/parent/complaints', data, true);
+      return response;
+    } catch (error) {
+      console.error('ParentService.createComplaint Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi gửi đơn'
+      };
+    }
+  }
+
+  /**
+   * Lấy danh sách đơn của parent
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getMyComplaints() {
+    try {
+      const response = await apiService.get('/parent/complaints');
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('ParentService.getMyComplaints Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy danh sách đơn',
+        data: []
+      };
+    }
+  }
+
+  /**
+   * Lấy chi tiết một đơn
+   * @param {string} complaintId - ID của đơn
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getComplaintById(complaintId) {
+    try {
+      const response = await apiService.get(`/parent/complaints/${complaintId}`);
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('ParentService.getComplaintById Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy chi tiết đơn'
+      };
     }
   }
 }

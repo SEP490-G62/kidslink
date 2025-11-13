@@ -343,15 +343,28 @@ const updatePost = async (req, res) => {
       });
     }
 
+    // Kiểm tra xem có thay đổi gì không
+    let hasChanges = false;
+    
     // Cập nhật content
-    if (content) {
+    if (content && content !== post.content) {
       post.content = content;
+      hasChanges = true;
     }
-
-    await post.save();
 
     // Xử lý images nếu có
     if (images && Array.isArray(images)) {
+      // Kiểm tra xem có thay đổi ảnh không
+      const currentImages = await PostImage.find({ post_id: postId });
+      const currentImageUrls = currentImages.map(img => img.image_url).sort();
+      const newImageUrls = images.filter(img => img.startsWith('http')).sort();
+      
+      // So sánh số lượng và URL để phát hiện thay đổi
+      if (currentImageUrls.length !== newImageUrls.length ||
+          !currentImageUrls.every((url, idx) => url === newImageUrls[idx])) {
+        hasChanges = true;
+      }
+      
       // Xóa các ảnh cũ
       await PostImage.deleteMany({ post_id: postId });
 
@@ -388,6 +401,13 @@ const updatePost = async (req, res) => {
         );
       }
     }
+
+    // Khi update bài viết (content hoặc images), chuyển về trạng thái pending để cần duyệt lại
+    if (hasChanges) {
+      post.status = 'pending';
+    }
+
+    await post.save();
 
     // Lấy post đã cập nhật với full details
     const updatedPost = await Post.findById(postId)
@@ -562,8 +582,71 @@ const deletePost = async (req, res) => {
   }
 };
 
+// GET /api/parent/posts/my-posts - Lấy tất cả bài post của user hiện tại (bao gồm pending và approved)
+const getMyPosts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const requestedUserId = req.query.user_id; // Cho phép lấy posts của user_id trong query
+    
+    // Nếu có user_id trong query, kiểm tra xem có phải user hiện tại không
+    const targetUserId = requestedUserId && requestedUserId === userId ? requestedUserId : userId;
+
+    // Lấy tất cả posts của user (bao gồm pending và approved)
+    const posts = await Post.find({ user_id: targetUserId })
+      .populate('user_id', 'full_name username avatar_url role')
+      .populate('class_id', 'class_name class_age_id')
+      .sort({ create_at: -1 });
+    
+    // Lấy thêm thông tin chi tiết cho mỗi post
+    const postsWithDetails = await Promise.all(
+      posts.map(async (post) => {
+        // Lấy hình ảnh của post
+        const images = await PostImage.find({ post_id: post._id });
+        
+        // Lấy số lượng like
+        const likeCount = await PostLike.countDocuments({ post_id: post._id });
+        
+        // Lấy số lượng comment
+        const commentCount = await PostComment.countDocuments({ post_id: post._id });
+        
+        // Kiểm tra user hiện tại đã like post này chưa
+        const currentUserId = req.user.id;
+        let isLiked = false;
+        if (currentUserId) {
+          const userLike = await PostLike.findOne({ 
+            post_id: post._id, 
+            user_id: currentUserId 
+          });
+          isLiked = !!userLike;
+        }
+        
+        return {
+          ...post.toObject(),
+          images: images.map(img => img.image_url),
+          like_count: likeCount,
+          comment_count: commentCount,
+          is_liked: isLiked
+        };
+      })
+    );
+    
+    res.json({
+      success: true,
+      data: postsWithDetails
+    });
+  } catch (error) {
+    console.error('Error getting my posts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi lấy danh sách bài đăng của bạn',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllPosts,
+  getMyPosts,
   createPost,
   updatePost,
   deletePost,
