@@ -1,6 +1,6 @@
 /**
 =========================================================
-* KidsLink Health Care Staff - Personal Information
+* KidsLink Nutrition Staff - Personal Information
 =========================================================
 */
 
@@ -33,26 +33,18 @@ import DashboardNavbar from "examples/Navbars/ParentNavBar";
 import Footer from "examples/Footer";
 
 // Services
-import healthService from "services/healthService";
+import nutritionService from "services/nutritionService";
 
-function HealthCareProfile() {
+function NutritionProfile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
   const [profileData, setProfileData] = useState({
-    user: {
-      full_name: "",
-      username: "",
-      email: "",
-      phone_number: "",
-      avatar_url: "",
-    },
-    staff: {
-      qualification: "",
-      major: "",
-      experience_years: "",
-      note: ""
-    }
+    full_name: "",
+    username: "",
+    email: "",
+    phone_number: "",
+    avatar_url: "",
   });
   const [formData, setFormData] = useState({
     full_name: "",
@@ -60,10 +52,6 @@ function HealthCareProfile() {
     email: "",
     phone_number: "",
     avatar_url: "",
-    qualification: "",
-    major: "",
-    experience_years: "",
-    note: ""
   });
   const [passwordData, setPasswordData] = useState({
     newPassword: "",
@@ -80,20 +68,30 @@ function HealthCareProfile() {
   const fetchPersonalInfo = async () => {
     try {
       setLoading(true);
-      const result = await healthService.getStaffProfile();
-      if (result && result.success && result.data) {
-        setProfileData(result.data);
-        setFormData({
-          full_name: result.data.user.full_name || "",
-          username: result.data.user.username || "",
-          email: result.data.user.email || "",
-          phone_number: result.data.user.phone_number || "",
-          avatar_url: result.data.user.avatar_url || "",
-          qualification: result.data.staff?.qualification || "",
-          major: result.data.staff?.major || "",
-          experience_years: result.data.staff?.experience_years || "",
-          note: result.data.staff?.note || ""
-        });
+      const result = await nutritionService.getProfile();
+      if (result && result.user) {
+        const userData = result.user;
+        const normalized = {
+          full_name: userData.full_name || "",
+          username: userData.username || "",
+          email: userData.email || "",
+          phone_number: userData.phone_number || "",
+          avatar_url: userData.avatar_url || "",
+        };
+        setProfileData(normalized);
+        setFormData(normalized);
+        setAvatarPreview("");
+      } else if (result && result.success && result.data) {
+        const userData = result.data.user || result.data;
+        const normalized = {
+          full_name: userData.full_name || "",
+          username: userData.username || "",
+          email: userData.email || "",
+          phone_number: userData.phone_number || "",
+          avatar_url: userData.avatar_url || "",
+        };
+        setProfileData(normalized);
+        setFormData(normalized);
         setAvatarPreview("");
       } else {
         setAlert({ open: true, message: result?.error || "Không thể tải thông tin", severity: "error" });
@@ -134,8 +132,8 @@ function HealthCareProfile() {
     try {
       setSaving(true);
       
-      const result = await healthService.updateStaffProfile({ ...formData });
-      if (result && result.success) {
+      const result = await nutritionService.updateProfile(formData);
+      if (result && (result.user || result.success)) {
         setAlert({ open: true, message: "Cập nhật thông tin thành công", severity: "success" });
         // Refresh data after update
         await fetchPersonalInfo();
@@ -178,10 +176,10 @@ function HealthCareProfile() {
 
     try {
       setSaving(true);
-      const result = await healthService.updateStaffProfile({
+      const result = await nutritionService.updateProfile({
         password: passwordData.newPassword
       });
-      if (result && result.success) {
+      if (result && (result.user || result.success)) {
         setAlert({ open: true, message: "Đổi mật khẩu thành công", severity: "success" });
         // Clear password fields
         setPasswordData({
@@ -204,18 +202,8 @@ function HealthCareProfile() {
 
   const openProfileForm = () => {
     // Initialize edit state from persisted profile data
-    setFormData({
-      full_name: profileData.user.full_name || "",
-      username: profileData.user.username || "",
-      email: profileData.user.email || "",
-      phone_number: profileData.user.phone_number || "",
-      avatar_url: profileData.user.avatar_url || "",
-      qualification: profileData.staff?.qualification || "",
-      major: profileData.staff?.major || "",
-      experience_years: profileData.staff?.experience_years || "",
-      note: profileData.staff?.note || ""
-    });
-    setAvatarPreview(profileData.user.avatar_url || "");
+    setFormData(profileData);
+    setAvatarPreview(profileData.avatar_url || "");
     setAvatarFile(null);
     setActiveForm("profile");
   };
@@ -226,17 +214,7 @@ function HealthCareProfile() {
 
   const closeForms = () => {
     // Discard unsaved edits by resetting edit state and preview
-    setFormData({
-      full_name: profileData.user.full_name || "",
-      username: profileData.user.username || "",
-      email: profileData.user.email || "",
-      phone_number: profileData.user.phone_number || "",
-      avatar_url: profileData.user.avatar_url || "",
-      qualification: profileData.staff?.qualification || "",
-      major: profileData.staff?.major || "",
-      experience_years: profileData.staff?.experience_years || "",
-      note: profileData.staff?.note || ""
-    });
+    setFormData(profileData);
     setAvatarPreview("");
     setAvatarFile(null);
     setActiveForm(null);
@@ -274,7 +252,7 @@ function HealthCareProfile() {
             Thông tin cá nhân
           </ArgonTypography>
           <ArgonTypography variant="body2" color="text" fontWeight="regular">
-            Quản lý thông tin cá nhân và cài đặt tài khoản nhân viên y tế
+            Quản lý thông tin cá nhân và cài đặt tài khoản nhân viên dinh dưỡng
           </ArgonTypography>
         </ArgonBox>
 
@@ -292,67 +270,38 @@ function HealthCareProfile() {
               <CardContent>
                 <ArgonBox display="flex" alignItems="center" gap={3} pb={3}>
                   <Avatar
-                    src={profileData.user.avatar_url}
-                    alt={profileData.user.full_name}
+                    src={profileData.avatar_url}
+                    alt={profileData.full_name}
                     sx={{ width: 120, height: 120, boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                   />
                   <ArgonBox flex={1}>
                     <ArgonTypography variant="h5" fontWeight="bold" color="dark">
-                      {profileData.user.full_name}
+                      {profileData.full_name}
                   </ArgonTypography>
                     <ArgonTypography variant="body2" color="text" mb={2}>
-                      Health Care Staff
+                      Nutrition Staff
                   </ArgonTypography>
                     
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-single-02" style={{ color: '#5e72e4', fontSize: '16px' }} />
+                      <i className="ni ni-single-02" style={{ color: '#43a047', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
-                        Username: <span style={{ fontWeight: 'bold' }}>{profileData.user.username}</span>
+                        Username: <span style={{ fontWeight: 'bold' }}>{profileData.username}</span>
                   </ArgonTypography>
                 </ArgonBox>
 
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-email-83" style={{ color: '#5e72e4', fontSize: '16px' }} />
+                      <i className="ni ni-email-83" style={{ color: '#43a047', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
-                        Email: <span style={{ fontWeight: 'bold' }}>{profileData.user.email || '—'}</span>
+                        Email: <span style={{ fontWeight: 'bold' }}>{profileData.email || '—'}</span>
                   </ArgonTypography>
                     </ArgonBox>
                     
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-mobile-button" style={{ color: '#5e72e4', fontSize: '16px' }} />
+                      <i className="ni ni-mobile-button" style={{ color: '#43a047', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
-                        SĐT: <span style={{ fontWeight: 'bold' }}>{profileData.user.phone_number || '—'}</span>
+                        SĐT: <span style={{ fontWeight: 'bold' }}>{profileData.phone_number || '—'}</span>
                   </ArgonTypography>
                 </ArgonBox>
-
-                    {/* Staff detail */}
-                    <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-hat-3" style={{ color: '#5e72e4', fontSize: '16px' }} />
-                      <ArgonTypography variant="body2" color="text" fontWeight="regular">
-                        Chuyên môn: <span style={{ fontWeight: 'bold' }}>{profileData.staff?.qualification || '—'}</span>
-                  </ArgonTypography>
-                    </ArgonBox>
-
-                    <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-bulb-61" style={{ color: '#5e72e4', fontSize: '16px' }} />
-                      <ArgonTypography variant="body2" color="text" fontWeight="regular">
-                        Ngành nghề: <span style={{ fontWeight: 'bold' }}>{profileData.staff?.major || '—'}</span>
-                  </ArgonTypography>
-                    </ArgonBox>
-
-                    <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-chart-bar-32" style={{ color: '#5e72e4', fontSize: '16px' }} />
-                      <ArgonTypography variant="body2" color="text" fontWeight="regular">
-                        Năm kinh nghiệm: <span style={{ fontWeight: 'bold' }}>{profileData.staff?.experience_years || '—'}</span>
-                  </ArgonTypography>
-                    </ArgonBox>
-
-                    <ArgonBox display="flex" alignItems="center" gap={1.5}>
-                      <i className="ni ni-notification-70" style={{ color: '#5e72e4', fontSize: '16px' }} />
-                      <ArgonTypography variant="body2" color="text" fontWeight="regular">
-                        Ghi chú: <span style={{ fontWeight: 'bold' }}>{profileData.staff?.note || '—'}</span>
-                  </ArgonTypography>
-                    </ArgonBox>
                   </ArgonBox>
                 </ArgonBox>
 
@@ -384,7 +333,7 @@ function HealthCareProfile() {
                   </Button>
                   <Button 
                     variant="contained" 
-                    color="primary"
+                    color="success"
                     onClick={openProfileForm}
                     startIcon={<i className="ni ni-single-02" />}
                     sx={{ 
@@ -392,9 +341,11 @@ function HealthCareProfile() {
                       height: 44,
                       fontSize: '14px',
                       fontWeight: 'bold',
+                      backgroundColor: '#43a047',
                       '&:hover': {
+                        backgroundColor: '#388e3c',
                         transform: 'translateY(-1px)',
-                        boxShadow: '0 6px 16px rgba(94, 114, 228, 0.4)'
+                        boxShadow: '0 6px 16px rgba(67, 160, 71, 0.4)'
                       }
                     }}
                   >
@@ -418,7 +369,7 @@ function HealthCareProfile() {
           }}
         >
           <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #43a047 0%, #2e7d32 100%)',
             color: 'white',
             py: 2.5
           }}>
@@ -440,12 +391,12 @@ function HealthCareProfile() {
                 </ArgonTypography>
                 <input
                   type="file"
-                  id="avatar-upload-health"
+                  id="avatar-upload-nutrition"
                   hidden
                   accept="image/*"
                   onChange={handleAvatarUpload}
                 />
-                <label htmlFor="avatar-upload-health" style={{ cursor: 'pointer' }}>
+                <label htmlFor="avatar-upload-nutrition" style={{ cursor: 'pointer' }}>
                   <Avatar
                     src={avatarPreview || formData.avatar_url}
                     alt="Avatar"
@@ -457,8 +408,8 @@ function HealthCareProfile() {
                       transition: 'all 0.3s ease',
                       '&:hover': {
                         transform: 'scale(1.05)',
-                        borderColor: '#5e72e4',
-                        boxShadow: '0 4px 12px rgba(94, 114, 228, 0.3)'
+                        borderColor: '#43a047',
+                        boxShadow: '0 4px 12px rgba(67, 160, 71, 0.3)'
                       }
                     }}
                   />
@@ -487,10 +438,10 @@ function HealthCareProfile() {
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: '#5e72e4',
+                            borderColor: '#43a047',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
+                            borderColor: '#43a047',
                             borderWidth: '2px',
                           },
                         },
@@ -537,10 +488,10 @@ function HealthCareProfile() {
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: '#5e72e4',
+                            borderColor: '#43a047',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
+                            borderColor: '#43a047',
                             borderWidth: '2px',
                           },
                         },
@@ -564,122 +515,10 @@ function HealthCareProfile() {
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: '#5e72e4',
+                            borderColor: '#43a047',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
-                          },
-                        },
-                      }}
-                    />
-                  </Grid>
-
-                  {/* Staff specific fields */}
-                  <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Chuyên môn
-                      </ArgonTypography>
-                    </ArgonBox>
-                    <TextField
-                      fullWidth
-                      value={formData.qualification}
-                      onChange={handleInputChange("qualification")}
-                      variant="outlined"
-                      placeholder="Nhập chuyên môn"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
-                          },
-                        },
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Ngành nghề
-                      </ArgonTypography>
-                    </ArgonBox>
-                    <TextField
-                      fullWidth
-                      value={formData.major}
-                      onChange={handleInputChange("major")}
-                      variant="outlined"
-                      placeholder="Nhập ngành nghề"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
-                          },
-                        },
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Năm kinh nghiệm
-                      </ArgonTypography>
-                    </ArgonBox>
-                    <TextField
-                      fullWidth
-                      value={formData.experience_years}
-                      onChange={handleInputChange("experience_years")}
-                      variant="outlined"
-                      type="number"
-                      placeholder="Nhập số năm kinh nghiệm"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
-                          },
-                        },
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Ghi chú
-                      </ArgonTypography>
-                    </ArgonBox>
-                    <TextField
-                      fullWidth
-                      value={formData.note}
-                      onChange={handleInputChange("note")}
-                      variant="outlined"
-                      multiline
-                      rows={3}
-                      placeholder="Nhập ghi chú"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
+                            borderColor: '#43a047',
                             borderWidth: '2px',
                           },
                         },
@@ -710,7 +549,7 @@ function HealthCareProfile() {
             <Button 
               onClick={handleSaveAndClose}
               variant="contained"
-              color="primary"
+              color="success"
               disabled={saving}
               sx={{
                 borderRadius: 2,
@@ -718,15 +557,13 @@ function HealthCareProfile() {
                 py: 1,
                 textTransform: 'none',
                 fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                backgroundColor: '#43a047',
                 boxShadow: 3,
-                color: 'white !important',
                 '&:hover': {
                   boxShadow: 5,
-                  background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-                  color: 'white !important'
+                  backgroundColor: '#388e3c',
                 },
-                '&:disabled': { background: '#ccc', color: 'white !important' }
+                '&:disabled': { backgroundColor: '#ccc' }
               }}
             >
               {saving ? "Đang lưu..." : "Lưu thay đổi"}
@@ -745,7 +582,7 @@ function HealthCareProfile() {
           }}
         >
           <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #43a047 0%, #2e7d32 100%)',
             color: 'white',
             py: 2.5
           }}>
@@ -780,10 +617,10 @@ function HealthCareProfile() {
                       '& .MuiOutlinedInput-root': {
                         backgroundColor: '#f8f9fa',
                         '&:hover fieldset': {
-                          borderColor: '#5e72e4',
+                          borderColor: '#43a047',
                         },
                         '&.Mui-focused fieldset': {
-                          borderColor: '#5e72e4',
+                          borderColor: '#43a047',
                           borderWidth: '2px',
                         },
                       },
@@ -812,10 +649,10 @@ function HealthCareProfile() {
                       '& .MuiOutlinedInput-root': {
                         backgroundColor: '#f8f9fa',
                         '&:hover fieldset': {
-                          borderColor: '#5e72e4',
+                          borderColor: '#43a047',
                         },
                         '&.Mui-focused fieldset': {
-                          borderColor: '#5e72e4',
+                          borderColor: '#43a047',
                           borderWidth: '2px',
                         },
                       },
@@ -845,7 +682,7 @@ function HealthCareProfile() {
             <Button 
               onClick={handlePasswordAndClose}
               variant="contained" 
-              color="primary"
+              color="success"
               disabled={saving}
               sx={{
                 borderRadius: 2,
@@ -853,15 +690,13 @@ function HealthCareProfile() {
                 py: 1,
                 textTransform: 'none',
                 fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                backgroundColor: '#43a047',
                 boxShadow: 3,
-                color: 'white !important',
                 '&:hover': {
                   boxShadow: 5,
-                  background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-                  color: 'white !important'
+                  backgroundColor: '#388e3c',
                 },
-                '&:disabled': { background: '#ccc', color: 'white !important' }
+                '&:disabled': { backgroundColor: '#ccc' }
               }}
             >
               {saving ? "Đang lưu..." : "Đổi mật khẩu"}
@@ -874,4 +709,4 @@ function HealthCareProfile() {
   );
 }
 
-export default HealthCareProfile;
+export default NutritionProfile;
