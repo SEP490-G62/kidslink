@@ -6,7 +6,6 @@ import {
   Grid,
   TextField,
   Typography,
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -16,7 +15,6 @@ import {
   Paper,
   IconButton,
   Chip,
-  FormControl,
   MenuItem,
   Select,
 } from "@mui/material";
@@ -24,6 +22,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import ArgonBox from "components/ArgonBox";
@@ -31,8 +30,30 @@ import ArgonTypography from "components/ArgonTypography";
 import ArgonButton from "components/ArgonButton";
 import api from "services/api";
 import FeeModal from "./FeeModal";
+import { useNavigate } from "react-router-dom";
+
+const STATUS_LABEL_MAP = {
+  dang_ap_dung: "đang áp dụng",
+  "đang áp dụng": "đang áp dụng",
+  tam_ngung: "đang áp dụng",
+  "tạm ngừng": "đang áp dụng",
+  da_hoan_thanh: "đã hoàn thành",
+  ket_thuc: "đã hoàn thành",
+  ngung: "đã hoàn thành",
+  "đã hoàn thành": "đã hoàn thành",
+  "kết thúc": "đã hoàn thành",
+  chua_ap_dung: "chưa áp dụng",
+  "chưa áp dụng": "chưa áp dụng",
+};
+
+const STATUS_COLOR_MAP = {
+  "đang áp dụng": "info",
+  "đã hoàn thành": "success",
+  "chưa áp dụng": "warning",
+};
 
 const ManageTuition = () => {
+  const navigate = useNavigate();
   const [fees, setFees] = useState([]);
   const [feeSearch, setFeeSearch] = useState("");
   const [schoolYearFilter, setSchoolYearFilter] = useState("all");
@@ -60,6 +81,11 @@ const ManageTuition = () => {
     } catch (e) {
       console.error("Lỗi khi tải danh sách khoản phí:", e);
     }
+  };
+
+  const handleViewDetail = (fee) => {
+    if (!fee?._id) return;
+    navigate(`/school-admin/tuition/${fee._id}`, { state: { fee } });
   };
 
   useEffect(() => {
@@ -263,30 +289,24 @@ const ManageTuition = () => {
                               </Typography>
                             </TableCell>
                             <TableCell>
-                              <Chip
-                                size="small"
-                                label={(() => {
-                                  const v = f.trang_thai || "đang áp dụng";
-                                  if (v === "dang_ap_dung") return "đang áp dụng";
-                                  if (v === "tam_ngung") return "tạm ngừng";
-                                  if (v === "ket_thuc" || v === "ngung") return "kết thúc";
-                                  if (v === "da_hoan_thanh") return "đã hoàn thành";
-                                  if (v === "chua_ap_dung") return "chưa áp dụng";
-                                  return v;
-                                })()}
-                                color={(() => {
-                                  const v = f.trang_thai;
-                                  if (v === "tam_ngung" || v === "tạm ngừng") return "warning";
-                                  if (v === "ket_thuc" || v === "ngung" || v === "kết thúc") return "default";
-                                  if (v === "da_hoan_thanh") return "success";
-                                  if (v === "chua_ap_dung") return "secondary";
-                                  return "primary";
-                                })()}
-                                variant="outlined"
-                              />
+                              {(() => {
+                                const label = STATUS_LABEL_MAP[f.trang_thai] || STATUS_LABEL_MAP["đang áp dụng"];
+                                const color = STATUS_COLOR_MAP[label] || "info";
+                                return (
+                                  <Chip
+                                    size="small"
+                                    label={label}
+                                    color={color}
+                                    variant="outlined"
+                                  />
+                                );
+                              })()}
                             </TableCell>
                             <TableCell>
                               <Box display="inline-flex" gap={0.5}>
+                                <IconButton size="small" color="info" title="Xem chi tiết" onClick={() => handleViewDetail(f)}>
+                                  <VisibilityIcon fontSize="small" />
+                                </IconButton>
                                 <IconButton size="small" color="primary" title="Chỉnh sửa" onClick={() => handleEdit(f)}>
                                   <EditIcon fontSize="small" />
                                 </IconButton>

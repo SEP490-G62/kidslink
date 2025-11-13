@@ -14,7 +14,6 @@ import {
   Divider,
   Chip,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   Switch,
@@ -22,13 +21,30 @@ import {
 import api from "services/api";
 
 const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
-  const STATUS_OPTIONS = ['đang áp dụng', 'tạm ngừng', 'kết thúc'];
+  const STATUS_OPTIONS = ['đang áp dụng', 'đã hoàn thành', 'chưa áp dụng'];
+  const STATUS_META = {
+    'đang áp dụng': { chipColor: 'info' },
+    'đã hoàn thành': { chipColor: 'success' },
+    'chưa áp dụng': { chipColor: 'warning' },
+  };
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedClassIds, setSelectedClassIds] = useState([]);
-  const [form, setForm] = useState({ ten_khoan_thu: "", so_tien: "", mo_ta: "", han_nop: "", bat_buoc: false, trang_thai: "dang_ap_dung", nam_hoc: "" });
+  const [form, setForm] = useState({ ten_khoan_thu: "", so_tien: "", mo_ta: "", han_nop: "", bat_buoc: false, trang_thai: "đang áp dụng", nam_hoc: "" });
   const [submitting, setSubmitting] = useState(false);
+
+  const parseAcademicYear = (value) => {
+    const match = /^(\d{4})\s*-\s*(\d{4})$/.exec(value);
+    if (!match) return null;
+    const startYear = Number(match[1]);
+    const endYear = Number(match[2]);
+    if (Number.isNaN(startYear) || Number.isNaN(endYear) || startYear >= endYear) return null;
+    if (endYear - startYear !== 1) return null;
+    return { startYear, endYear };
+  };
+
+  const minDueDate = useMemo(() => new Date().toISOString().substring(0, 10), []);
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -49,10 +65,15 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
   useEffect(() => {
     if (feeData) {
       const normalizeStatus = (v) => {
+        if (!v) return 'đang áp dụng';
+        if (STATUS_OPTIONS.includes(v)) return v;
         if (v === 'dang_ap_dung') return 'đang áp dụng';
-        if (v === 'tam_ngung') return 'tạm ngừng';
-        if (v === 'ket_thuc' || v === 'ngung') return 'kết thúc';
-        return v || 'đang áp dụng';
+        if (v === 'da_hoan_thanh') return 'đã hoàn thành';
+        if (v === 'chua_ap_dung') return 'chưa áp dụng';
+        // legacy values mapping to closest supported statuses
+        if (v === 'tam_ngung') return 'đang áp dụng';
+        if (v === 'ket_thuc' || v === 'ngung') return 'đã hoàn thành';
+        return 'đang áp dụng';
       };
       setForm({
         ten_khoan_thu: feeData.ten_khoan_thu || feeData.fee_name || "",
@@ -107,6 +128,34 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
       alert("Vui lòng nhập đầy đủ tên khoản phí và số tiền.");
       return;
     }
+    const normalizedYear = (form.nam_hoc || "").trim();
+    const parsedYear = normalizedYear ? parseAcademicYear(normalizedYear) : null;
+    const isCreating = !feeData || !feeData._id;
+    const currentYear = new Date().getFullYear();
+
+    if (isCreating) {
+      if (!normalizedYear) {
+        alert("Vui lòng nhập năm học.");
+        return;
+      }
+      if (!parsedYear) {
+        alert("Năm học phải có định dạng YYYY-YYYY, ví dụ: 2025-2026.");
+        return;
+      }
+      if (parsedYear.endYear < currentYear) {
+        alert("Chỉ có thể tạo khoản phí cho năm học hiện tại hoặc tương lai.");
+        return;
+      }
+    } else if (normalizedYear && !parsedYear) {
+      alert("Năm học phải có định dạng YYYY-YYYY, ví dụ: 2025-2026.");
+      return;
+    }
+
+    if (form.trang_thai && !STATUS_OPTIONS.includes(form.trang_thai)) {
+      alert("Trạng thái không hợp lệ.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       const payload = {
@@ -117,7 +166,7 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
         han_nop: form.han_nop || null,
         bat_buoc: !!form.bat_buoc,
         trang_thai: form.trang_thai,
-        nam_hoc: form.nam_hoc || undefined,
+        nam_hoc: normalizedYear || undefined,
       };
       if (feeData && feeData._id) await api.put(`/fees/${feeData._id}`, payload, true);
       else await api.post("/fees", payload, true);
@@ -178,7 +227,15 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
           <Box mb={2} display="flex" alignItems="center" justifyContent="space-between" gap={2}>
             <Box flex={1}>
               <Typography variant="caption" fontWeight={600} display="block" mb={0.75}>Hạn nộp</Typography>
-              <TextField fullWidth size="small" type="date" name="han_nop" value={form.han_nop} onChange={onChangeForm} />
+              <TextField
+                fullWidth
+                size="small"
+                type="date"
+                name="han_nop"
+                value={form.han_nop}
+                onChange={onChangeForm}
+                inputProps={{ min: minDueDate }}
+              />
             </Box>
             <Box display="flex" alignItems="center" gap={1} sx={{ alignSelf: 'flex-end' }}>
               <Typography variant="caption" fontWeight={600}>Bắt buộc</Typography>
@@ -189,10 +246,36 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
           <Box mb={2}>
             <Typography variant="caption" fontWeight={600} display="block" mb={0.75}>Trạng thái</Typography>
             <FormControl size="small" fullWidth>
-              <Select value={STATUS_OPTIONS.includes(form.trang_thai) ? form.trang_thai : 'đang áp dụng'} name="trang_thai" onChange={onChangeForm} displayEmpty>
-                <MenuItem value="đang áp dụng">đang áp dụng</MenuItem>
-                <MenuItem value="tạm ngừng">tạm ngừng</MenuItem>
-                <MenuItem value="kết thúc">kết thúc</MenuItem>
+              <Select
+                value={STATUS_OPTIONS.includes(form.trang_thai) ? form.trang_thai : 'đang áp dụng'}
+                name="trang_thai"
+                onChange={onChangeForm}
+                renderValue={(selected) => {
+                  const value = STATUS_OPTIONS.includes(selected) ? selected : 'đang áp dụng';
+                  const meta = STATUS_META[value] || {};
+                  return (
+                    <Chip
+                      size="small"
+                      label={value}
+                      color={meta.chipColor || 'default'}
+                      variant="filled"
+                    />
+                  );
+                }}
+              >
+                {STATUS_OPTIONS.map((status) => {
+                  const meta = STATUS_META[status] || {};
+                  return (
+                    <MenuItem key={status} value={status}>
+                      <Chip
+                        size="small"
+                        label={status}
+                        color={meta.chipColor || 'default'}
+                        variant="outlined"
+                      />
+                    </MenuItem>
+                  );
+                })}
               </Select>
             </FormControl>
           </Box>

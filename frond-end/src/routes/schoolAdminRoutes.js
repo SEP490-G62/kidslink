@@ -9,6 +9,7 @@ import ManagePost from "layouts/school-admin/pages/ManagePost";
 import ManageAccountPage from "layouts/school-admin/pages/ManageAccount";
 import ManageCalendar from "layouts/school-admin/pages/ManageCalendar";
 import ManageTuition from "layouts/school-admin/pages/ManageTuition";
+import ManageTuitionDetail from "layouts/school-admin/pages/ManageTuition/Detail";
 import Profile from "layouts/profile";
 import { useEffect } from "react";
 import { useAuth } from "context/AuthContext";
@@ -98,6 +99,15 @@ const schoolAdminRoutes = [
       <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-money-coins" />
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageTuition /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Chi tiết học phí",
+    key: "school-admin-tuition-detail",
+    route: "/school-admin/tuition/:feeId",
+    noSidenav: true,
+    icon: null,
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageTuitionDetail /></ProtectedRoute>,
   },
   {
     type: "divider",
