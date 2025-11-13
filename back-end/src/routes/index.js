@@ -9,6 +9,8 @@ const teacherRouter = require('./teacherRouter');
 const parentRouter = require('./parent');
 const parentCRUDRouter = require('./parentCRUD');
 const healthStaffRouter = require('./healthStaff');
+const nutritionStaffRouter = require('./nutritionStaff');
+
 const classRouter = require('./class');
 const classAgeRouter = require('./classAge');
 const studentRouter = require('./student');
@@ -23,6 +25,7 @@ router.use('/teachers', teacherRouter);
 router.use('/parent', parentRouter);
 router.use('/parentcrud', parentCRUDRouter);
 router.use('/health-staff', healthStaffRouter);
+router.use('/nutrition', nutritionStaffRouter);
 router.use('/classes', classRouter);
 router.use('/class-ages', classAgeRouter);
 router.use('/student', studentRouter);

@@ -4,8 +4,13 @@ const complaintTypeSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    trim: true,
-    unique: true
+    enum: ['teacher', 'parent'],
+    trim: true
+  },
+  name: {
+    type: String,
+    required: true,
+    trim: true
   },
   description: {
     type: String,

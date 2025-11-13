@@ -136,6 +136,9 @@ function Illustration() {
             case 'health_care_staff':
               navigate('/health-care');
               break;
+            case 'nutrition_staff':
+              navigate('/nutrition');
+              break;
             default:
               navigate('/');
           }

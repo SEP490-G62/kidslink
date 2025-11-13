@@ -29,6 +29,7 @@ import createCache from "@emotion/cache";
 // Argon Dashboard 2 MUI routes
 import routes from "routes";
 import healthCareStaffRoutes from "routes/healthCareStaffRoutes";
+import nutritionStaffRoutes from "routes/nutritionStaffRoutes";
 import teacherRoutes from "routes/teacherRoutes";
 import parentRoutes from "routes/parentRoutes";
 
@@ -128,7 +129,35 @@ export default function App() {
   const isTeacherPath = pathname.startsWith("/teacher");
   const isParentPath = pathname.startsWith("/parent");
   const isHealthCareStaffPath = pathname.startsWith("/health-care");
-  const activeRoutes = isTeacherPath ? teacherRoutes : isParentPath ? parentRoutes : isHealthCareStaffPath ? healthCareStaffRoutes : routes;
+  const isNutritionStaffPath = pathname.startsWith("/nutrition");
+  const activeRoutes = isTeacherPath ? teacherRoutes : isParentPath ? parentRoutes : isHealthCareStaffPath ? healthCareStaffRoutes : isNutritionStaffPath ? nutritionStaffRoutes : routes;
+  // Determine role from localStorage to support role-based sidenav (school_admin)
+  let userRole = null;
+  try {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      userRole = JSON.parse(storedUser)?.role || null;
+    }
+  } catch (e) {
+    userRole = null;
+  }
+  const isSchoolAdmin = userRole === "school_admin";
+  const activeRoutes = isTeacherPath
+    ? teacherRoutes
+    : isParentPath
+    ? parentRoutes
+    : isHealthCareStaffPath
+    ? healthCareStaffRoutes
+    : isSchoolAdmin
+    ? schoolAdminRoutes
+    : routes;
+
+  // Ensure sidenav is not in mini overlay mode on desktop
+  useEffect(() => {
+    setMiniSidenav(dispatch, window.innerWidth < 1200 ? true : false);
+  }, [dispatch]);
+
+  // Keep root "/" as public Landing regardless of role
   const SidenavComponent = isParentPath ? ParentSidenav : Sidenav;
 
   // Removed floating configurator button
