@@ -9,6 +9,7 @@ import ManagePost from "layouts/school-admin/pages/ManagePost";
 import ManageAccountPage from "layouts/school-admin/pages/ManageAccount";
 import ManageCalendar from "layouts/school-admin/pages/ManageCalendar";
 import ManageTuition from "layouts/school-admin/pages/ManageTuition";
+import ManageComplaints from "layouts/school-admin/pages/ManageComplaints";
 import Profile from "layouts/profile";
 import { useEffect } from "react";
 import { useAuth } from "context/AuthContext";
@@ -98,6 +99,16 @@ const schoolAdminRoutes = [
       <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-money-coins" />
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageTuition /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Quản lý đơn",
+    key: "manage-complaints",
+    route: "/school-admin/complaints",
+    icon: (
+      <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-paper-diploma" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageComplaints /></ProtectedRoute>,
   },
   {
     type: "divider",

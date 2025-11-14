@@ -2,10 +2,15 @@ const mongoose = require('mongoose');
 
 const complaintTypeSchema = new mongoose.Schema({
   category: {
-    type: String,
+    type: [String],
     required: true,
     enum: ['teacher', 'parent'],
-    trim: true
+    validate: {
+      validator: function(v) {
+        return v && v.length > 0;
+      },
+      message: 'Phải có ít nhất một loại người dùng'
+    }
   },
   name: {
     type: String,
@@ -19,6 +24,13 @@ const complaintTypeSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+complaintTypeSchema.statics.findParentTypeById = function(typeId) {
+  return this.findOne({
+    _id: typeId,
+    category: { $in: ['parent'] }
+  });
+};
 
 module.exports = mongoose.model('ComplaintType', complaintTypeSchema);
 
