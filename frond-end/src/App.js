@@ -33,12 +33,6 @@ import nutritionStaffRoutes from "routes/nutritionStaffRoutes";
 import teacherRoutes from "routes/teacherRoutes";
 import parentRoutes from "routes/parentRoutes";
 import schoolAdminRoutes from "routes/schoolAdminRoutes";
-import Landing from "layouts/landing";
-import SignIn from "layouts/authentication/sign-in";
-import SignUp from "layouts/authentication/sign-up";
-import ForgotPassword from "layouts/authentication/forgot-password";
-import Unauthorized from "layouts/authentication/unauthorized";
-
 // Argon Dashboard 2 MUI contexts
 import { useArgonController, setMiniSidenav } from "context";
 import { AuthProvider } from "context/AuthContext";
@@ -107,9 +101,11 @@ export default function App() {
       try {
         const res = await messagingService.getUnreadCount();
         if (res && res.success && res.data) {
-          const total = parseInt(res.data.total || 0, 10) || 0;
-          localStorage.setItem('kidslink:unread_total', String(total));
-          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total } }));
+          // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+          const byConversation = Array.isArray(res.data.byConversation) ? res.data.byConversation : [];
+          const conversationCount = byConversation.length;
+          localStorage.setItem('kidslink:unread_total', String(conversationCount));
+          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationCount } }));
         }
       } catch (e) {
         // ignore
@@ -124,7 +120,9 @@ export default function App() {
       }
 
       if (route.route) {
-        return <Route exact path={route.route} element={route.component} key={route.key} />;
+        // Use exact only if route doesn't contain :id or other params
+        const hasParams = route.route.includes(':');
+        return <Route exact={!hasParams} path={route.route} element={route.component} key={route.key} />;
       }
 
       return null;
@@ -134,7 +132,7 @@ export default function App() {
   const isParentPath = pathname.startsWith("/parent");
   const isHealthCareStaffPath = pathname.startsWith("/health-care");
   const isNutritionStaffPath = pathname.startsWith("/nutrition");
-  const activeRoutes = isTeacherPath ? teacherRoutes : isParentPath ? parentRoutes : isHealthCareStaffPath ? healthCareStaffRoutes : isNutritionStaffPath ? nutritionStaffRoutes : routes;
+  const isSchoolAdminPath = pathname.startsWith("/school-admin");
   // Determine role from localStorage to support role-based sidenav (school_admin)
   let userRole = null;
   try {
@@ -152,7 +150,9 @@ export default function App() {
     ? parentRoutes
     : isHealthCareStaffPath
     ? healthCareStaffRoutes
-    : isSchoolAdmin
+    : isNutritionStaffPath 
+    ? nutritionStaffRoutes
+    : isSchoolAdminPath
     ? schoolAdminRoutes
     : routes;
 
@@ -179,19 +179,14 @@ export default function App() {
                   brand={darkSidenav || darkMode ? brand : brandDark}
                   brandName="KidsLink"
                   routes={activeRoutes}
+                  onMouseEnter={handleOnMouseEnter}
+                  onMouseLeave={handleOnMouseLeave}
                 />
                 {/* Configurator removed */}
               </>
             )}
             {layout === "vr" && null}
             <Routes>
-              {/* Public landing page at root */}
-              <Route exact path="/" element={<Landing />} />
-              {/* Auth routes always available */}
-              <Route path="/authentication/sign-in" element={<SignIn />} />
-              <Route path="/authentication/sign-up" element={<SignUp />} />
-              <Route path="/authentication/forgot-password" element={<ForgotPassword />} />
-              <Route path="/unauthorized" element={<Unauthorized />} />
               {getRoutes(activeRoutes)}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
@@ -207,17 +202,14 @@ export default function App() {
                 brand={darkSidenav || darkMode ? brand : brandDark}
                 brandName="KidsLink"
                 routes={activeRoutes}
+                onMouseEnter={handleOnMouseEnter}
+                onMouseLeave={handleOnMouseLeave}
               />
               {/* Configurator removed */}
             </>
           )}
           {layout === "vr" && null}
           <Routes>
-            <Route exact path="/" element={<Landing />} />
-            <Route path="/authentication/sign-in" element={<SignIn />} />
-            <Route path="/authentication/sign-up" element={<SignUp />} />
-            <Route path="/authentication/forgot-password" element={<ForgotPassword />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
             {getRoutes(activeRoutes)}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
