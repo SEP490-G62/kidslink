@@ -97,6 +97,48 @@ const schoolAdminService = {
   getAllTeachers: async () => {
     return await api.get('/school-admin/calendar/teachers', true);
   },
+
+  // Complaints
+  getComplaintStats: async () => {
+    return await api.get('/school-admin/complaints/stats', true);
+  },
+
+  getAllComplaints: async (category = null, status = null) => {
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (status) params.append('status', status);
+    const queryString = params.toString();
+    return await api.get(`/school-admin/complaints${queryString ? '?' + queryString : ''}`, true);
+  },
+
+  getComplaintById: async (complaintId) => {
+    return await api.get(`/school-admin/complaints/${complaintId}`, true);
+  },
+
+  approveComplaint: async (complaintId, response = '') => {
+    return await api.put(`/school-admin/complaints/${complaintId}/approve`, { response }, true);
+  },
+
+  rejectComplaint: async (complaintId, response) => {
+    return await api.put(`/school-admin/complaints/${complaintId}/reject`, { response }, true);
+  },
+
+  // Complaint Types
+  getAllComplaintTypes: async () => {
+    return await api.get('/school-admin/complaints/types/list', true);
+  },
+
+  createComplaintType: async (typeData) => {
+    return await api.post('/school-admin/complaints/types', typeData, true);
+  },
+
+  updateComplaintType: async (typeId, typeData) => {
+    return await api.put(`/school-admin/complaints/types/${typeId}`, typeData, true);
+  },
+
+  deleteComplaintType: async (typeId) => {
+    return await api.delete(`/school-admin/complaints/types/${typeId}`, true);
+  },
 };
 
 export default schoolAdminService;

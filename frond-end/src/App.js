@@ -32,7 +32,7 @@ import healthCareStaffRoutes from "routes/healthCareStaffRoutes";
 import nutritionStaffRoutes from "routes/nutritionStaffRoutes";
 import teacherRoutes from "routes/teacherRoutes";
 import parentRoutes from "routes/parentRoutes";
-
+import schoolAdminRoutes from "routes/schoolAdminRoutes";
 // Argon Dashboard 2 MUI contexts
 import { useArgonController, setMiniSidenav } from "context";
 import { AuthProvider } from "context/AuthContext";
@@ -120,7 +120,9 @@ export default function App() {
       }
 
       if (route.route) {
-        return <Route exact path={route.route} element={route.component} key={route.key} />;
+        // Use exact only if route doesn't contain :id or other params
+        const hasParams = route.route.includes(':');
+        return <Route exact={!hasParams} path={route.route} element={route.component} key={route.key} />;
       }
 
       return null;
@@ -130,6 +132,7 @@ export default function App() {
   const isParentPath = pathname.startsWith("/parent");
   const isHealthCareStaffPath = pathname.startsWith("/health-care");
   const isNutritionStaffPath = pathname.startsWith("/nutrition");
+  const isSchoolAdminPath = pathname.startsWith("/school-admin");
   // Determine role from localStorage to support role-based sidenav (school_admin)
   let userRole = null;
   try {
@@ -149,7 +152,7 @@ export default function App() {
     ? healthCareStaffRoutes
     : isNutritionStaffPath 
     ? nutritionStaffRoutes
-    : isSchoolAdmin
+    : isSchoolAdminPath
     ? schoolAdminRoutes
     : routes;
 

@@ -6,6 +6,11 @@ const complaintSchema = new mongoose.Schema({
     ref: 'ComplaintType',
     required: true
   },
+  complaintTypeName: {
+    type: String,
+    required: true,
+    trim: true
+  },
   reason: {
     type: String,
     required: true,
