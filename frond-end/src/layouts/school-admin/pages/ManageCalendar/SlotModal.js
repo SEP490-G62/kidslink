@@ -11,17 +11,20 @@ import {
   MenuItem,
   Grid,
   CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import ArgonButton from "components/ArgonButton";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import schoolAdminService from "services/schoolAdminService";
 
-const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId, onSuccess }) => {
+const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId, onSuccess, preSelectedSlot }) => {
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [slots, setSlots] = useState([]);
   const [activities, setActivities] = useState([]);
+  const [alertInfo, setAlertInfo] = useState({ show: false, message: "", severity: "error" });
   const [formData, setFormData] = useState({
     slotId: "",
     activityId: "",
@@ -35,14 +38,22 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
       fetchActivities();
       
       if (calendarEntry) {
-        // Chỉnh sửa calendar entry có sẵn
+        // Chỉnh sửa calendar entry có sẵn - populate form data
+        console.log('Editing calendar entry:', calendarEntry);
         setFormData({
-          slotId: calendarEntry.slotId || "",
-          activityId: calendarEntry.activity?._id || "",
-          teacherId: calendarEntry.teacher?._id || ""
+          slotId: calendarEntry.slotId || calendarEntry.slot?._id || "",
+          activityId: calendarEntry.activity?._id || calendarEntry.activityId || "",
+          teacherId: calendarEntry.teacher?._id || calendarEntry.teacherId || ""
+        });
+      } else if (preSelectedSlot) {
+        // Thêm mới từ ô lịch - slot đã được chọn sẵn
+        setFormData({
+          slotId: preSelectedSlot._id || "",
+          activityId: "",
+          teacherId: ""
         });
       } else {
-        // Thêm mới
+        // Thêm mới hoàn toàn
         setFormData({
           slotId: "",
           activityId: "",
@@ -50,7 +61,7 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
         });
       }
     }
-  }, [open, calendarEntry, date]);
+  }, [open, calendarEntry, date, preSelectedSlot]);
 
   const fetchSlots = async () => {
     try {
@@ -79,31 +90,63 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
     
     // Validate required fields
     if (!formData.slotId || !formData.activityId) {
-      alert("Vui lòng chọn khung giờ và hoạt động");
+      setAlertInfo({ show: true, message: "Vui lòng chọn khung giờ và hoạt động", severity: "warning" });
       return;
     }
     if (!dateToUse) {
-      alert("Vui lòng chọn ngày");
+      setAlertInfo({ show: true, message: "Vui lòng chọn ngày", severity: "warning" });
       return;
     }
+    if (!classId) {
+      setAlertInfo({ show: true, message: "Không tìm thấy thông tin lớp học", severity: "error" });
+      return;
+    }
+    
+    setAlertInfo({ show: false, message: "", severity: "error" });
 
     setLoading(true);
     try {
+      // If editing, use existing calendar entry id, otherwise 'new'
       const calendarId = calendarEntry?.id || 'new';
       const requestData = {
         classId: classId,
         date: dateToUse,
         slotId: formData.slotId,
-        activityId: formData.activityId,
-        teacherId: formData.teacherId || undefined
+        activityId: formData.activityId
       };
       
+      // Only include teacherId if it's provided
+      if (formData.teacherId) {
+        requestData.teacherId = formData.teacherId;
+      }
+      
+      console.log("Sending calendar entry data:", requestData);
+      console.log("Calendar ID:", calendarId);
+      
       await schoolAdminService.createOrUpdateCalendarEntry(calendarId, requestData);
-      onSuccess();
-      onClose();
+      setAlertInfo({ show: true, message: "Lưu tiết học thành công!", severity: "success" });
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1000);
     } catch (error) {
       console.error("Error saving calendar entry:", error);
-      alert("Lỗi khi lưu tiết học: " + (error.message || "Vui lòng thử lại"));
+      console.error("Full error object:", error);
+      
+      // Parse error message from backend
+      let errorMessage = "Vui lòng thử lại";
+      if (error.message) {
+        errorMessage = error.message;
+        
+        // Specific error messages
+        if (errorMessage.includes("giáo viên chủ nhiệm")) {
+          errorMessage = "Lớp học này chưa có giáo viên chủ nhiệm. Vui lòng thêm giáo viên cho lớp trước.";
+        } else if (errorMessage.includes("trùng") || errorMessage.includes("overlapping")) {
+          errorMessage = "Tiết học này bị trùng với tiết khác trong cùng ngày. Vui lòng kiểm tra lại.";
+        }
+      }
+      
+      setAlertInfo({ show: true, message: "Lỗi khi lưu tiết học: " + errorMessage, severity: "error" });
     } finally {
       setLoading(false);
     }
@@ -113,14 +156,64 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
   const selectedSlot = slots.find(s => s._id === formData.slotId);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>
-        <ArgonTypography variant="h5" fontWeight="bold">
-          {calendarEntry ? "Chỉnh sửa tiết học" : "Thêm tiết học mới"}
-        </ArgonTypography>
-      </DialogTitle>
-      <DialogContent sx={{ pt: 3 }}>
-        <ArgonBox>
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+         <DialogTitle sx={{ pb: 1 }}>
+           <ArgonTypography variant="h6" component="span" fontWeight="bold">
+            {calendarEntry ? "Sửa nội dung tiết học" : "Thêm nội dung tiết học"}
+          </ArgonTypography>
+           <ArgonTypography variant="caption" component="div" color="text" sx={{ display: 'block', mt: 0.5 }}>
+            Gán hoạt động và giáo viên cho tiết học trong ngày cụ thể
+          </ArgonTypography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <ArgonBox>
+          {/* Hiển thị thông tin tiết học và ngày khi mở từ ô lịch */}
+          {preSelectedSlot && date && (
+            <ArgonBox 
+              sx={{ 
+                mb: 3, 
+                p: 2, 
+                backgroundColor: '#e3f2fd', 
+                borderRadius: 2,
+                border: '1px solid #90caf9'
+              }}
+            >
+              <Grid container spacing={1}>
+                <Grid item xs={12} sm={6}>
+                  <ArgonTypography variant="caption" color="text" fontWeight="medium">
+                    Tiết học:
+                  </ArgonTypography>
+                  <ArgonTypography variant="body2" color="info" fontWeight="bold">
+                    {preSelectedSlot.slotName} ({preSelectedSlot.startTime} - {preSelectedSlot.endTime})
+                  </ArgonTypography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <ArgonTypography variant="caption" color="text" fontWeight="medium">
+                    Ngày:
+                  </ArgonTypography>
+                  <ArgonTypography variant="body2" color="info" fontWeight="bold">
+                    {(() => {
+                      // Split date string "YYYY-MM-DD"
+                      const [yearStr, monthStr, dayStr] = date.split('-');
+                      
+                      // Format Vietnamese date manually to avoid timezone issues
+                      const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+                      const monthNames = ['tháng 1', 'tháng 2', 'tháng 3', 'tháng 4', 'tháng 5', 'tháng 6', 
+                                          'tháng 7', 'tháng 8', 'tháng 9', 'tháng 10', 'tháng 11', 'tháng 12'];
+                      
+                      // Create date object and get day of week
+                      const tempDate = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr), 12, 0, 0);
+                      const dayOfWeek = dayNames[tempDate.getDay()];
+                      
+                      return `${dayOfWeek}, ${parseInt(dayStr)} ${monthNames[parseInt(monthStr) - 1]} năm ${yearStr}`;
+                    })()}
+                  </ArgonTypography>
+                </Grid>
+              </Grid>
+            </ArgonBox>
+          )}
+          
           <Grid container spacing={2}>
             {/* Date selector - only show if adding new and weekDays provided */}
             {!date && weekDays.length > 0 && (
@@ -143,41 +236,34 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
               </Grid>
             )}
             
-            {/* Show date if fixed */}
-            {date && (
+            {/* Chọn khung giờ tiết học - ẩn khi đã chọn sẵn từ bảng */}
+            {!preSelectedSlot && (
               <Grid item xs={12}>
-                <ArgonTypography variant="body2" color="text">
-                  Ngày: <strong>{new Date(date).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
-                </ArgonTypography>
+                <FormControl fullWidth>
+                  <InputLabel>Chọn khung giờ tiết học *</InputLabel>
+                  <Select
+                    value={formData.slotId}
+                    onChange={(e) => handleChange('slotId', e.target.value)}
+                    label="Chọn khung giờ tiết học *"
+                    required
+                  >
+                    <MenuItem value="">
+                      <em>-- Chọn khung giờ --</em>
+                    </MenuItem>
+                    {slots.map(slot => (
+                      <MenuItem key={slot._id} value={slot._id}>
+                        {slot.slotName} ({slot.startTime} - {slot.endTime})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                {selectedSlot && (
+                  <ArgonTypography variant="caption" color="text" mt={0.5}>
+                    Khung giờ: {selectedSlot.startTime} - {selectedSlot.endTime}
+                  </ArgonTypography>
+                )}
               </Grid>
             )}
-
-            {/* Chọn khung giờ tiết học */}
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Chọn khung giờ tiết học *</InputLabel>
-                <Select
-                  value={formData.slotId}
-                  onChange={(e) => handleChange('slotId', e.target.value)}
-                  label="Chọn khung giờ tiết học *"
-                  required
-                >
-                  <MenuItem value="">
-                    <em>-- Chọn khung giờ --</em>
-                  </MenuItem>
-                  {slots.map(slot => (
-                    <MenuItem key={slot._id} value={slot._id}>
-                      {slot.slotName} ({slot.startTime} - {slot.endTime})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              {selectedSlot && (
-                <ArgonTypography variant="caption" color="text" mt={0.5}>
-                  Khung giờ: {selectedSlot.startTime} - {selectedSlot.endTime}
-                </ArgonTypography>
-              )}
-            </Grid>
 
             {/* Chọn nội dung hoạt động */}
             <Grid item xs={12}>
@@ -220,6 +306,24 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
         </ArgonButton>
       </DialogActions>
     </Dialog>
+    
+    {/* Snackbar thông báo */}
+    <Snackbar
+      open={alertInfo.show}
+      autoHideDuration={4000}
+      onClose={() => setAlertInfo({ ...alertInfo, show: false })}
+      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+    >
+      <Alert 
+        onClose={() => setAlertInfo({ ...alertInfo, show: false })} 
+        severity={alertInfo.severity}
+        sx={{ width: '100%' }}
+        variant="filled"
+      >
+        {alertInfo.message}
+      </Alert>
+    </Snackbar>
+  </>
   );
 };
 
@@ -232,6 +336,11 @@ SlotModal.propTypes = {
     slotName: PropTypes.string,
     startTime: PropTypes.string,
     endTime: PropTypes.string,
+    activityId: PropTypes.string,
+    teacherId: PropTypes.string,
+    slot: PropTypes.shape({
+      _id: PropTypes.string
+    }),
     activity: PropTypes.shape({
       _id: PropTypes.string,
       name: PropTypes.string,
@@ -250,7 +359,13 @@ SlotModal.propTypes = {
     dateStr: PropTypes.string
   })),
   classId: PropTypes.string.isRequired,
-  onSuccess: PropTypes.func.isRequired
+  onSuccess: PropTypes.func.isRequired,
+  preSelectedSlot: PropTypes.shape({
+    _id: PropTypes.string,
+    slotName: PropTypes.string,
+    startTime: PropTypes.string,
+    endTime: PropTypes.string
+  })
 };
 
 export default SlotModal;

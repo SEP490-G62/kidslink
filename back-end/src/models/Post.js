@@ -25,7 +25,8 @@ const postSchema = new mongoose.Schema({
   class_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Class',
-    required: true
+    required: false,
+    default: null
   }
 }, {
   timestamps: true

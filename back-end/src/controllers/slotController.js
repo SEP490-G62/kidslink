@@ -10,7 +10,7 @@ const getAllSlots = async (req, res) => {
       success: true,
       data: slots.map((slot, index) => ({
         _id: slot._id,
-        slotName: slot.slot_name,
+        slotName: `Tiết ${index + 1}`,
         slotNumber: index + 1,
         startTime: slot.start_time,
         endTime: slot.end_time
@@ -29,12 +29,12 @@ const getAllSlots = async (req, res) => {
 // CREATE slot (tạo khung giờ tiết học mới)
 const createSlot = async (req, res) => {
   try {
-    const { slotName, startTime, endTime } = req.body;
+    const { startTime, endTime } = req.body;
 
-    if (!slotName || !startTime || !endTime) {
+    if (!startTime || !endTime) {
       return res.status(400).json({
         success: false,
-        message: 'Vui lòng cung cấp tên tiết, giờ bắt đầu và giờ kết thúc'
+        message: 'Vui lòng cung cấp giờ bắt đầu và giờ kết thúc'
       });
     }
 
@@ -59,6 +59,16 @@ const createSlot = async (req, res) => {
       });
     }
 
+    // Auto-generate slot name based on time order
+    const allSlots = await Slot.find().sort({ start_time: 1 }).lean();
+    let slotNumber = 1;
+    for (const s of allSlots) {
+      if (startTime > s.start_time) {
+        slotNumber++;
+      }
+    }
+    const slotName = `Tiết ${slotNumber}`;
+
     const slot = await Slot.create({
       slot_name: slotName,
       start_time: startTime,
@@ -70,7 +80,7 @@ const createSlot = async (req, res) => {
       message: 'Đã tạo khung giờ tiết học mới',
       data: {
         _id: slot._id,
-        slotName: slot.slot_name,
+        slotName: slotName,
         startTime: slot.start_time,
         endTime: slot.end_time
       }
@@ -89,12 +99,12 @@ const createSlot = async (req, res) => {
 const updateSlot = async (req, res) => {
   try {
     const { slotId } = req.params;
-    const { slotName, startTime, endTime } = req.body;
+    const { startTime, endTime } = req.body;
 
-    if (!slotName || !startTime || !endTime) {
+    if (!startTime || !endTime) {
       return res.status(400).json({
         success: false,
-        message: 'Vui lòng cung cấp tên tiết, giờ bắt đầu và giờ kết thúc'
+        message: 'Vui lòng cung cấp giờ bắt đầu và giờ kết thúc'
       });
     }
 
@@ -120,17 +130,24 @@ const updateSlot = async (req, res) => {
       });
     }
 
-    const slot = await Slot.findByIdAndUpdate(
+    // Update the slot
+    await Slot.findByIdAndUpdate(
       slotId,
       {
-        slot_name: slotName,
         start_time: startTime,
         end_time: endTime
-      },
-      { new: true }
+      }
     );
 
-    if (!slot) {
+    // Regenerate all slot names based on new time order
+    const allSlots = await Slot.find().sort({ start_time: 1 });
+    for (let i = 0; i < allSlots.length; i++) {
+      allSlots[i].slot_name = `Tiết ${i + 1}`;
+      await allSlots[i].save();
+    }
+
+    const updatedSlot = await Slot.findById(slotId);
+    if (!updatedSlot) {
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy khung giờ tiết học'
@@ -141,10 +158,10 @@ const updateSlot = async (req, res) => {
       success: true,
       message: 'Đã cập nhật khung giờ tiết học',
       data: {
-        _id: slot._id,
-        slotName: slot.slot_name,
-        startTime: slot.start_time,
-        endTime: slot.end_time
+        _id: updatedSlot._id,
+        slotName: updatedSlot.slot_name,
+        startTime: updatedSlot.start_time,
+        endTime: updatedSlot.end_time
       }
     });
   } catch (error) {

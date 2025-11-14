@@ -49,10 +49,27 @@ exports.createParent = async (req, res) => {
       relationship,
       student_id,
       createAccount,
+      username,
+      password,
     } = req.body;
 
     if (!full_name || !phone || !student_id || !relationship) {
       return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+    }
+
+    // Kiểm tra xem học sinh đã có bố hoặc mẹ chưa (tùy theo relationship)
+    if (relationship === 'father' || relationship === 'mother') {
+      const existingParentWithSameRelation = await ParentStudent.findOne({
+        student_id: student_id,
+        relationship: relationship
+      });
+      
+      if (existingParentWithSameRelation) {
+        const relationshipName = relationship === 'father' ? 'bố' : 'mẹ';
+        return res.status(400).json({ 
+          message: `Học sinh này đã có ${relationshipName}. Mỗi học sinh chỉ có thể có 1 ${relationshipName}.` 
+        });
+      }
     }
 
     // Kiểm tra xem parent đã tồn tại chưa (qua phone hoặc email)
@@ -77,15 +94,33 @@ exports.createParent = async (req, res) => {
       }
     } else {
       // Tạo user mới cho parent
-      const username = await generateUniqueUsername({ email, phone });
-      const defaultPasswordHash = await bcrypt.hash('123456', 10);
+      let finalUsername;
+      let finalPasswordHash;
+      
+      if (createAccount && username && password) {
+        // Sử dụng username và password do admin nhập vào
+        finalUsername = username.trim();
+        finalPasswordHash = await bcrypt.hash(password, 10);
+        
+        // Kiểm tra username đã tồn tại chưa
+        const existingUsername = await User.findOne({ username: finalUsername });
+        if (existingUsername) {
+          return res.status(400).json({ message: 'Tên đăng nhập đã tồn tại' });
+        }
+      } else {
+        // Không tạo account - để username và password null
+        finalUsername = null;
+        finalPasswordHash = null;
+      }
+      
       const userStatus = createAccount ? 1 : 0; // nếu không tạo account thì để inactive
+      const avatar_url = req.body.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(full_name || 'Parent')}&background=random`;
       const newUser = await User.create({
         full_name,
-        username,
-        password_hash: defaultPasswordHash,
+        username: finalUsername,
+        password_hash: finalPasswordHash,
         role: 'parent',
-        avatar_url: '',
+        avatar_url,
         status: userStatus,
         email: email || null,
         phone_number: phone,
@@ -158,6 +193,22 @@ exports.updateParent = async (req, res) => {
 
     // Cập nhật relationship nếu có student_id
     if (relationship && student_id) {
+      // Kiểm tra nếu đổi sang father/mother, học sinh đã có chưa
+      if (relationship === 'father' || relationship === 'mother') {
+        const existingWithSameRelation = await ParentStudent.findOne({
+          student_id: student_id,
+          relationship: relationship,
+          parent_id: { $ne: id } // Không phải parent hiện tại
+        });
+        
+        if (existingWithSameRelation) {
+          const relationshipName = relationship === 'father' ? 'bố' : 'mẹ';
+          return res.status(400).json({ 
+            message: `Học sinh này đã có ${relationshipName}. Không thể thay đổi mối quan hệ.` 
+          });
+        }
+      }
+      
       await ParentStudent.findOneAndUpdate(
         { parent_id: id, student_id: student_id },
         { relationship: relationship }
@@ -191,11 +242,14 @@ exports.deleteParent = async (req, res) => {
     // Kiểm tra xem parent còn liên kết với student nào khác không
     const remainingRelationships = await ParentStudent.countDocuments({ parent_id: id });
 
-    // Nếu không còn relationship nào, có thể soft delete user (optional)
+    // Nếu không còn relationship nào, xóa parent và user
     if (remainingRelationships === 0) {
       const parent = await Parent.findById(id);
-      if (parent) {
-        await User.findByIdAndUpdate(parent.user_id, { status: 0 });
+      if (parent && parent.user_id) {
+        // Xóa user
+        await User.findByIdAndDelete(parent.user_id);
+        // Xóa parent
+        await Parent.findByIdAndDelete(id);
       }
     }
 

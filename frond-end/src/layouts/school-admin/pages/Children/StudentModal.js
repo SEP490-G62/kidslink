@@ -64,8 +64,9 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
 
   const fetchClasses = async () => {
     try {
-      const response = await api.get("/class", true);
-      setClasses(response.classes || []);
+      const response = await api.get("/classes", true);
+      const list = Array.isArray(response) ? response : (response.data || response.classes || []);
+      setClasses(list);
     } catch (e) {
       console.error("Lỗi tải danh sách lớp:", e);
     }
