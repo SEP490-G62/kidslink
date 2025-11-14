@@ -231,7 +231,13 @@ function ChildInformation() {
     );
   }
 
-  const { student, pickups = [], healthRecords = [] } = childData;
+  const { student, pickups = [], healthRecords = [], classInfo } = childData;
+  const formatDate = (date) => {
+    if (!date) return 'Đang cập nhật';
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return 'Đang cập nhật';
+    return d.toLocaleDateString('vi-VN');
+  };
 
   return (
     <DashboardLayout>
@@ -263,7 +269,7 @@ function ChildInformation() {
                     {student.full_name}
                   </ArgonTypography>
                   <ArgonTypography variant="body2" color="text" textAlign="center">
-                    {selectedChild?.class?.class_name || 'Chưa phân lớp'} • {student.age} tuổi
+                    {classInfo?.name || selectedChild?.class?.class_name || 'Chưa phân lớp'} • {student.age} tuổi
                   </ArgonTypography>
                 </ArgonBox>
 
@@ -330,6 +336,26 @@ function ChildInformation() {
                       label={student.status === 1 ? "Đang học" : "Đã nghỉ"} 
                       color={student.status === 1 ? "success" : "error"} 
                     />
+                  </ArgonBox>
+                </ArgonBox>
+
+                <Divider sx={{ my: 2 }} />
+
+                <ArgonBox>
+                  <ArgonTypography variant="body2" color="text" fontWeight="medium" mb={1}>
+                    Lớp & năm học hiện tại
+                  </ArgonTypography>
+                  <ArgonBox display="flex" flexDirection="column" gap={0.5}>
+                    <ArgonTypography variant="body2" color="dark" fontWeight="bold">
+                      {classInfo?.name || 'Chưa cập nhật'} {classInfo?.academicYear ? `• ${classInfo.academicYear}` : ''}
+                    </ArgonTypography>
+                    <ArgonTypography variant="caption" color="text">
+                      Thời gian: {classInfo ? `${formatDate(classInfo.startDate)} - ${formatDate(classInfo.endDate)}` : 'Đang cập nhật'}
+                    </ArgonTypography>
+                    <ArgonTypography variant="caption" color="text">
+                      Giáo viên chủ nhiệm: {classInfo?.teacher?.name || 'Đang cập nhật'}
+                      {classInfo?.teacher?.phone ? ` (${classInfo.teacher.phone})` : ''}
+                    </ArgonTypography>
                   </ArgonBox>
                 </ArgonBox>
               </CardContent>
