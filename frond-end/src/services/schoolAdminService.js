@@ -98,46 +98,29 @@ const schoolAdminService = {
     return await api.get('/school-admin/calendar/teachers', true);
   },
 
-  // Complaints
-  getComplaintStats: async () => {
-    return await api.get('/school-admin/complaints/stats', true);
+  // Fees
+  getAllFees: async (page = 1, limit = 50) => {
+    return await api.get(`/school-admin/fees?page=${page}&limit=${limit}`, true);
   },
 
-  getAllComplaints: async (category = null, status = null) => {
-    const params = new URLSearchParams();
-    if (category) params.append('category', category);
-    if (status) params.append('status', status);
-    const queryString = params.toString();
-    return await api.get(`/school-admin/complaints${queryString ? '?' + queryString : ''}`, true);
+  getFeeById: async (feeId) => {
+    return await api.get(`/school-admin/fees/${feeId}`, true);
   },
 
-  getComplaintById: async (complaintId) => {
-    return await api.get(`/school-admin/complaints/${complaintId}`, true);
+  createFee: async (feeData) => {
+    return await api.post('/school-admin/fees', feeData, true);
   },
 
-  approveComplaint: async (complaintId, response = '') => {
-    return await api.put(`/school-admin/complaints/${complaintId}/approve`, { response }, true);
+  updateFee: async (feeId, feeData) => {
+    return await api.put(`/school-admin/fees/${feeId}`, feeData, true);
   },
 
-  rejectComplaint: async (complaintId, response) => {
-    return await api.put(`/school-admin/complaints/${complaintId}/reject`, { response }, true);
+  deleteFee: async (feeId) => {
+    return await api.delete(`/school-admin/fees/${feeId}`, true);
   },
 
-  // Complaint Types
-  getAllComplaintTypes: async () => {
-    return await api.get('/school-admin/complaints/types/list', true);
-  },
-
-  createComplaintType: async (typeData) => {
-    return await api.post('/school-admin/complaints/types', typeData, true);
-  },
-
-  updateComplaintType: async (typeId, typeData) => {
-    return await api.put(`/school-admin/complaints/types/${typeId}`, typeData, true);
-  },
-
-  deleteComplaintType: async (typeId) => {
-    return await api.delete(`/school-admin/complaints/types/${typeId}`, true);
+  getClassFeePayments: async (feeId, classFeeId) => {
+    return await api.get(`/school-admin/fees/${feeId}/classes/${classFeeId}/payments`, true);
   },
 };
 

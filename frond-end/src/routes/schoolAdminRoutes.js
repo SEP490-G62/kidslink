@@ -8,8 +8,8 @@ import ChildrenPage from "layouts/school-admin/pages/Children";
 import ManagePost from "layouts/school-admin/pages/ManagePost";
 import ManageAccountPage from "layouts/school-admin/pages/ManageAccount";
 import ManageCalendar from "layouts/school-admin/pages/ManageCalendar";
-import ManageTuition from "layouts/school-admin/pages/ManageTuition";
-import ManageComplaints from "layouts/school-admin/pages/ManageComplaints";
+import ManageFees from "layouts/school-admin/pages/ManageFees";
+import FeeDetail from "layouts/school-admin/pages/ManageFees/FeeDetail";
 import Profile from "layouts/profile";
 import { useEffect } from "react";
 import { useAuth } from "context/AuthContext";
@@ -82,6 +82,25 @@ const schoolAdminRoutes = [
   },
   {
     type: "route",
+    name: "Quản lý phí",
+    key: "manage-fees",
+    route: "/school-admin/fees",
+    icon: (
+      <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-money-coins" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageFees /></ProtectedRoute>,
+  },
+  {
+    type: "hidden",
+    name: "Chi tiết phí",
+    key: "fee-detail",
+    route: "/school-admin/fees/:id",
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><FeeDetail /></ProtectedRoute>,
+    // Hidden from sidenav
+    hideFromSidenav: true,
+  },
+  {
+    type: "route",
     name: "Quản lý tài khoản",
     key: "manage-accounts",
     route: "/school-admin/accounts",
@@ -90,26 +109,7 @@ const schoolAdminRoutes = [
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageAccountPage /></ProtectedRoute>,
   },
-  {
-    type: "route",
-    name: "Quản lý học phí",
-    key: "school-admin-tuition",
-    route: "/school-admin/tuition",
-    icon: (
-      <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-money-coins" />
-    ),
-    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageTuition /></ProtectedRoute>,
-  },
-  {
-    type: "route",
-    name: "Quản lý đơn",
-    key: "manage-complaints",
-    route: "/school-admin/complaints",
-    icon: (
-      <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-paper-diploma" />
-    ),
-    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageComplaints /></ProtectedRoute>,
-  },
+
   {
     type: "divider",
     key: "school-admin-divider-1",

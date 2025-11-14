@@ -32,6 +32,27 @@ const invoiceSchema = new mongoose.Schema({
     type: Number,
     required: true,
     default: 0 // 0: pending, 1: paid, 2: overdue
+  },
+  payos_order_code: {
+    type: Number
+  },
+  payos_checkout_url: {
+    type: String,
+    trim: true
+  },
+  payos_qr_code: {
+    type: String
+  },
+  payos_qr_url: {
+    type: String,
+    trim: true
+  },
+  payos_expired_at: {
+    type: Date
+  },
+  payos_transaction_id: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true

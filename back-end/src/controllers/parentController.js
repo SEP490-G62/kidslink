@@ -5,6 +5,7 @@ const likesController = require('./parent/likesController');
 const personalInfoController = require('./parent/personalInfoController');
 const childInfoController = require('./parent/childInfoController');
 const calendarController = require('./parent/calendarController');
+const feeController = require('./parent/feeController');
 
 
 module.exports = {
@@ -34,5 +35,10 @@ module.exports = {
   getChildInfo: childInfoController.getChildInfo,
   
   // Export functions from calendar controller
-  getClassCalendarLatest: calendarController.getClassCalendarLatest
+  getClassCalendarLatest: calendarController.getClassCalendarLatest,
+  
+  // Export functions from fee controller
+  getStudentFees: feeController.getStudentFees,
+  createPayOSPaymentRequest: feeController.createPayOSPaymentRequest,
+  checkPayOSPaymentStatus: feeController.checkPayOSPaymentStatus
 };
