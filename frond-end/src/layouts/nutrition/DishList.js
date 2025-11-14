@@ -101,11 +101,12 @@ export default function NutritionDishList() {
   const [weekSchedule, setWeekSchedule] = useState({}); // { 'meal_id-weekday_id': { dishes: [], date: string } }
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [search, setSearch] = useState("");
+  const [mealTypeFilter, setMealTypeFilter] = useState("");
 
   // Dialog state for add/edit dish
   const [dishDialogOpen, setDishDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState(null);
-  const [dishForm, setDishForm] = useState({ dish_name: "", description: "" });
+  const [dishForm, setDishForm] = useState({ dish_name: "", description: "", meal_type: "" });
   const [dishSubmitting, setDishSubmitting] = useState(false);
 
   // Dialog state for selecting dishes for a meal slot
@@ -134,18 +135,48 @@ export default function NutritionDishList() {
     return Object.values(weeklyMealSelection).some(slot => (slot?.dishes || []).length > 0);
   }, [weeklyMealSelection]);
 
-  // Filtered lists for dialogs
+  // Filtered lists for dialogs - filter by meal_type based on current slot's meal_id
   const filteredAllDishes = useMemo(() => {
-    if (!dishSearch.trim()) return dishes;
-    const q = dishSearch.trim().toLowerCase();
-    return dishes.filter(d => (d.dish_name || "").toLowerCase().includes(q));
-  }, [dishes, dishSearch]);
+    let filtered = dishes;
+    
+    // Filter by meal_type if currentSlot has meal_id
+    if (currentSlot?.meal_id) {
+      filtered = dishes.filter(d => {
+        // meal_type có thể là object (populated) hoặc string (ObjectId)
+        const dishMealTypeId = d.meal_type?._id || d.meal_type;
+        return String(dishMealTypeId) === String(currentSlot.meal_id);
+      });
+    }
+    
+    // Filter by search term
+    if (dishSearch.trim()) {
+      const q = dishSearch.trim().toLowerCase();
+      filtered = filtered.filter(d => (d.dish_name || "").toLowerCase().includes(q));
+    }
+    
+    return filtered;
+  }, [dishes, dishSearch, currentSlot]);
 
   const filteredAllDishesWeekly = useMemo(() => {
-    if (!dishSearchWeekly.trim()) return dishes;
-    const q = dishSearchWeekly.trim().toLowerCase();
-    return dishes.filter(d => (d.dish_name || "").toLowerCase().includes(q));
-  }, [dishes, dishSearchWeekly]);
+    let filtered = dishes;
+    
+    // Filter by meal_type if currentWeeklySlot has meal_id
+    if (currentWeeklySlot?.meal_id) {
+      filtered = dishes.filter(d => {
+        // meal_type có thể là object (populated) hoặc string (ObjectId)
+        const dishMealTypeId = d.meal_type?._id || d.meal_type;
+        return String(dishMealTypeId) === String(currentWeeklySlot.meal_id);
+      });
+    }
+    
+    // Filter by search term
+    if (dishSearchWeekly.trim()) {
+      const q = dishSearchWeekly.trim().toLowerCase();
+      filtered = filtered.filter(d => (d.dish_name || "").toLowerCase().includes(q));
+    }
+    
+    return filtered;
+  }, [dishes, dishSearchWeekly, currentWeeklySlot]);
 
   useEffect(() => {
     async function loadInit() {
@@ -187,13 +218,27 @@ export default function NutritionDishList() {
   }, []);
 
   const filteredDishes = useMemo(() => {
-    if (!search.trim()) return dishes;
-    const q = search.trim().toLowerCase();
-    return dishes.filter(d =>
-      (d.dish_name || "").toLowerCase().includes(q) ||
-      (d.description || "").toLowerCase().includes(q)
-    );
-  }, [dishes, search]);
+    let filtered = dishes;
+    
+    // Filter by meal_type
+    if (mealTypeFilter) {
+      filtered = filtered.filter(d => {
+        const dishMealTypeId = d.meal_type?._id || d.meal_type;
+        return String(dishMealTypeId) === String(mealTypeFilter);
+      });
+    }
+    
+    // Filter by search term
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      filtered = filtered.filter(d =>
+        (d.dish_name || "").toLowerCase().includes(q) ||
+        (d.description || "").toLowerCase().includes(q)
+      );
+    }
+    
+    return filtered;
+  }, [dishes, search, mealTypeFilter]);
 
   // Load week schedule when class age or week changes
   useEffect(() => {
@@ -313,18 +358,24 @@ export default function NutritionDishList() {
 
   const openAddDish = () => {
     setEditingDish(null);
-    setDishForm({ dish_name: "", description: "" });
+    setDishForm({ dish_name: "", description: "", meal_type: "" });
     setDishDialogOpen(true);
   };
 
   const openEditDish = (dish) => {
     setEditingDish(dish);
-    setDishForm({ dish_name: dish.dish_name || "", description: dish.description || "" });
+    // meal_type có thể là object (populated) hoặc string (ObjectId)
+    const mealTypeId = dish.meal_type?._id || dish.meal_type || "";
+    setDishForm({ 
+      dish_name: dish.dish_name || "", 
+      description: dish.description || "",
+      meal_type: mealTypeId
+    });
     setDishDialogOpen(true);
   };
 
   const submitDish = async () => {
-    if (!dishForm.dish_name?.trim() || !dishForm.description?.trim()) return;
+    if (!dishForm.dish_name?.trim() || !dishForm.description?.trim() || !dishForm.meal_type) return;
     setDishSubmitting(true);
     try {
       if (editingDish) {
@@ -493,14 +544,40 @@ export default function NutritionDishList() {
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {!loading && (
             <Grid container spacing={2}>
-              <Grid item xs={12} display="flex" gap={2} alignItems="center">
+              <Grid item xs={12} display="flex" gap={2} alignItems="center" flexWrap="wrap">
                 <TextField
                   placeholder="Tìm kiếm món ăn..."
                   value={search}
                   onChange={(e)=>setSearch(e.target.value)}
                   size="small"
-                  sx={{ flex: 1, maxWidth: 400 }}
+                  sx={{ flex: 1, minWidth: 200, maxWidth: 400 }}
                 />
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel id="meal-type-filter-label">Lọc theo loại bữa ăn</InputLabel>
+                  <Select
+                    labelId="meal-type-filter-label"
+                    label="Lọc theo loại bữa ăn"
+                    value={mealTypeFilter}
+                    onChange={(e) => setMealTypeFilter(e.target.value)}
+                    displayEmpty
+                    renderValue={(selected) => {
+                      if (!selected) {
+                        return <em>Tất cả</em>;
+                      }
+                      const selectedMeal = meals.find(m => m._id === selected);
+                      return selectedMeal ? selectedMeal.meal : '';
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>Tất cả</em>
+                    </MenuItem>
+                    {meals.map(meal => (
+                      <MenuItem key={meal._id} value={meal._id}>
+                        {meal.meal}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 <Button 
                   startIcon={<AddIcon />} 
                   variant="contained" 
@@ -513,47 +590,67 @@ export default function NutritionDishList() {
               </Grid>
 
               <Grid item xs={12}>
-                <TableContainer sx={{ border: '1px solid #e0e0e0', borderRadius: 2 }}>
+                <TableContainer 
+                  sx={{ 
+                    border: '1px solid #e0e0e0', 
+                    borderRadius: 2,
+                    maxHeight: 500,
+                    overflow: 'auto'
+                  }}
+                >
                 
                   <Table size="medium" sx={{ tableLayout: 'fixed' }}>
                   
                       <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                        <TableCell sx={{ fontWeight: 700, fontSize: '15px', width: '30%', py: 2 }}>Tên món</TableCell>
-                        <TableCell sx={{ fontWeight: 700, fontSize: '15px', width: '50%', py: 2 }}>Mô tả</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '15px', width: '20%', py: 2 }}>Cập nhật</TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontSize: '15px', width: '25%', py: 2, position: 'sticky', top: 0, backgroundColor: '#f5f5f5', zIndex: 1 }}>Tên món</TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontSize: '15px', width: '40%', py: 2, position: 'sticky', top: 0, backgroundColor: '#f5f5f5', zIndex: 1 }}>Mô tả</TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontSize: '15px', width: '20%', py: 2, position: 'sticky', top: 0, backgroundColor: '#f5f5f5', zIndex: 1 }}>Loại bữa ăn</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '15px', width: '15%', py: 2, position: 'sticky', top: 0, backgroundColor: '#f5f5f5', zIndex: 1 }}>Cập nhật</TableCell>
                       </TableRow>
                     
                     <TableBody>
                       {filteredDishes.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                          <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                             <ArgonTypography color="text">Không có món ăn nào</ArgonTypography>
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredDishes.map(d => (
-                          <TableRow key={d._id} hover sx={{ '&:hover': { backgroundColor: '#fafafa' } }}>
-                            <TableCell sx={{ fontSize: '14px', width: '30%', py: 2 }}>{d.dish_name}</TableCell>
-                            <TableCell sx={{ fontSize: '14px', width: '50%', py: 2 }}>{d.description}</TableCell>
-                            <TableCell align="right" sx={{ width: '20%', py: 2 }}>
-                              <IconButton 
-                                size="small" 
-                                color="primary" 
-                                onClick={() => openEditDish(d)}
-                                sx={{ mr: 1 }}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton 
-                                size="small" 
-                                color="error" 
-                                onClick={() => deleteDish(d._id)}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                        filteredDishes.map(d => {
+                          // meal_type có thể là object (populated) hoặc string (ObjectId)
+                          const mealTypeName = d.meal_type?.meal || d.meal_type || "N/A";
+                          return (
+                            <TableRow key={d._id} hover sx={{ '&:hover': { backgroundColor: '#fafafa' } }}>
+                              <TableCell sx={{ fontSize: '14px', width: '25%', py: 2 }}>{d.dish_name}</TableCell>
+                              <TableCell sx={{ fontSize: '14px', width: '40%', py: 2 }}>{d.description}</TableCell>
+                              <TableCell sx={{ fontSize: '14px', width: '20%', py: 2 }}>
+                                <Chip 
+                                  label={mealTypeName} 
+                                  size="small" 
+                                  color="success" 
+                                  variant="outlined"
+                                />
+                              </TableCell>
+                              <TableCell align="right" sx={{ width: '15%', py: 2 }}>
+                                <IconButton 
+                                  size="small" 
+                                  color="primary" 
+                                  onClick={() => openEditDish(d)}
+                                  sx={{ mr: 1 }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton 
+                                  size="small" 
+                                  color="error" 
+                                  onClick={() => deleteDish(d._id)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
                       )}
                     </TableBody>
                   </Table>
@@ -866,7 +963,13 @@ export default function NutritionDishList() {
                   <ListItem>
                     <ListItemText 
                       primary="Không tìm thấy món phù hợp" 
-                      secondary={dishSearch ? `Từ khóa: "${dishSearch}"` : 'Vui lòng thêm món ăn ở phần trên'}
+                      secondary={
+                        currentSlot?.meal_id 
+                          ? `Không có món nào thuộc loại "${meals.find(m => m._id === currentSlot.meal_id)?.meal || ''}"${dishSearch ? ` và từ khóa "${dishSearch}"` : ''}. Vui lòng thêm món ăn ở phần trên.`
+                          : dishSearch 
+                            ? `Từ khóa: "${dishSearch}"` 
+                            : 'Vui lòng thêm món ăn ở phần trên'
+                      }
                     />
                   </ListItem>
                 ) : (
@@ -994,7 +1097,13 @@ export default function NutritionDishList() {
                   <ListItem>
                     <ListItemText 
                       primary="Không tìm thấy món phù hợp" 
-                      secondary={dishSearchWeekly ? `Từ khóa: "${dishSearchWeekly}"` : 'Vui lòng thêm món ăn ở phần trên'}
+                      secondary={
+                        currentWeeklySlot?.meal_id 
+                          ? `Không có món nào thuộc loại "${meals.find(m => m._id === currentWeeklySlot.meal_id)?.meal || ''}"${dishSearchWeekly ? ` và từ khóa "${dishSearchWeekly}"` : ''}. Vui lòng thêm món ăn ở phần trên.`
+                          : dishSearchWeekly 
+                            ? `Từ khóa: "${dishSearchWeekly}"` 
+                            : 'Vui lòng thêm món ăn ở phần trên'
+                      }
                     />
                   </ListItem>
                 ) : (
@@ -1070,6 +1179,37 @@ export default function NutritionDishList() {
                 required
               />
             </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth required>
+                <InputLabel id="meal-type-label">Loại bữa ăn</InputLabel>
+                <Select
+                  labelId="meal-type-label"
+                  label="Loại bữa ăn"
+                  value={dishForm.meal_type}
+                  onChange={(e) => setDishForm(v => ({ ...v, meal_type: e.target.value }))}
+                  displayEmpty
+                  renderValue={(selected) => {
+                    if (!selected) {
+                      return <em>Chọn loại bữa ăn</em>;
+                    }
+                    const selectedMeal = meals.find(m => m._id === selected);
+                    return selectedMeal ? selectedMeal.meal : '';
+                  }}
+                >
+                  {meals.length === 0 ? (
+                    <MenuItem disabled value="">
+                      <em>Chưa có loại bữa ăn nào</em>
+                    </MenuItem>
+                  ) : (
+                    meals.map(meal => (
+                      <MenuItem key={meal._id} value={meal._id}>
+                        {meal.meal}
+                      </MenuItem>
+                    ))
+                  )}
+                </Select>
+              </FormControl>
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
@@ -1078,7 +1218,7 @@ export default function NutritionDishList() {
             variant="contained" 
             color="success" 
             onClick={submitDish} 
-            disabled={dishSubmitting || !dishForm.dish_name?.trim() || !dishForm.description?.trim()}
+            disabled={dishSubmitting || !dishForm.dish_name?.trim() || !dishForm.description?.trim() || !dishForm.meal_type}
           >
             {dishSubmitting ? 'Đang lưu...' : 'Lưu'}
           </Button>

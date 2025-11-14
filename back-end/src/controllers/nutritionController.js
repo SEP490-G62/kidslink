@@ -4,7 +4,7 @@ const { Dish, ClassAge, ClassAgeMeal, Meal, WeekDay, DishesClassAgeMeal, User } 
 // Lấy danh sách tất cả món ăn
 exports.listDishes = async (req, res) => {
   try {
-    const dishes = await Dish.find().sort({ dish_name: 1 });
+    const dishes = await Dish.find().populate('meal_type').sort({ dish_name: 1 });
     res.json({ count: dishes.length, dishes });
   } catch (err) {
     res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
@@ -14,13 +14,22 @@ exports.listDishes = async (req, res) => {
 // Tạo mới món ăn
 exports.createDish = async (req, res) => {
   try {
-    const { dish_name, description } = req.body || {};
-    if (!dish_name || !description) {
-      return res.status(400).json({ error: 'Thiếu dish_name hoặc description' });
+    const { dish_name, description, meal_type } = req.body || {};
+    if (!dish_name || !description || !meal_type) {
+      return res.status(400).json({ error: 'Thiếu dish_name, description hoặc meal_type' });
     }
-    const created = await Dish.create({ dish_name, description });
-    return res.status(201).json(created);
+    // Validate meal_type tồn tại trong bảng Meal
+    const mealExists = await Meal.exists({ _id: meal_type });
+    if (!mealExists) {
+      return res.status(400).json({ error: 'meal_type không hợp lệ hoặc không tồn tại' });
+    }
+    const created = await Dish.create({ dish_name, description, meal_type });
+    const populated = await Dish.findById(created._id).populate('meal_type');
+    return res.status(201).json(populated);
   } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(400).json({ error: 'meal_type không đúng định dạng ObjectId' });
+    }
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
 };
@@ -29,20 +38,30 @@ exports.createDish = async (req, res) => {
 exports.updateDish = async (req, res) => {
   try {
     const { id } = req.params;
-    const { dish_name, description } = req.body || {};
-    if (!dish_name && !description) {
+    const { dish_name, description, meal_type } = req.body || {};
+    if (!dish_name && !description && !meal_type) {
       return res.status(400).json({ error: 'Không có dữ liệu để cập nhật' });
+    }
+    // Validate meal_type nếu có cập nhật
+    if (meal_type) {
+      const mealExists = await Meal.exists({ _id: meal_type });
+      if (!mealExists) {
+        return res.status(400).json({ error: 'meal_type không hợp lệ hoặc không tồn tại' });
+      }
     }
     const updated = await Dish.findByIdAndUpdate(
       id,
-      { $set: { ...(dish_name ? { dish_name } : {}), ...(description ? { description } : {}) } },
+      { $set: { ...(dish_name ? { dish_name } : {}), ...(description ? { description } : {}), ...(meal_type ? { meal_type } : {}) } },
       { new: true }
-    );
+    ).populate('meal_type');
     if (!updated) {
       return res.status(404).json({ error: 'Không tìm thấy món ăn' });
     }
     return res.json(updated);
   } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(400).json({ error: 'meal_type không đúng định dạng ObjectId' });
+    }
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
 };
@@ -162,7 +181,10 @@ exports.assignDishesToClassAgeMeal = async (req, res) => {
       .populate('class_age_id')
       .populate('meal_id')
       .populate('weekday_id');
-    const dishes = await DishesClassAgeMeal.find({ class_age_meal_id: classAgeMeal._id }).populate('dish_id');
+    const dishes = await DishesClassAgeMeal.find({ class_age_meal_id: classAgeMeal._id }).populate({
+      path: 'dish_id',
+      populate: { path: 'meal_type' }
+    });
 
     return res.json({
       success: true,
@@ -190,11 +212,100 @@ exports.getAssignedDishes = async (req, res) => {
     if (!classAgeMeal) {
       return res.json({ dishes: [] });
     }
-    const mappings = await DishesClassAgeMeal.find({ class_age_meal_id: classAgeMeal._id }).populate('dish_id');
+    const mappings = await DishesClassAgeMeal.find({ class_age_meal_id: classAgeMeal._id }).populate({
+      path: 'dish_id',
+      populate: { path: 'meal_type' }
+    });
     return res.json({
       classAgeMealId: classAgeMeal._id,
       dishes: mappings.map((m) => m.dish_id)
     });
+  } catch (err) {
+    res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+// Lấy tất cả món đã gán cho một tuần (batch endpoint để tránh quá nhiều requests)
+// Query: week_start (YYYY-MM-DD), class_age_ids (comma-separated), meal_ids (comma-separated), weekday_ids (comma-separated)
+exports.getWeeklyAssignedDishes = async (req, res) => {
+  try {
+    const { week_start, class_age_ids, meal_ids, weekday_ids } = req.query;
+    
+    if (!week_start) {
+      return res.status(400).json({ error: 'Thiếu tham số week_start' });
+    }
+
+    const weekStartDate = new Date(week_start);
+    if (isNaN(weekStartDate.getTime())) {
+      return res.status(400).json({ error: 'week_start không hợp lệ' });
+    }
+
+    // Parse optional filters
+    const classAgeIds = class_age_ids ? class_age_ids.split(',').filter(id => id.trim()) : null;
+    const mealIds = meal_ids ? meal_ids.split(',').filter(id => id.trim()) : null;
+    const weekdayIds = weekday_ids ? weekday_ids.split(',').filter(id => id.trim()) : null;
+
+    // Build date range for the week (Monday to Friday)
+    const dates = [];
+    for (let i = 0; i < 5; i++) {
+      const date = new Date(weekStartDate);
+      date.setDate(date.getDate() + i);
+      dates.push(date);
+    }
+
+    // Build filter for ClassAgeMeal
+    const filter = {
+      date: { $in: dates }
+    };
+    if (classAgeIds && classAgeIds.length > 0) {
+      filter.class_age_id = { $in: classAgeIds };
+    }
+    if (mealIds && mealIds.length > 0) {
+      filter.meal_id = { $in: mealIds };
+    }
+    if (weekdayIds && weekdayIds.length > 0) {
+      filter.weekday_id = { $in: weekdayIds };
+    }
+
+    // Find all ClassAgeMeals for the week
+    const classAgeMeals = await ClassAgeMeal.find(filter)
+      .populate('class_age_id')
+      .populate('meal_id')
+      .populate('weekday_id');
+
+    // Get all dish mappings for these ClassAgeMeals
+    const classAgeMealIds = classAgeMeals.map(cam => cam._id);
+    const mappings = await DishesClassAgeMeal.find({
+      class_age_meal_id: { $in: classAgeMealIds }
+    }).populate({
+      path: 'dish_id',
+      populate: { path: 'meal_type' }
+    });
+
+    // Group dishes by classAgeMeal
+    const dishesByClassAgeMeal = {};
+    mappings.forEach(mapping => {
+      const camId = String(mapping.class_age_meal_id);
+      if (!dishesByClassAgeMeal[camId]) {
+        dishesByClassAgeMeal[camId] = [];
+      }
+      dishesByClassAgeMeal[camId].push(mapping.dish_id);
+    });
+
+    // Build result object with key format: classAgeId-mealId-weekdayId
+    const result = {};
+    classAgeMeals.forEach(cam => {
+      const key = `${cam.class_age_id._id}-${cam.meal_id._id}-${cam.weekday_id._id}`;
+      result[key] = {
+        dishes: dishesByClassAgeMeal[String(cam._id)] || [],
+        classAgeId: cam.class_age_id._id,
+        mealId: cam.meal_id._id,
+        weekdayId: cam.weekday_id._id,
+        date: cam.date
+      };
+    });
+
+    return res.json({ schedule: result });
   } catch (err) {
     res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
