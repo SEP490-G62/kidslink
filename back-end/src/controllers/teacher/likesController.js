@@ -1,37 +1,99 @@
 const Post = require('../../models/Post');
 const PostLike = require('../../models/PostLike');
 
-// POST /api/teacher/posts/:postId/like - Giáo viên like bài post
-const likePost = async (req, res) => {
+// POST /api/teachers/posts/:postId/like - Like/Unlike bài post
+const toggleLike = async (req, res) => {
   try {
     const { postId } = req.params;
     const userId = req.user.id;
-    // Kiểm tra tồn tại bài post
+
+    // Kiểm tra bài post có tồn tại không
     const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết.' });
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy bài viết'
+      });
+    }
 
-    // Kiểm tra đã like chưa (unique index)
-    const isLiked = await PostLike.findOne({ post_id: postId, user_id: userId });
-    if (isLiked) return res.json({ success: true, message: 'Đã like trước đó.' });
+    // Kiểm tra user đã like chưa
+    const existingLike = await PostLike.findOne({
+      post_id: postId,
+      user_id: userId
+    });
 
-    await PostLike.create({ post_id: postId, user_id: userId });
-    res.json({ success: true, message: 'Đã like bài viết.' });
+    let isLiked = false;
+    let likeCount = 0;
+
+    if (existingLike) {
+      // Nếu đã like thì unlike
+      await PostLike.findByIdAndDelete(existingLike._id);
+      isLiked = false;
+    } else {
+      // Nếu chưa like thì like
+      await PostLike.create({
+        post_id: postId,
+        user_id: userId
+      });
+      isLiked = true;
+    }
+
+    // Đếm số lượng like
+    likeCount = await PostLike.countDocuments({ post_id: postId });
+
+    res.json({
+      success: true,
+      data: {
+        isLiked,
+        likeCount
+      }
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi khi like', error: error.message });
+    console.error('Error in toggleLike:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Có lỗi xảy ra khi xử lý like'
+    });
   }
 };
-// DELETE /api/teacher/posts/:postId/like - Giáo viên bỏ like
-const unlikePost = async (req, res) => {
+
+// GET /api/teachers/posts/:postId/likes - Lấy danh sách user đã like bài post
+const getLikes = async (req, res) => {
   try {
     const { postId } = req.params;
-    const userId = req.user.id;
-    await PostLike.deleteOne({ post_id: postId, user_id: userId });
-    res.json({ success: true, message: 'Đã bỏ like.' });
+    const { page = 1, limit = 10 } = req.query;
+
+    const skip = (page - 1) * limit;
+
+    const likes = await PostLike.find({ post_id: postId })
+      .populate('user_id', 'full_name username avatar_url')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalLikes = await PostLike.countDocuments({ post_id: postId });
+
+    res.json({
+      success: true,
+      data: {
+        likes,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalLikes / limit),
+          totalLikes
+        }
+      }
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi khi unlike', error: error.message });
+    console.error('Error in getLikes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Có lỗi xảy ra khi lấy danh sách like'
+    });
   }
 };
+
 module.exports = {
-  likePost,
-  unlikePost,
+  toggleLike,
+  getLikes
 };
