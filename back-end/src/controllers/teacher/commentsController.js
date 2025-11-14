@@ -102,9 +102,92 @@ const getComments = async (req, res) => {
   }
 };
 
+// PUT /api/teachers/comments/:commentId - Cập nhật comment
+const updateComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { contents } = req.body;
+    const userId = req.user.id;
+
+    const comment = await PostComment.findOne({
+      _id: commentId,
+      user_id: userId
+    });
+
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy comment hoặc không có quyền chỉnh sửa'
+      });
+    }
+
+    comment.contents = contents;
+    await comment.save();
+
+    await comment.populate('user_id', 'full_name username avatar_url role');
+
+    res.json({
+      success: true,
+      data: comment
+    });
+  } catch (error) {
+    console.error('Error in updateComment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Có lỗi xảy ra khi cập nhật comment'
+    });
+  }
+};
+
+// DELETE /api/teachers/comments/:commentId - Xóa comment và đẩy các replies lên cấp trên
+const deleteComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user.id;
+
+    const comment = await PostComment.findOne({
+      _id: commentId,
+      user_id: userId
+    });
+
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy comment hoặc không có quyền xóa'
+      });
+    }
+
+    // Đẩy tất cả replies trực tiếp của comment này lên comment cha (hoặc top-level nếu không có cha)
+    await PostComment.updateMany(
+      { parent_comment_id: commentId },
+      { $set: { parent_comment_id: comment.parent_comment_id || null } }
+    );
+
+    // Xóa comment chính
+    await PostComment.findByIdAndDelete(commentId);
+
+    res.json({
+      success: true,
+      message: 'Xóa comment thành công, các trả lời đã được đẩy lên'
+    });
+  } catch (error) {
+    console.error('Error in deleteComment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Có lỗi xảy ra khi xóa comment'
+    });
+  }
+};
+
 const createCommentValidators = [
   body('contents').isString().trim().notEmpty().withMessage('Nội dung comment là bắt buộc'),
   body('parent_comment_id').optional().isMongoId().withMessage('Parent comment ID không hợp lệ')
 ];
 
-module.exports = { createComment, createCommentValidators, getComments };
+module.exports = { 
+  createComment, 
+  createCommentValidators, 
+  getComments,
+  updateComment,
+  deleteComment
+};
