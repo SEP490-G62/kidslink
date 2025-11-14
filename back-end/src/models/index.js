@@ -48,7 +48,11 @@ module.exports = {
   StudentClass: require('./StudentClass'),
   DailyReport: require('./DailyReport'),
   Pickup: require('./Pickup'),
-  PickupStudent: require('./PickupStudent')
+  PickupStudent: require('./PickupStudent'),
+  
+  // Complaint models
+  ComplaintType: require('./ComplaintType'),
+  Complaint: require('./Complaint')
 };
 
 

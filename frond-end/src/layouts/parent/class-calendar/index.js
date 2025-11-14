@@ -69,6 +69,15 @@ function ClassCalendar() {
     return selectedMonday;
   };
 
+  // Helper: chuyển Date -> chuỗi YYYY-MM-DD theo múi giờ địa phương (tránh lệch UTC)
+  const toLocalISO = (dateInput) => {
+    const d = new Date(dateInput);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   // Tạo danh sách 7 ngày trong tuần (T2-CN)
   const weekDays = useMemo(() => {
     const monday = getSelectedWeekMonday();
@@ -85,7 +94,7 @@ function ClassCalendar() {
         shortName: dayShortNames[i],
         date: day,
         dateStr: `${String(day.getDate()).padStart(2, '0')}/${String(day.getMonth() + 1).padStart(2, '0')}`,
-        isoDate: day.toISOString().split('T')[0],
+        isoDate: toLocalISO(day),
         isToday,
       });
     }
@@ -121,7 +130,7 @@ function ClassCalendar() {
     weekDays.forEach(day => {
       const calendarsOfDay = calendarData.calendars.filter(c => {
         const calDate = new Date(c.date);
-        const calDateStr = calDate.toISOString().split('T')[0];
+        const calDateStr = toLocalISO(calDate);
         return calDateStr === day.isoDate;
       });
       

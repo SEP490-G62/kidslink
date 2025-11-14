@@ -55,16 +55,14 @@ class HealthService {
   }
 
   /**
-   * Cập nhật hồ sơ sức khoẻ
-   * @param {string} id
-   * @param {Object} payload
+   * Cập nhật sổ sức khoẻ
    */
   async updateHealthRecord(id, payload) {
     try {
       const data = await apiService.put(`/health-staff/health/records/${id}`, payload);
       return { success: true, data };
     } catch (error) {
-      return { success: false, error: error.message || 'Lỗi cập nhật hồ sơ sức khoẻ' };
+      return { success: false, error: error.message || 'Lỗi cập nhật sổ sức khoẻ' };
     }
   }
 
@@ -96,6 +94,18 @@ class HealthService {
   }
 
   /**
+   * Cập nhật thông báo y tế
+   */
+  async updateHealthNotice(id, payload) {
+    try {
+      const data = await apiService.put(`/health-staff/health/notices/${id}`, payload);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message || 'Lỗi cập nhật thông báo y tế' };
+    }
+  }
+
+  /**
    * Lấy profile nhân viên y tế hiện tại
    */
   async getStaffProfile() {
@@ -117,6 +127,29 @@ class HealthService {
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message || 'Lỗi cập nhật profile' };
+    }
+  }
+
+  /**
+   * Xoá sổ sức khoẻ
+   */
+  async deleteHealthRecord(id) {
+    try {
+      const data = await apiService.delete(`/health-staff/health/records/${id}`);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message || 'Lỗi xoá sổ sức khoẻ' };
+    }
+  }
+  /**
+   * Xoá thông báo y tế
+   */
+  async deleteHealthNotice(id) {
+    try {
+      const data = await apiService.delete(`/health-staff/health/notices/${id}`);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message || 'Lỗi xoá thông báo y tế' };
     }
   }
 }

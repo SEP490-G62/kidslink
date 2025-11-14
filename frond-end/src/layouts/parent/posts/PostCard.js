@@ -112,130 +112,208 @@ function PostCard({
   const renderImages = () => {
     if (!post.images || post.images.length === 0) return null;
 
-    // Kích thước chuẩn cho tất cả ảnh: chiều cao tối đa cố định
-    const standardHeight = window.innerWidth < 600 ? '300px' : '400px';
+    const imageContainerStyle = {
+      position: 'relative',
+      overflow: 'hidden',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      transition: 'opacity 0.2s ease',
+      '&:hover': {
+        opacity: 0.95
+      }
+    };
 
+    const imageStyle = {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      display: 'block'
+    };
+
+    // 1 ảnh: Hiển thị to, tự điều chỉnh theo tỷ lệ gốc
     if (post.images.length === 1) {
       return (
-        <img
-          src={post.images[0]}
-          alt={post.title}
-          style={{
+        <ArgonBox
+          sx={{
+            ...imageContainerStyle,
             width: '100%',
-            height: standardHeight,
-            maxHeight: standardHeight,
-            objectFit: 'cover',
-            borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            cursor: 'pointer'
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            maxHeight: { xs: '500px', sm: '600px', md: '700px' },
+            borderRadius: '8px',
+            backgroundColor: '#f0f0f0'
           }}
           onClick={() => onOpenGallery(post.images)}
-        />
-      );
-    }
-
-    if (post.images.length === 2) {
-      return (
-        <ArgonBox display="flex" gap={1}>
-          {post.images.map((image, index) => (
-            <img
-              key={index}
-              src={image}
-              alt={`${post.title} ${index + 1}`}
-              style={{
-                width: '50%',
-                height: standardHeight,
-                maxHeight: standardHeight,
-                objectFit: 'cover',
-                borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                cursor: 'pointer'
-              }}
-              onClick={() => onOpenGallery(post.images, index)}
-            />
-          ))}
-        </ArgonBox>
-      );
-    }
-
-    if (post.images.length === 3) {
-      return (
-        <ArgonBox>
-          <ArgonBox display="flex" gap={1} mb={1}>
-            {post.images.slice(0, 2).map((image, index) => (
-              <img
-                key={index}
-                src={image}
-                alt={`${post.title} ${index + 1}`}
-                style={{
-                  width: '50%',
-                  height: standardHeight,
-                  maxHeight: standardHeight,
-                  objectFit: 'cover',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  cursor: 'pointer'
-                }}
-                onClick={() => onOpenGallery(post.images, index)}
-              />
-            ))}
-          </ArgonBox>
+        >
           <img
-            src={post.images[2]}
-            alt={`${post.title} 3`}
+            src={post.images[0]}
+            alt={post.title}
             style={{
-              width: '100%',
-              height: standardHeight,
-              maxHeight: standardHeight,
-              objectFit: 'cover',
-              borderRadius: '12px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              cursor: 'pointer'
+              maxWidth: '100%',
+              maxHeight: '100%',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              borderRadius: '8px',
+              display: 'block'
             }}
-            onClick={() => onOpenGallery(post.images, 2)}
           />
         </ArgonBox>
       );
     }
 
-    // Four or more images: 2x2 grid with "more" indicator
-    return (
-      <ArgonBox>
-        <ArgonBox display="flex" gap={1} mb={1}>
-          {post.images.slice(0, 2).map((image, index) => (
-            <img
+    // 2 ảnh: Chia đôi, cùng chiều cao
+    if (post.images.length === 2) {
+      return (
+        <ArgonBox display="flex" gap={0.5} sx={{ borderRadius: '8px', overflow: 'hidden' }}>
+          {post.images.map((image, index) => (
+            <ArgonBox
               key={index}
-              src={image}
-              alt={`${post.title} ${index + 1}`}
-              style={{
+              sx={{
+                ...imageContainerStyle,
                 width: '50%',
-                height: standardHeight,
-                maxHeight: standardHeight,
-                objectFit: 'cover',
-                borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                cursor: 'pointer'
+                aspectRatio: '1 / 1'
               }}
               onClick={() => onOpenGallery(post.images, index)}
-            />
+            >
+              <img
+                src={image}
+                alt={`${post.title} ${index + 1}`}
+                style={imageStyle}
+              />
+            </ArgonBox>
           ))}
         </ArgonBox>
-        <ArgonBox display="flex" gap={1}>
+      );
+    }
+
+    // 3 ảnh: 1 ảnh lớn bên trái, 2 ảnh nhỏ bên phải
+    if (post.images.length === 3) {
+      return (
+        <ArgonBox display="flex" gap={0.5} sx={{ borderRadius: '8px', overflow: 'hidden' }}>
+          <ArgonBox
+            sx={{
+              ...imageContainerStyle,
+              width: '50%',
+              aspectRatio: '1 / 1'
+            }}
+            onClick={() => onOpenGallery(post.images, 0)}
+          >
+            <img
+              src={post.images[0]}
+              alt={`${post.title} 1`}
+              style={imageStyle}
+            />
+          </ArgonBox>
+          <ArgonBox sx={{ width: '50%', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            {post.images.slice(1, 3).map((image, index) => (
+              <ArgonBox
+                key={index}
+                sx={{
+                  ...imageContainerStyle,
+                  width: '100%',
+                  aspectRatio: '1 / 1',
+                  flex: 1
+                }}
+                onClick={() => onOpenGallery(post.images, index + 1)}
+              >
+                <img
+                  src={image}
+                  alt={`${post.title} ${index + 2}`}
+                  style={imageStyle}
+                />
+              </ArgonBox>
+            ))}
+          </ArgonBox>
+        </ArgonBox>
+      );
+    }
+
+    // 4 ảnh: Grid 2x2
+    if (post.images.length === 4) {
+      return (
+        <ArgonBox sx={{ borderRadius: '8px', overflow: 'hidden' }}>
+          <ArgonBox display="flex" gap={0.5} mb={0.5}>
+            {post.images.slice(0, 2).map((image, index) => (
+              <ArgonBox
+                key={index}
+                sx={{
+                  ...imageContainerStyle,
+                  width: '50%',
+                  aspectRatio: '1 / 1'
+                }}
+                onClick={() => onOpenGallery(post.images, index)}
+              >
+                <img
+                  src={image}
+                  alt={`${post.title} ${index + 1}`}
+                  style={imageStyle}
+                />
+              </ArgonBox>
+            ))}
+          </ArgonBox>
+          <ArgonBox display="flex" gap={0.5}>
+            {post.images.slice(2, 4).map((image, index) => (
+              <ArgonBox
+                key={index}
+                sx={{
+                  ...imageContainerStyle,
+                  width: '50%',
+                  aspectRatio: '1 / 1'
+                }}
+                onClick={() => onOpenGallery(post.images, index + 2)}
+              >
+                <img
+                  src={image}
+                  alt={`${post.title} ${index + 3}`}
+                  style={imageStyle}
+                />
+              </ArgonBox>
+            ))}
+          </ArgonBox>
+        </ArgonBox>
+      );
+    }
+
+    // 5+ ảnh: Grid 2x2 với overlay hiển thị số ảnh còn lại
+    return (
+      <ArgonBox sx={{ borderRadius: '8px', overflow: 'hidden' }}>
+        <ArgonBox display="flex" gap={0.5} mb={0.5}>
+          {post.images.slice(0, 2).map((image, index) => (
+            <ArgonBox
+              key={index}
+              sx={{
+                ...imageContainerStyle,
+                width: '50%',
+                aspectRatio: '1 / 1'
+              }}
+              onClick={() => onOpenGallery(post.images, index)}
+            >
+              <img
+                src={image}
+                alt={`${post.title} ${index + 1}`}
+                style={imageStyle}
+              />
+            </ArgonBox>
+          ))}
+        </ArgonBox>
+        <ArgonBox display="flex" gap={0.5}>
           {post.images.slice(2, 4).map((image, index) => (
-            <ArgonBox key={index} position="relative" width="50%">
+            <ArgonBox
+              key={index}
+              sx={{
+                ...imageContainerStyle,
+                width: '50%',
+                aspectRatio: '1 / 1',
+                position: 'relative'
+              }}
+              onClick={() => onOpenGallery(post.images, index + 2)}
+            >
               <img
                 src={image}
                 alt={`${post.title} ${index + 3}`}
-                style={{
-                  width: '100%',
-                  height: standardHeight,
-                  maxHeight: standardHeight,
-                  objectFit: 'cover',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  cursor: 'pointer'
-                }}
-                onClick={() => onOpenGallery(post.images, index + 2)}
+                style={imageStyle}
               />
               {index === 1 && post.images.length > 4 && (
                 <ArgonBox
@@ -247,26 +325,26 @@ function PostCard({
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
-                  bgcolor="rgba(0,0,0,0.7)"
-                  borderRadius="12px"
-                  sx={{ 
+                  bgcolor="rgba(0,0,0,0.6)"
+                  sx={{
                     cursor: 'pointer',
-                    backdropFilter: 'blur(2px)',
-                    transition: 'all 0.3s ease',
+                    transition: 'background-color 0.2s ease',
                     '&:hover': {
-                      bgcolor: 'rgba(0,0,0,0.8)',
-                      transform: 'scale(1.02)'
+                      bgcolor: 'rgba(0,0,0,0.7)'
                     }
                   }}
-                  onClick={() => onOpenGallery(post.images, 3)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenGallery(post.images, 3);
+                  }}
                 >
-                  <ArgonTypography 
-                    variant="h4" 
-                    color="white" 
+                  <ArgonTypography
+                    variant="h4"
+                    color="white"
                     fontWeight="bold"
                     sx={{
-                      textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-                      fontSize: { xs: '24px', sm: '32px' }
+                      fontSize: { xs: '28px', sm: '36px' },
+                      textShadow: '0 2px 8px rgba(0,0,0,0.5)'
                     }}
                   >
                     +{post.images.length - 4}

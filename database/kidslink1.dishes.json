@@ -1,0 +1,52 @@
+[{
+  "_id": {
+    "$oid": "671000000000000000000541"
+  },
+  "dish_name": "Chicken Porridge",
+  "description": "Soft porridge with chicken",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000542"
+  },
+  "dish_name": "Chicken Rice",
+  "description": "Steamed rice with chicken",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000543"
+  },
+  "dish_name": "Vegetable Soup",
+  "description": "Mixed veggies soup",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000544"
+  },
+  "dish_name": "Fruit Cup",
+  "description": "Seasonal fruits",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+}]

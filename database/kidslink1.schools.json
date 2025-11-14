@@ -1,0 +1,28 @@
+[{
+  "_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "school_name": "KidsLink Kindergarten",
+  "address": "123 Nguyen Trai, District 1, HCMC",
+  "phone": "0281234567",
+  "email": "contact@kidslink.vn",
+  "logo_url": "https://picsum.photos/seed/school/300",
+  "status": 1,
+  "qr_data": "KIDSLINK-SCHOOL-QR-001",
+  "payos_config": {
+    "client_id": "your-payos-client-id",
+    "api_key": "your-payos-api-key",
+    "checksum_key": "your-payos-checksum-key",
+    "account_number": "1234567890",
+    "account_name": "KidsLink Kindergarten",
+    "bank_code": "VCB",
+    "active": true,
+    "webhook_url": "https://api.kidslink.vn/webhook/payos"
+  },
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+}]

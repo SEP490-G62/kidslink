@@ -86,6 +86,7 @@ function Breadcrumbs({ icon, title, route, light }) {
       'logout': 'Đăng xuất',
       'attendance': 'Điểm danh',
       'classes': 'Lớp học',
+      'schedule': 'Lịch học',
     };
     
     return titleTranslations[titleName] || titleName.replace("-", " ");

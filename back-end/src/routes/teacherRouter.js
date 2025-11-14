@@ -12,23 +12,44 @@ const {
   getTeacherClasses,
   getClassStudents,
   getStudentsAttendanceByDate,
-  getAllTeachers,
-
-  getTeacherLatestClassCalendar
+  getTeacherLatestClassCalendar,
+  getMyProfile,
+  updateMyProfile,
+  uploadMyAvatar
 } = require('../controllers/teacherController');
 const { getClassTimeSlots } = require('../controllers/parent/calendarController');
 const { getStudentDetail } = require('../controllers/studentController');
 const { createClassChatGroup } = require('../controllers/messagingController');
+const {
+  getAllPostsForTeacher,
+  createPost,
+  updatePost,
+  deletePost,
+  getMyPosts
+} = require('../controllers/teacher/postsController');
+const {
+  toggleLike,
+  getLikes
+} = require('../controllers/teacher/likesController');
+const {
+  createComment,
+  getComments,
+  updateComment,
+  deleteComment,
+  createCommentValidators
+} = require('../controllers/teacher/commentsController');
 
-// Get all teachers (public or with auth as needed)
-router.get('/',  getAllTeachers);
-
-// Middleware xác thực cho tất cả routes bên dưới
+// Middleware xác thực cho tất cả routes
 router.use(authenticate);
 
 // Chỉ cho phép teacher thực hiện check in/out và cập nhật comments
 router.post('/daily-reports/checkin', authorize(['teacher']), studentValidators, checkIn);
 router.put('/daily-reports/checkout', authorize(['teacher']), studentValidators, checkOut);
+
+// Hồ sơ giáo viên
+router.get('/profile', authorize(['teacher']), getMyProfile);
+router.put('/profile', authorize(['teacher']), updateMyProfile);
+router.post('/profile/avatar', authorize(['teacher']), uploadMyAvatar);
 
 // Đánh giá học sinh - cập nhật comments cuối ngày
 router.put('/daily-reports/:id/comment', authorize(['teacher']), require('../controllers/dailyReportController').updateComment);
@@ -48,6 +69,23 @@ router.get('/class-calendar/slots', authorize(['teacher']), getClassTimeSlots);
 router.get('/students/:id', authorize(['teacher']), getStudentDetail);
 
 router.post('/class/chat-group', authorize(['teacher']), createClassChatGroup);
+
+// Routes cho posts
+router.get('/posts', authorize(['teacher']), getAllPostsForTeacher);
+router.get('/posts/my-posts', authorize(['teacher']), getMyPosts);
+router.post('/posts', authorize(['teacher']), createPost);
+router.put('/posts/:postId', authorize(['teacher']), updatePost);
+router.delete('/posts/:postId', authorize(['teacher']), deletePost);
+
+// Routes cho likes
+router.post('/posts/:postId/like', authorize(['teacher']), toggleLike);
+router.get('/posts/:postId/likes', authorize(['teacher']), getLikes);
+
+// Routes cho comments
+router.post('/posts/:postId/comments', authorize(['teacher']), createCommentValidators, createComment);
+router.get('/posts/:postId/comments', authorize(['teacher']), getComments);
+router.put('/comments/:commentId', authorize(['teacher']), updateComment);
+router.delete('/comments/:commentId', authorize(['teacher']), deleteComment);
 
 module.exports = router;
 

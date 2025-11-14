@@ -16,7 +16,10 @@ const {
   deleteComment,
   createCommentValidators,
   getPersonalInfo,
-  updatePersonalInfo
+  updatePersonalInfo,
+  getStudentFees,
+  createPayOSPaymentRequest,
+  checkPayOSPaymentStatus
 } = require('../controllers/parentController');
 
 const { getMyPosts } = require('../controllers/parent/postsController');
@@ -77,5 +80,21 @@ router.get('/class-calendar/slots', getClassTimeSlots);
 // Routes cho weekly menu
 const { getWeeklyMenuLatest } = require('../controllers/parent/menuController');
 router.get('/menu', getWeeklyMenuLatest);
+
+// Routes cho complaints
+const {
+  getComplaintTypes,
+  createComplaint,
+  getMyComplaints,
+  getComplaintById
+} = require('../controllers/parent/complaintController');
+router.get('/complaints/types', getComplaintTypes);
+router.post('/complaints', createComplaint);
+router.get('/complaints', getMyComplaints);
+router.get('/complaints/:complaintId', getComplaintById);
+
+router.get('/fees', getStudentFees);
+router.post('/fees/payos', createPayOSPaymentRequest);
+router.post('/fees/payos/status', checkPayOSPaymentStatus);
 
 module.exports = router;

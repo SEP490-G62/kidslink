@@ -109,6 +109,31 @@ const schoolAdminService = {
   getAllTeachers: async () => {
     return await api.get('/school-admin/calendar/teachers', true);
   },
+
+  // Fees
+  getAllFees: async (page = 1, limit = 50) => {
+    return await api.get(`/school-admin/fees?page=${page}&limit=${limit}`, true);
+  },
+
+  getFeeById: async (feeId) => {
+    return await api.get(`/school-admin/fees/${feeId}`, true);
+  },
+
+  createFee: async (feeData) => {
+    return await api.post('/school-admin/fees', feeData, true);
+  },
+
+  updateFee: async (feeId, feeData) => {
+    return await api.put(`/school-admin/fees/${feeId}`, feeData, true);
+  },
+
+  deleteFee: async (feeId) => {
+    return await api.delete(`/school-admin/fees/${feeId}`, true);
+  },
+
+  getClassFeePayments: async (feeId, classFeeId) => {
+    return await api.get(`/school-admin/fees/${feeId}/classes/${classFeeId}/payments`, true);
+  },
 };
 
 export default schoolAdminService;

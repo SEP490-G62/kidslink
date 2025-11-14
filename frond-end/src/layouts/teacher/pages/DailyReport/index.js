@@ -538,7 +538,7 @@ const DailyReportPage = () => {
                           </ArgonTypography>
                         </Box>
                         <Chip 
-                          label={report.comments === 'Nghỉ' ? 'Nghỉ' : (report.checkin_time && report.checkout_time ? 'Hoàn thành' : report.checkin_time ? 'Đang học' : 'Chưa checkin')} 
+                          label={report.comments === 'Nghỉ' ? 'Nghỉ' : (report.checkin_time && report.checkout_time ? 'Hoàn thành' : report.checkin_time ? 'Chưa check out' : 'Chưa checkin')} 
                           color={report.comments === 'Nghỉ' ? 'error' : (report.checkin_time && report.checkout_time ? 'success' : report.checkin_time ? 'info' : 'default')}
                           size="small"
                           sx={{fontWeight:600}}

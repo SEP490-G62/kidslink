@@ -87,6 +87,10 @@ const TeacherChat = () => {
   const hasClassGroup = useMemo(() => (conversations || []).some(c => !!c.class_id), [conversations]);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState(null);
+  const [openParentSelect, setOpenParentSelect] = useState(false);
+  const [parentsList, setParentsList] = useState([]);
+  const [loadingParents, setLoadingParents] = useState(false);
+  const [creatingConversation, setCreatingConversation] = useState(false);
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -233,8 +237,9 @@ const TeacherChat = () => {
       const currentConvIdStr = currentConvId?.toString();
       const currentUserIdFromRef = currentUserIdRef.current;
       
+      const isActiveConv = currentSelectedConv && conversationIdStr && currentConvIdStr && conversationIdStr === currentConvIdStr;
       // Kiểm tra tin nhắn có thuộc conversation đang mở không
-      if (currentSelectedConv && conversationIdStr && currentConvIdStr && conversationIdStr === currentConvIdStr) {
+      if (isActiveConv) {
         setMessages(prev => {
           // Xác định sender_id của tin nhắn mới
           const messageSenderId = message.sender_id?._id?.toString() || message.sender_id?.id?.toString() || message.sender_id?.toString();
@@ -319,29 +324,78 @@ const TeacherChat = () => {
         }
       }
       
-      // Cập nhật lastMessage trong conversations (luôn luôn cập nhật)
-      setConversations(prev => prev.map(conv => {
-        const convId = conv._id?.toString() || conv._id;
-        if (convId?.toString() === conversationIdStr || conv._id?.toString() === conversationIdStr) {
-          return { 
-            ...conv, 
-            lastMessage: message, 
-            last_message_at: message.send_at || new Date()
-          };
-        }
-        return conv;
-      }));
+      // Cập nhật lastMessage và unread trong conversations, sắp xếp lại theo last_message_at
+      setConversations(prev => {
+        let updated = prev.map(conv => {
+          const convIdStr = (conv._id?.toString() || conv._id)?.toString();
+          if (convIdStr === conversationIdStr) {
+            const senderId = message.sender_id?._id || message.sender_id?.id || message.sender_id;
+            const isMine = senderId && senderId.toString() === currentUserIdRef.current?.toString();
+            const unreadInc = (!isActiveConv && !isMine) ? 1 : 0;
+            const newLastMessageAt = message.send_at ? new Date(message.send_at) : new Date();
+            return {
+              ...conv,
+              lastMessage: message,
+              last_message_at: newLastMessageAt,
+              unread_count: Math.max(0, (conv.unread_count || 0) + unreadInc)
+            };
+          }
+          return conv;
+        });
+        // Sắp xếp lại theo last_message_at mới nhất (desc)
+        updated = [...updated].sort((a, b) => {
+          const timeA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+          const timeB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+          return timeB - timeA; // Mới nhất lên đầu
+        });
+        // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+        const conversationUnreadCount = updated.filter(c => (c.unread_count || 0) > 0).length;
+        localStorage.setItem('kidslink:unread_total', String(conversationUnreadCount));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationUnreadCount } }));
+        return updated;
+      });
     });
 
     // Lắng nghe thông báo tin nhắn mới (từ conversation khác)
     newSocket.on('new_message_notification', (data) => {
-      // Cập nhật conversations list
-      setConversations(prev => prev.map(conv => {
-        if (conv._id === data.conversation_id) {
-          return { ...conv, lastMessage: data.message, last_message_at: data.message.send_at };
-        }
-        return conv;
-      }));
+      // Cập nhật conversations list và tăng unread cho conv tương ứng, sắp xếp lại theo last_message_at
+      setConversations(prev => {
+        const cur = selectedConversationRef.current;
+        const curStr = cur?._id?.toString();
+        const targetIdStr = (data.conversation_id?._id || data.conversation_id || '').toString();
+        const isActive = cur && targetIdStr && curStr && targetIdStr === curStr;
+        
+        const message = data.message || data;
+        const senderId = message.sender_id?._id || message.sender_id?.id || message.sender_id;
+        const isMine = senderId && senderId.toString() === currentUserIdRef.current?.toString();
+        
+        let updated = prev.map(conv => {
+          const idStr = (conv._id?.toString() || conv._id)?.toString();
+          if (idStr === targetIdStr) {
+            const newLastMessageAt = message.send_at ? new Date(message.send_at) : new Date();
+            // Chỉ tăng unread_count nếu không phải tin nhắn của mình và không phải conversation đang mở
+            const unreadInc = (!isActive && !isMine) ? 1 : 0;
+            return { 
+              ...conv, 
+              lastMessage: message, 
+              last_message_at: newLastMessageAt,
+              unread_count: Math.max(0, (conv.unread_count || 0) + unreadInc)
+            };
+          }
+          return conv;
+        });
+        // Sắp xếp lại theo last_message_at mới nhất (desc)
+        updated = [...updated].sort((a, b) => {
+          const timeA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+          const timeB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+          return timeB - timeA; // Mới nhất lên đầu
+        });
+        // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+        const conversationUnreadCount = updated.filter(c => (c.unread_count || 0) > 0).length;
+        localStorage.setItem('kidslink:unread_total', String(conversationUnreadCount));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationUnreadCount } }));
+        return updated;
+      });
     });
 
     // Lắng nghe typing indicator
@@ -385,12 +439,42 @@ const TeacherChat = () => {
         fetchMessages(selectedConversation._id);
         // Đánh dấu đã đọc
         messagingService.markAsRead(selectedConversation._id);
+        // Reset unread count trong state và đồng bộ badge
+        setConversations(prev => {
+          const updated = prev.map(c => {
+            const id = (c._id?.toString() || c._id)?.toString();
+            const selId = (selectedConversation._id?.toString() || selectedConversation._id)?.toString();
+            if (id === selId) {
+              return { ...c, unread_count: 0 };
+            }
+            return c;
+          });
+          // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+          const conversationUnreadCount = updated.filter(c => (c.unread_count || 0) > 0).length;
+          localStorage.setItem('kidslink:unread_total', String(conversationUnreadCount));
+          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationUnreadCount } }));
+          return updated;
+        });
       } else {
         // Nếu chưa kết nối, đợi kết nối rồi join
         socket.once('connect', () => {
           socket.emit('join_conversation', { conversation_id: selectedConversation._id });
           fetchMessages(selectedConversation._id);
           messagingService.markAsRead(selectedConversation._id);
+          setConversations(prev => {
+            const updated = prev.map(c => {
+              const id = (c._id?.toString() || c._id)?.toString();
+              const selId = (selectedConversation._id?.toString() || selectedConversation._id)?.toString();
+              if (id === selId) {
+                return { ...c, unread_count: 0 };
+              }
+              return c;
+            });
+            const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+            localStorage.setItem('kidslink:unread_total', String(totalUnread));
+            window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+            return updated;
+          });
         });
       }
     }
@@ -418,14 +502,58 @@ const TeacherChat = () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await messagingService.getConversations(1, 50);
-      if (result.success) {
-        setConversations(result.data.conversations || []);
-        if (result.data.conversations && result.data.conversations.length > 0) {
-          setSelectedConversation(result.data.conversations[0]);
+      const [convRes, unreadRes] = await Promise.all([
+        messagingService.getConversations(1, 50),
+        messagingService.getUnreadCount()
+      ]);
+      if (convRes.success) {
+        let conversationsData = convRes.data.conversations || [];
+        const unreadMap = new Map();
+        let totalUnread = 0;
+        if (unreadRes && unreadRes.success && unreadRes.data) {
+          totalUnread = parseInt(unreadRes.data.total || 0, 10) || 0;
+          const byConv = Array.isArray(unreadRes.data.byConversation) ? unreadRes.data.byConversation : [];
+          byConv.forEach(item => {
+            const id = (item._id?._id || item._id || '').toString();
+            unreadMap.set(id, item.count || 0);
+          });
+        }
+        // Sort by last_message_at desc - sử dụng helper function để lấy timestamp chính xác
+        const getTimeForSort = (conv) => {
+          if (conv.last_message_at) {
+            const date = new Date(conv.last_message_at);
+            return isNaN(date.getTime()) ? 0 : date.getTime();
+          }
+          if (conv.lastMessage && conv.lastMessage.send_at) {
+            const date = new Date(conv.lastMessage.send_at);
+            return isNaN(date.getTime()) ? 0 : date.getTime();
+          }
+          return 0;
+        };
+        conversationsData = [...conversationsData].sort((a, b) => {
+          const timeA = getTimeForSort(a);
+          const timeB = getTimeForSort(b);
+          return timeB - timeA; // Mới nhất lên đầu
+        });
+        const merged = conversationsData.map(c => {
+          const id = (c._id?._id || c._id || '').toString();
+          return { ...c, unread_count: unreadMap.get(id) || 0 };
+        });
+        setConversations(merged);
+        // đồng bộ badge sidenav - đếm số conversation có tin nhắn chưa đọc
+        const conversationUnreadCount = merged.filter(c => {
+          const unread = c.unread_count || 0;
+          return unread > 0;
+        }).length;
+        // Đảm bảo không có conversation nào có unread thì badge = 0
+        const finalCount = conversationUnreadCount > 0 ? conversationUnreadCount : 0;
+        localStorage.setItem('kidslink:unread_total', String(finalCount));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: finalCount } }));
+        if (merged.length > 0) {
+          setSelectedConversation(merged[0]);
         }
       } else {
-        setError(result.error);
+        setError(convRes.error);
       }
     } catch (err) {
       console.error('Error fetching conversations:', err);
@@ -681,6 +809,16 @@ const TeacherChat = () => {
   const handlePickEmoji = (emo) => setNewMessage((prev) => (prev || '') + emo);
 
   const getConversationTitle = (conversation) => {
+    // Nếu conversation có 2 thành viên, hiển thị tên đối phương
+    if (conversation.participants_count === 2 && conversation.participants && Array.isArray(conversation.participants)) {
+      const otherParticipant = conversation.participants.find(
+        p => (p._id?.toString() || p._id) !== (currentUserId?.toString() || currentUserId)
+      );
+      if (otherParticipant && otherParticipant.full_name) {
+        return otherParticipant.full_name;
+      }
+    }
+    // Nếu không phải 1-1 hoặc không có participants, dùng title hoặc class_name
     if (conversation.title) {
       return conversation.title;
     }
@@ -772,32 +910,57 @@ const TeacherChat = () => {
                       }
                     }}
                   />
-                  {!hasClassGroup && (
+                  <Box display="flex" gap={1}>
                     <ArgonButton
                       size="small"
-                      color="primary"
+                      color="info"
                       sx={{ height: 36, mt: 0.25, whiteSpace: 'nowrap' }}
                       onClick={async () => {
                         try {
-                          setCreatingGroup(true);
-                          const res = await messagingService.createClassChatGroup(null, null);
+                          setLoadingParents(true);
+                          setOpenParentSelect(true);
+                          const res = await messagingService.getParentsByTeacherClass();
                           if (res.success) {
-                            const conv = res.data.conversation;
-                            setConversations(prev => [conv, ...prev.filter(c => (c._id?.toString() || c._id) !== (conv._id?.toString() || conv._id))]);
-                            setSelectedConversation(conv);
+                            setParentsList(res.data.parents || []);
                           } else {
-                            setError(res.error || 'Không thể tạo nhóm');
+                            setError(res.error || 'Không thể tải danh sách phụ huynh');
                           }
                         } catch (e) {
-                          setError(e.message || 'Không thể tạo nhóm');
+                          setError(e.message || 'Không thể tải danh sách phụ huynh');
                         } finally {
-                          setCreatingGroup(false);
+                          setLoadingParents(false);
                         }
                       }}
                     >
-                      {creatingGroup ? 'Đang tạo...' : 'Tạo nhóm lớp'}
+                      Nhắn với phụ huynh
                     </ArgonButton>
-                  )}
+                    {!hasClassGroup && (
+                      <ArgonButton
+                        size="small"
+                        color="primary"
+                        sx={{ height: 36, mt: 0.25, whiteSpace: 'nowrap' }}
+                        onClick={async () => {
+                          try {
+                            setCreatingGroup(true);
+                            const res = await messagingService.createClassChatGroup(null, null);
+                            if (res.success) {
+                              const conv = res.data.conversation;
+                              setConversations(prev => [conv, ...prev.filter(c => (c._id?.toString() || c._id) !== (conv._id?.toString() || conv._id))]);
+                              setSelectedConversation(conv);
+                            } else {
+                              setError(res.error || 'Không thể tạo nhóm');
+                            }
+                          } catch (e) {
+                            setError(e.message || 'Không thể tạo nhóm');
+                          } finally {
+                            setCreatingGroup(false);
+                          }
+                        }}
+                      >
+                        {creatingGroup ? 'Đang tạo...' : 'Tạo nhóm lớp'}
+                      </ArgonButton>
+                    )}
+                  </Box>
                 </Box>
               </CardContent>
 
@@ -818,7 +981,7 @@ const TeacherChat = () => {
                     {filteredConversations.map((conv, index) => {
                       const isSelected = selectedConversation?._id === conv._id;
                       const lastMessage = conv.lastMessage;
-                      const unreadCount = conv.participants_count || 0;
+                      const unreadCount = conv.unread_count || 0;
 
                       return (
                         <React.Fragment key={conv._id}>
@@ -868,7 +1031,7 @@ const TeacherChat = () => {
                                 >
                                   <Typography 
                                     variant="body2" 
-                                    fontWeight="bold" 
+                                    fontWeight={unreadCount > 0 ? '800' : 'bold'} 
                                     sx={{ 
                                       fontSize: '0.875rem',
                                       flex: 1,
@@ -921,14 +1084,14 @@ const TeacherChat = () => {
                                       Chưa có tin nhắn
                                     </Typography>
                                   )}
-                                  {conv.participants_count ? (
+                                  {unreadCount > 0 && (
                                     <Chip 
-                                      label={`${conv.participants_count} TV`} 
+                                      label={unreadCount > 99 ? '99+' : unreadCount} 
+                                      color="error"
                                       size="small" 
-                                      variant="outlined"
                                       sx={{ height: 18, fontSize: '0.65rem' }}
                                     />
-                                  ) : null}
+                                  )}
                                 </Box>
                               }
                               sx={{ 
@@ -1411,6 +1574,76 @@ const TeacherChat = () => {
           <img src={previewImageUrl} alt="preview" style={{ width: '100vw', height: '100vh', objectFit: 'contain' }} />
         )}
       </DialogContent>
+    </Dialog>
+
+    {/* Dialog chọn phụ huynh */}
+    <Dialog open={openParentSelect} onClose={() => !creatingConversation && setOpenParentSelect(false)} fullWidth maxWidth="sm">
+      <DialogTitle>Chọn phụ huynh để nhắn tin</DialogTitle>
+      <DialogContent dividers>
+        {loadingParents ? (
+          <Box display="flex" justifyContent="center" p={3}>
+            <CircularProgress />
+          </Box>
+        ) : parentsList.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" textAlign="center" p={2}>
+            Không có phụ huynh nào trong lớp
+          </Typography>
+        ) : (
+          <List sx={{ p: 0 }}>
+            {parentsList.map((parent) => (
+              <ListItem
+                key={parent.user_id}
+                button
+                onClick={async () => {
+                  try {
+                    setCreatingConversation(true);
+                    const res = await messagingService.createDirectConversation(null, null, parent.user_id);
+                    if (res.success) {
+                      const conv = res.data.conversation;
+                      setConversations(prev => [conv, ...prev.filter(c => (c._id?.toString() || c._id) !== (conv._id?.toString() || conv._id))]);
+                      setSelectedConversation(conv);
+                      setOpenParentSelect(false);
+                      setParentsList([]);
+                    } else {
+                      setError(res.error || 'Không thể tạo trò chuyện');
+                    }
+                  } catch (e) {
+                    setError(e.message || 'Không thể tạo trò chuyện');
+                  } finally {
+                    setCreatingConversation(false);
+                  }
+                }}
+                disabled={creatingConversation}
+                sx={{
+                  borderRadius: 1.5,
+                  mb: 0.5,
+                  '&:hover': {
+                    bgcolor: 'grey.50'
+                  }
+                }}
+              >
+                <ListItemAvatar>
+                  <Avatar src={parent.avatar_url}>
+                    {parent.full_name?.charAt(0) || 'P'}
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={parent.full_name || 'Phụ huynh'}
+                  secondary="Phụ huynh"
+                />
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <ArgonButton 
+          onClick={() => setOpenParentSelect(false)} 
+          disabled={creatingConversation}
+        >
+          Đóng
+        </ArgonButton>
+      </DialogActions>
     </Dialog>
     </DashboardLayout>
   );

@@ -437,6 +437,158 @@ class ParentService {
       return { success: false, error: error.message || 'Lỗi lấy thực đơn tuần' };
     }
   }
+
+  /**
+   * Lấy danh sách loại đơn (complaint types) cho parent
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getComplaintTypes() {
+    try {
+      const response = await apiService.get('/parent/complaints/types');
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('ParentService.getComplaintTypes Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy danh sách loại đơn',
+        data: []
+      };
+    }
+  }
+
+  /**
+   * Tạo đơn khiếu nại/góp ý mới
+   * @param {string} complaint_type_id - ID của loại đơn
+   * @param {string} reason - Nội dung khiếu nại/góp ý
+   * @param {string} image - Base64 string của ảnh (tùy chọn)
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async createComplaint(complaint_type_id, reason, image = null) {
+    try {
+      const data = { complaint_type_id, reason };
+      if (image) {
+        data.image = image;
+      }
+      const response = await apiService.post('/parent/complaints', data, true);
+      return response;
+    } catch (error) {
+      console.error('ParentService.createComplaint Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi gửi đơn'
+      };
+    }
+  }
+
+  /**
+   * Lấy danh sách đơn của parent
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getMyComplaints() {
+    try {
+      const response = await apiService.get('/parent/complaints');
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('ParentService.getMyComplaints Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy danh sách đơn',
+        data: []
+      };
+    }
+  }
+
+  /**
+   * Lấy chi tiết một đơn
+   * @param {string} complaintId - ID của đơn
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getComplaintById(complaintId) {
+    try {
+      const response = await apiService.get(`/parent/complaints/${complaintId}`);
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('ParentService.getComplaintById Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy chi tiết đơn'
+      };
+    }
+  }
+
+  /**
+   * Lấy danh sách các khoản thu của lớp có academic year lớn nhất cho mỗi student
+   * @returns {Promise<Object>} - Kết quả API call
+   */
+  async getStudentFees() {
+    try {
+      const response = await apiService.get('/parent/fees');
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('ParentService.getStudentFees Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy danh sách khoản thu',
+        data: []
+      };
+    }
+  }
+
+  /**
+   * Tạo yêu cầu thanh toán PayOS cho phụ huynh
+   * @param {Object} payload - { student_id, class_fee_id, student_class_id, invoice_id? }
+   * @returns {Promise<Object>}
+   */
+  async createPayOSPayment(payload) {
+    try {
+      const response = await apiService.post('/parent/fees/payos', payload, true);
+      return response;
+    } catch (error) {
+      console.error('ParentService.createPayOSPayment Error:', error);
+      const message = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi tạo yêu cầu thanh toán';
+      return {
+        success: false,
+        error: message,
+        data: error?.response?.data || null
+      };
+    }
+  }
+
+  /**
+   * Kiểm tra trạng thái thanh toán PayOS theo order_code
+   * @param {number|string} orderCode
+   * @returns {Promise<Object>}
+   */
+  async checkPayOSPaymentStatus(orderCode) {
+    if (!orderCode) {
+      return {
+        success: false,
+        error: 'order_code không hợp lệ'
+      };
+    }
+    try {
+      const response = await apiService.post('/parent/fees/payos/status', { order_code: orderCode }, true);
+      return response;
+    } catch (error) {
+      console.error('ParentService.checkPayOSPaymentStatus Error:', error);
+      return {
+        success: false,
+        error: error?.response?.data?.message || error?.message || 'Không thể kiểm tra trạng thái thanh toán'
+      };
+    }
+  }
 }
 
 const parentService = new ParentService();

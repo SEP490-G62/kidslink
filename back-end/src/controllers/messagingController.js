@@ -128,7 +128,7 @@ exports.getConversations = async (req, res) => {
       .populate('class_id', 'class_name')
       .sort({ last_message_at: -1 });
 
-    // Lấy tin nhắn cuối cùng của mỗi conversation
+    // Lấy tin nhắn cuối cùng và danh sách participants của mỗi conversation
     const conversationsWithLastMessage = await Promise.all(
       conversations.map(async (conv) => {
         const lastMessage = await Message.findOne({
@@ -142,10 +142,21 @@ exports.getConversations = async (req, res) => {
           conversation_id: conv._id
         });
 
+        // Lấy danh sách participants để frontend có thể hiển thị tên đối phương
+        const participants = await ConversationParticipant.find({ conversation_id: conv._id })
+          .populate('user_id', 'full_name avatar_url role')
+          .select('user_id');
+
         return {
           ...conv.toObject(),
           lastMessage: lastMessage || null,
-          participants_count
+          participants_count,
+          participants: participants.map(p => ({
+            _id: p.user_id?._id || p.user_id,
+            full_name: p.user_id?.full_name,
+            avatar_url: p.user_id?.avatar_url,
+            role: p.user_id?.role
+          }))
         };
       })
     );
@@ -384,53 +395,89 @@ exports.getUnreadCount = async (req, res) => {
 exports.createDirectConversationWithTeacher = async (req, res) => {
   try {
     const requester_user_id = req.user.id;
-    if (req.user.role !== 'parent') {
-      return res.status(403).json({ error: 'Chỉ phụ huynh mới có quyền tạo trò chuyện riêng với giáo viên' });
+    const requester_role = req.user.role;
+    
+    // Cho phép cả parent và teacher tạo conversation
+    if (requester_role !== 'parent' && requester_role !== 'teacher') {
+      return res.status(403).json({ error: 'Chỉ phụ huynh hoặc giáo viên mới có quyền tạo trò chuyện riêng' });
     }
 
-    // Luôn chọn giáo viên chủ nhiệm của lớp có academic_year lớn nhất của học sinh (con) thuộc phụ huynh
-    const parent = await Parent.findOne({ user_id: requester_user_id });
-    if (!parent) return res.status(404).json({ error: 'Không tìm thấy phụ huynh' });
+    let parent_user_id, teacher_user_id, clazz;
 
-    const parentStudents = await ParentStudent.find({ parent_id: parent._id }).select('student_id');
-    let studentIds = parentStudents.map(ps => ps.student_id);
-    // Nếu client chỉ định student_id, ưu tiên học sinh đó
-    if (req.body.student_id) {
-      const specified = req.body.student_id.toString();
-      if (studentIds.some(id => id.toString() === specified)) {
-        studentIds = [specified];
+    if (requester_role === 'parent') {
+      // Logic cho parent tạo conversation với teacher
+      const parent = await Parent.findOne({ user_id: requester_user_id });
+      if (!parent) return res.status(404).json({ error: 'Không tìm thấy phụ huynh' });
+
+      const parentStudents = await ParentStudent.find({ parent_id: parent._id }).select('student_id');
+      let studentIds = parentStudents.map(ps => ps.student_id);
+      // Nếu client chỉ định student_id, ưu tiên học sinh đó
+      if (req.body.student_id) {
+        const specified = req.body.student_id.toString();
+        if (studentIds.some(id => id.toString() === specified)) {
+          studentIds = [specified];
+        }
       }
-    }
-    if (studentIds.length === 0) return res.status(404).json({ error: 'Không tìm thấy học sinh liên kết' });
+      if (studentIds.length === 0) return res.status(404).json({ error: 'Không tìm thấy học sinh liên kết' });
 
-    // Tìm lớp mới nhất (theo academic_year) trong các lớp mà con đang/đã học
-    // populate class_id để lấy class_name và teacher
-    const latestStudentClass = await StudentClass.find({ student_id: { $in: studentIds } })
-      .populate('class_id')
-      .sort({ 'class_id.academic_year': -1, createdAt: -1 })
-      .limit(1);
-    if (!latestStudentClass || latestStudentClass.length === 0 || !latestStudentClass[0].class_id) {
-      return res.status(404).json({ error: 'Không tìm thấy lớp để xác định giáo viên' });
-    }
-    const clazz = latestStudentClass[0].class_id;
-    const mainTeacher = await Teacher.findById(clazz.teacher_id);
-    const secondTeacher = clazz.teacher_id2 ? await Teacher.findById(clazz.teacher_id2) : null;
-    if (!mainTeacher || !mainTeacher.user_id) return res.status(404).json({ error: 'Không tìm thấy giáo viên chủ nhiệm' });
-    let teacher_user_id = mainTeacher.user_id.toString();
-    // Nếu client chỉ định giáo viên, và giáo viên đó thuộc lớp, ưu tiên giáo viên đó
-    if (req.body.teacher_user_id) {
-      const requested = req.body.teacher_user_id.toString();
-      const validUserIds = [
-        mainTeacher?.user_id?.toString(),
-        secondTeacher?.user_id?.toString()
-      ].filter(Boolean);
-      if (validUserIds.includes(requested)) {
-        teacher_user_id = requested;
+      // Tìm lớp mới nhất (theo academic_year) trong các lớp mà con đang/đã học
+      const latestStudentClass = await StudentClass.find({ student_id: { $in: studentIds } })
+        .populate('class_id')
+        .sort({ 'class_id.academic_year': -1, createdAt: -1 })
+        .limit(1);
+      if (!latestStudentClass || latestStudentClass.length === 0 || !latestStudentClass[0].class_id) {
+        return res.status(404).json({ error: 'Không tìm thấy lớp để xác định giáo viên' });
+      }
+      clazz = latestStudentClass[0].class_id;
+      const mainTeacher = await Teacher.findById(clazz.teacher_id);
+      const secondTeacher = clazz.teacher_id2 ? await Teacher.findById(clazz.teacher_id2) : null;
+      if (!mainTeacher || !mainTeacher.user_id) return res.status(404).json({ error: 'Không tìm thấy giáo viên chủ nhiệm' });
+      parent_user_id = requester_user_id;
+      teacher_user_id = mainTeacher.user_id.toString();
+      // Nếu client chỉ định giáo viên, và giáo viên đó thuộc lớp, ưu tiên giáo viên đó
+      if (req.body.teacher_user_id) {
+        const requested = req.body.teacher_user_id.toString();
+        const validUserIds = [
+          mainTeacher?.user_id?.toString(),
+          secondTeacher?.user_id?.toString()
+        ].filter(Boolean);
+        if (validUserIds.includes(requested)) {
+          teacher_user_id = requested;
+        }
+      }
+    } else {
+      // Logic cho teacher tạo conversation với parent
+      const teacher = await Teacher.findOne({ user_id: requester_user_id });
+      if (!teacher) return res.status(404).json({ error: 'Không tìm thấy thông tin giáo viên' });
+
+      // Tìm lớp mới nhất (theo academic_year) của giáo viên
+      const latestClass = await Class.find({
+        $or: [
+          { teacher_id: teacher._id },
+          { teacher_id2: teacher._id }
+        ]
+      })
+        .sort({ academic_year: -1, createdAt: -1 })
+        .limit(1);
+
+      if (!latestClass || latestClass.length === 0) {
+        return res.status(404).json({ error: 'Không tìm thấy lớp học' });
+      }
+      clazz = latestClass[0];
+      teacher_user_id = requester_user_id;
+
+      // Nếu client chỉ định parent_user_id, sử dụng parent đó
+      if (req.body.parent_user_id) {
+        const parent = await Parent.findOne({ user_id: req.body.parent_user_id });
+        if (!parent) return res.status(404).json({ error: 'Không tìm thấy phụ huynh' });
+        parent_user_id = req.body.parent_user_id;
+      } else {
+        return res.status(400).json({ error: 'Yêu cầu parent_user_id khi giáo viên tạo conversation' });
       }
     }
 
     // Kiểm tra đã có conversation 1-1 giữa parent và teacher chưa (trong cùng class)
-    const parentConvDocs = await ConversationParticipant.find({ user_id: requester_user_id }).select('conversation_id');
+    const parentConvDocs = await ConversationParticipant.find({ user_id: parent_user_id }).select('conversation_id');
     const teacherConvDocs = await ConversationParticipant.find({ user_id: teacher_user_id }).select('conversation_id');
     const parentConvIds = new Set(parentConvDocs.map(c => c.conversation_id.toString()));
     const bothConvIds = teacherConvDocs
@@ -442,15 +489,31 @@ exports.createDirectConversationWithTeacher = async (req, res) => {
       for (const conv of candidates) {
         const count = await ConversationParticipant.countDocuments({ conversation_id: conv._id });
         if (count === 2) {
-          return res.status(200).json({ message: 'Đã có cuộc trò chuyện', conversation: conv });
+          // Populate participants để trả về cho frontend
+          const participants = await ConversationParticipant.find({ conversation_id: conv._id })
+            .populate('user_id', 'full_name avatar_url role')
+            .select('user_id');
+
+          const conversationObj = conv.toObject();
+          conversationObj.participants_count = 2;
+          conversationObj.participants = participants.map(p => ({
+            _id: p.user_id?._id || p.user_id,
+            full_name: p.user_id?.full_name,
+            avatar_url: p.user_id?.avatar_url,
+            role: p.user_id?.role
+          }));
+
+          return res.status(200).json({ message: 'Đã có cuộc trò chuyện', conversation: conversationObj });
         }
       }
     }
 
-    // Tạo conversation mới thuộc lớp mới nhất, tiêu đề: "Tên giáo viên - Tên lớp"
+    // Tạo conversation mới thuộc lớp mới nhất, tiêu đề: "Tên parent - Tên teacher"
     const teacherUserDoc = await User.findById(teacher_user_id).select('full_name');
+    const parentUserDoc = await User.findById(parent_user_id).select('full_name');
     const teacherName = teacherUserDoc?.full_name || 'Giáo viên';
-    const title = `${teacherName} - ${clazz.class_name}`;
+    const parentName = parentUserDoc?.full_name || 'Phụ huynh';
+    const title = `${parentName} - ${teacherName}`;
     const conversation = new Conversation({
       title,
       class_id: clazz._id,
@@ -460,10 +523,24 @@ exports.createDirectConversationWithTeacher = async (req, res) => {
     await conversation.save();
 
     // Thêm 2 participants: parent và teacher
-    await ConversationParticipant.create({ user_id: requester_user_id, conversation_id: conversation._id });
+    await ConversationParticipant.create({ user_id: parent_user_id, conversation_id: conversation._id });
     await ConversationParticipant.create({ user_id: teacher_user_id, conversation_id: conversation._id });
 
-    res.status(201).json({ message: 'Tạo trò chuyện thành công', conversation });
+    // Populate participants để trả về cho frontend
+    const participants = await ConversationParticipant.find({ conversation_id: conversation._id })
+      .populate('user_id', 'full_name avatar_url role')
+      .select('user_id');
+
+    const conversationObj = conversation.toObject();
+    conversationObj.participants_count = 2;
+    conversationObj.participants = participants.map(p => ({
+      _id: p.user_id?._id || p.user_id,
+      full_name: p.user_id?.full_name,
+      avatar_url: p.user_id?.avatar_url,
+      role: p.user_id?.role
+    }));
+
+    res.status(201).json({ message: 'Tạo trò chuyện thành công', conversation: conversationObj });
   } catch (error) {
     console.error('Error creating direct conversation:', error);
     res.status(500).json({ error: 'Lỗi khi tạo trò chuyện', details: error.message });
@@ -653,5 +730,94 @@ exports.createClassChatGroup = async (req, res) => {
       error: 'Lỗi khi tạo nhóm chat cho lớp',
       details: error.message
     });
+  }
+};
+
+// Lấy danh sách phụ huynh theo lớp của giáo viên (lớp có academic_year mới nhất)
+exports.getParentsByTeacherClass = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    
+    // Kiểm tra user là giáo viên
+    if (req.user.role !== 'teacher') {
+      return res.status(403).json({ error: 'Chỉ giáo viên mới có quyền xem danh sách phụ huynh' });
+    }
+
+    // Lấy thông tin giáo viên
+    const teacher = await Teacher.findOne({ user_id });
+    if (!teacher) {
+      return res.status(404).json({ error: 'Không tìm thấy thông tin giáo viên' });
+    }
+
+    // Tìm lớp mới nhất (theo academic_year) của giáo viên
+    const latestClass = await Class.find({
+      $or: [
+        { teacher_id: teacher._id },
+        { teacher_id2: teacher._id }
+      ]
+    })
+      .sort({ academic_year: -1, createdAt: -1 })
+      .limit(1);
+
+    if (!latestClass || latestClass.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy lớp học' });
+    }
+
+    const clazz = latestClass[0];
+
+    // Lấy tất cả học sinh trong lớp
+    const studentClasses = await StudentClass.find({ class_id: clazz._id })
+      .populate('student_id', 'full_name avatar_url');
+    const studentIds = studentClasses
+      .filter(sc => sc.student_id)
+      .map(sc => sc.student_id._id);
+
+    if (studentIds.length === 0) {
+      return res.json({ 
+        class: { _id: clazz._id, class_name: clazz.class_name, academic_year: clazz.academic_year },
+        parents: [] 
+      });
+    }
+
+    // Lấy tất cả phụ huynh của các học sinh trong lớp
+    const parentStudents = await ParentStudent.find({
+      student_id: { $in: studentIds }
+    }).populate({
+      path: 'parent_id',
+      populate: {
+        path: 'user_id',
+        select: 'full_name avatar_url'
+      }
+    });
+
+    // Tạo map để loại bỏ duplicate (một phụ huynh có thể có nhiều con trong cùng lớp)
+    const parentMap = new Map();
+    parentStudents.forEach(ps => {
+      if (ps.parent_id && ps.parent_id.user_id) {
+        const parentUserId = ps.parent_id.user_id._id.toString();
+        if (!parentMap.has(parentUserId)) {
+          parentMap.set(parentUserId, {
+            parent_id: ps.parent_id._id,
+            user_id: ps.parent_id.user_id._id,
+            full_name: ps.parent_id.user_id.full_name,
+            avatar_url: ps.parent_id.user_id.avatar_url
+          });
+        }
+      }
+    });
+
+    const parents = Array.from(parentMap.values());
+
+    res.json({
+      class: {
+        _id: clazz._id,
+        class_name: clazz.class_name,
+        academic_year: clazz.academic_year
+      },
+      parents: parents
+    });
+  } catch (error) {
+    console.error('Error getParentsByTeacherClass:', error);
+    res.status(500).json({ error: 'Lỗi khi lấy danh sách phụ huynh', details: error.message });
   }
 };
