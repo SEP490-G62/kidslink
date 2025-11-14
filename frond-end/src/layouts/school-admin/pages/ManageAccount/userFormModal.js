@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, Select, TextField, InputLabel, FormControl, Avatar, Stack, Typography } from "@mui/material";
 import ArgonButton from "components/ArgonButton";
 import ArgonTypography from "components/ArgonTypography";
 import api from "services/api";
+import { passwordHint, passwordRegex, validatePassword } from "utils/passwordPolicy";
 
 const ROLES = [
   "school_admin",
@@ -13,13 +14,14 @@ const ROLES = [
   "nutrition_staff",
 ];
 
-const UserFormModal = ({ open, onClose, onSuccess, user }) => {
+const UserFormModal = ({ open, onClose, onSuccess, user, allowedRoles, defaultRole }) => {
   const isEdit = Boolean(user && user._id);
+  const resolvedDefaultRole = defaultRole || (allowedRoles && allowedRoles.length > 0 ? allowedRoles[0] : "parent");
   const [form, setForm] = useState({
     full_name: "",
     username: "",
     password: "",
-    role: "parent",
+    role: resolvedDefaultRole,
     email: "",
     phone_number: "",
     avatar_url: "",
@@ -54,9 +56,26 @@ const UserFormModal = ({ open, onClose, onSuccess, user }) => {
         status: user.status ?? 1,
       });
     } else {
-      setForm({ full_name: "", username: "", password: "", role: "parent", email: "", phone_number: "", avatar_url: "", status: 1 });
+      setForm({
+        full_name: "",
+        username: "",
+        password: "",
+        role: resolvedDefaultRole,
+        email: "",
+        phone_number: "",
+        avatar_url: "",
+        status: 1,
+      });
     }
-  }, [user, isEdit]);
+  }, [user, isEdit, resolvedDefaultRole]);
+
+  const roleOptions = useMemo(() => {
+    const base = (allowedRoles && allowedRoles.length > 0 ? allowedRoles : ROLES).slice();
+    if (isEdit && user?.role && !base.includes(user.role)) {
+      base.push(user.role);
+    }
+    return base;
+  }, [allowedRoles, isEdit, user]);
 
   const handleChange = (field) => (e) => {
     const value = e.target.value;
@@ -98,18 +117,52 @@ const UserFormModal = ({ open, onClose, onSuccess, user }) => {
       e.password = "Vui lòng nhập mật khẩu";
     }
     if (form.password) {
-      const pwRe = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/;
-      if (!pwRe.test(form.password)) {
-        e.password = "Mật khẩu ≥8 ký tự, gồm hoa, thường, số, ký tự đặc biệt";
+      const passwordValidation = validatePassword(form.password);
+      if (!passwordValidation.valid) {
+        e.password = passwordValidation.message;
       }
     }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
+  const checkAvailability = async () => {
+    const payload = {
+      username: form.username.trim() || undefined,
+      email: form.email.trim() || undefined,
+    };
+    if (isEdit && user?._id) {
+      payload.exclude_id = user._id;
+    }
+    if (!payload.username && !payload.email) return true;
+    try {
+      const res = await api.post("/users/check-availability", payload, true);
+      const nextErrors = {};
+      if (res?.usernameTaken) {
+        nextErrors.username = "Username đã tồn tại";
+      }
+      if (res?.emailTaken) {
+        nextErrors.email = "Email đã tồn tại";
+      }
+      if (Object.keys(nextErrors).length) {
+        setErrors((prev) => ({ ...prev, ...nextErrors }));
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("Check availability failed", err);
+      return true;
+    }
+  };
+
   const handleSubmit = async () => {
     if (!validate()) return;
     setSaving(true);
+    const available = await checkAvailability();
+    if (!available) {
+      setSaving(false);
+      return;
+    }
     try {
       if (isEdit) {
         const payload = { ...form };
@@ -192,7 +245,7 @@ const UserFormModal = ({ open, onClose, onSuccess, user }) => {
                     },
                   }}
                 >
-                  {ROLES.map((r) => (
+                  {roleOptions.map((r) => (
                     <MenuItem key={r} value={r}>{r}</MenuItem>
                   ))}
                 </TextField>
@@ -257,11 +310,15 @@ UserFormModal.propTypes = {
     avatar_url: PropTypes.string,
     status: PropTypes.number,
   }),
+  allowedRoles: PropTypes.arrayOf(PropTypes.string),
+  defaultRole: PropTypes.string,
 };
 
 UserFormModal.defaultProps = {
   onSuccess: undefined,
   user: null,
+  allowedRoles: ROLES,
+  defaultRole: "parent",
 };
 
 export default UserFormModal;

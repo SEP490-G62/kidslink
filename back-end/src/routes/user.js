@@ -7,7 +7,8 @@ const {
   updateUser,
   deleteUser,
   hardDeleteUser,
-  restoreUser
+  restoreUser,
+  checkAvailability,
 } = require('../controllers/userController');
 const { authenticate, authorize } = require('../middleware/auth');
 
@@ -21,6 +22,9 @@ router.get('/', getAllUsers);
 
 // GET /api/users/:id - Lấy thông tin user theo ID
 router.get('/:id', getUserById);
+
+// POST /api/users/check-availability - kiểm tra trùng username/email
+router.post('/check-availability', checkAvailability);
 
 // POST /api/users - Tạo user mới
 router.post('/', createUser);

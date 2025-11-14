@@ -22,7 +22,8 @@ const userSchema = new mongoose.Schema({
   },
   avatar_url: {
     type: String,
-    required: true
+    trim: true,
+    default: ''
   },
   status: {
     type: Number,

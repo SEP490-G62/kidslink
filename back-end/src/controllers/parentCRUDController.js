@@ -3,6 +3,7 @@ const Parent = require('../models/Parent');
 const ParentStudent = require('../models/ParentStudent');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const { validatePassword } = require('../utils/passwordPolicy');
 
 function sanitizeUsername(base) {
   return (base || '')
@@ -10,32 +11,6 @@ function sanitizeUsername(base) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9._-]/g, '');
-}
-
-async function generateUniqueUsername({ email, phone }) {
-  // Prefer phone digits, else email local part, else timestamp
-  const phoneDigits = (phone || '').replace(/\D/g, '');
-  let base = '';
-  if (phoneDigits) {
-    base = `ph${phoneDigits.slice(-9)}`; // last digits
-  } else if (email) {
-    base = email.split('@')[0];
-  } else {
-    base = `parent${Date.now()}`;
-  }
-  base = sanitizeUsername(base) || `parent${Date.now()}`;
-
-  // Ensure uniqueness
-  let username = base;
-  let suffix = 0;
-  // Loop with a cap to avoid infinite
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const exists = await User.findOne({ username }).select('_id').lean();
-    if (!exists) return username;
-    suffix += 1;
-    username = `${base}${suffix}`;
-  }
 }
 
 // --- Tạo mới phụ huynh ---
@@ -49,10 +24,22 @@ exports.createParent = async (req, res) => {
       relationship,
       student_id,
       createAccount,
+      password,
+      username,
+      avatar_url,
+      status,
     } = req.body;
 
     if (!full_name || !phone || !student_id || !relationship) {
       return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+    }
+    if (!mongoose.isValidObjectId(student_id)) {
+      return res.status(400).json({ message: 'student_id không hợp lệ' });
+    }
+
+    const sanitizedUsername = username ? sanitizeUsername(username) : null;
+    if (sanitizedUsername && sanitizedUsername.length < 4) {
+      return res.status(400).json({ message: 'Username phải từ 4 ký tự và không chứa ký tự đặc biệt ngoài ._-'} );
     }
 
     // Kiểm tra xem parent đã tồn tại chưa (qua phone hoặc email)
@@ -64,10 +51,39 @@ exports.createParent = async (req, res) => {
       existingUser = await User.findOne({ phone_number: phone, role: 'parent' });
     }
 
+    if (!existingUser && createAccount && (!password || !password.trim())) {
+      return res.status(400).json({ message: 'Mật khẩu là bắt buộc để tạo tài khoản phụ huynh' });
+    }
+
+    if (password && password.trim()) {
+      const passwordValidation = validatePassword(password.trim());
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ message: passwordValidation.message });
+      }
+    }
+
     let parentId;
 
     if (existingUser) {
-      // Parent đã tồn tại, chỉ cần tạo relationship
+      // cập nhật thông tin và dùng lại account
+      const updateExisting = {};
+      if (full_name) updateExisting.full_name = full_name;
+      if (phone) updateExisting.phone_number = phone;
+      if (email !== undefined) updateExisting.email = email;
+      if (address !== undefined) updateExisting.address = address;
+      if (avatar_url !== undefined) updateExisting.avatar_url = avatar_url;
+      if (status !== undefined) {
+        updateExisting.status = status;
+      } else if (createAccount) {
+        updateExisting.status = 1;
+      }
+      if (password && password.trim()) {
+        updateExisting.password_hash = await bcrypt.hash(password.trim(), 10);
+      }
+      if (Object.keys(updateExisting).length > 0) {
+        await User.findByIdAndUpdate(existingUser._id, updateExisting);
+      }
+
       const existingParent = await Parent.findOne({ user_id: existingUser._id });
       if (!existingParent) {
         const newParent = await Parent.create({ user_id: existingUser._id });
@@ -77,19 +93,26 @@ exports.createParent = async (req, res) => {
       }
     } else {
       // Tạo user mới cho parent
-      const username = await generateUniqueUsername({ email, phone });
-      const defaultPasswordHash = await bcrypt.hash('123456', 10);
-      const userStatus = createAccount ? 1 : 0; // nếu không tạo account thì để inactive
+      if (!sanitizedUsername) {
+        return res.status(400).json({ message: 'Vui lòng nhập username hợp lệ cho phụ huynh mới' });
+      }
+      const usernameExists = await User.findOne({ username: sanitizedUsername }).select('_id').lean();
+      if (usernameExists) {
+        return res.status(400).json({ message: 'Username đã tồn tại, vui lòng chọn tên khác' });
+      }
+      const plainPassword = password && password.trim() ? password.trim() : 'Abc@1234';
+      const passwordHash = await bcrypt.hash(plainPassword, 10);
+      const userStatus = status !== undefined ? status : (createAccount ? 1 : 0);
       const newUser = await User.create({
         full_name,
-        username,
-        password_hash: defaultPasswordHash,
+        username: sanitizedUsername,
+        password_hash: passwordHash,
         role: 'parent',
-        avatar_url: '',
+        avatar_url: avatar_url || '',
         status: userStatus,
         email: email || null,
         phone_number: phone,
-        address
+        address: address || null
       });
 
       // Tạo parent
@@ -121,6 +144,17 @@ exports.createParent = async (req, res) => {
     });
   } catch (err) {
     console.error('createParent error:', err);
+    console.error('Error stack:', err.stack);
+    if (err?.code === 11000) {
+      return res.status(409).json({ message: 'Phụ huynh này đã được gán cho học sinh', error: err.message });
+    }
+    if (err?.name === 'CastError') {
+      return res.status(400).json({ message: 'Dữ liệu không hợp lệ', error: err.message });
+    }
+    if (err?.name === 'ValidationError') {
+      const validationErrors = Object.values(err.errors || {}).map(e => e.message).join(', ');
+      return res.status(400).json({ message: `Lỗi validation: ${validationErrors}`, error: err.message });
+    }
     return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
   }
 };

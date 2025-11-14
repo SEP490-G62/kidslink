@@ -21,7 +21,7 @@ import {
 import Switch from "@mui/material/Switch";
 import { styled } from "@mui/material/styles";
 import Chip from "@mui/material/Chip";
-import { Edit as EditIcon, Delete as DeleteIcon, Restore as RestoreIcon, Search as SearchIcon, Add as AddIcon, KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
+import { Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon, KeyboardArrowDown, KeyboardArrowUp, GroupAdd as GroupAddIcon, FamilyRestroom as FamilyRestroomIcon } from "@mui/icons-material";
 import InputAdornment from "@mui/material/InputAdornment";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
@@ -31,6 +31,7 @@ import ArgonButton from "components/ArgonButton";
 import { useAuth } from "context/AuthContext";
 import api from "services/api";
 import UserFormModal from "./userFormModal";
+import ParentAccountModal from "./ParentAccountModal";
 
 const ROLES = [
   "school_admin",
@@ -51,7 +52,8 @@ function ManageAccountPage() {
   const [qRole, setQRole] = useState("");
   const [qStatus, setQStatus] = useState("");
   const [qSearch, setQSearch] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [staffModalOpen, setStaffModalOpen] = useState(false);
+  const [parentModalOpen, setParentModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [roleOpen, setRoleOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -179,14 +181,20 @@ function ManageAccountPage() {
     }
   };
 
-  const openCreate = () => {
+  const staffRoles = useMemo(() => ROLES.filter((role) => role !== "parent"), []);
+
+  const openCreateStaff = () => {
     setEditingUser(null);
-    setModalOpen(true);
+    setStaffModalOpen(true);
   };
 
   const openEdit = (user) => {
     setEditingUser(user);
-    setModalOpen(true);
+    setStaffModalOpen(true);
+  };
+
+  const openCreateParent = () => {
+    setParentModalOpen(true);
   };
 
   const handleDelete = async (userId) => {
@@ -222,9 +230,28 @@ function ManageAccountPage() {
     <DashboardLayout>
       <DashboardNavbar />
       <ArgonBox py={3} position="relative" zIndex={3}>
-        <ArgonBox mb={3} display="flex" justifyContent="space-between" alignItems="center">
+        <ArgonBox mb={3} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
           <ArgonTypography variant="h5" fontWeight="bold" color="white">Quản lý tài khoản</ArgonTypography>
-          <ArgonButton color="info" size="medium" onClick={openCreate} variant="gradient">+ Tạo tài khoản</ArgonButton>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+            <ArgonButton
+              color="info"
+              size="medium"
+              onClick={openCreateStaff}
+              variant="gradient"
+              startIcon={<GroupAddIcon fontSize="small" />}
+            >
+              Tạo tài khoản nhân sự
+            </ArgonButton>
+            <ArgonButton
+              color="warning"
+              size="medium"
+              onClick={openCreateParent}
+              variant="gradient"
+              startIcon={<FamilyRestroomIcon fontSize="small" />}
+            >
+              Tạo tài khoản phụ huynh
+            </ArgonButton>
+          </Stack>
         </ArgonBox>
 
         <ArgonBox mb={2} display="flex" gap={2} flexWrap="wrap" alignItems="center">
@@ -462,10 +489,17 @@ function ManageAccountPage() {
       </ArgonBox>
 
       <UserFormModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSuccess={() => { setModalOpen(false); fetchUsers(); }}
+        open={staffModalOpen}
+        onClose={() => { setStaffModalOpen(false); setEditingUser(null); }}
+        onSuccess={() => { setStaffModalOpen(false); setEditingUser(null); fetchUsers(); }}
         user={editingUser}
+        allowedRoles={editingUser ? ROLES : staffRoles}
+        defaultRole={editingUser ? editingUser.role : staffRoles[0]}
+      />
+      <ParentAccountModal
+        open={parentModalOpen}
+        onClose={() => setParentModalOpen(false)}
+        onSuccess={() => { setParentModalOpen(false); fetchUsers(); }}
       />
       </ArgonBox>
     </DashboardLayout>

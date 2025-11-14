@@ -1,5 +1,7 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const { validatePassword } = require('../utils/passwordPolicy');
 
 // GET /api/users - Lấy danh sách tất cả users
 const getAllUsers = async (req, res) => {
@@ -74,6 +76,19 @@ const getUserById = async (req, res) => {
 const createUser = async (req, res) => {
   try {
     const { full_name, username, password, role, email, phone_number, avatar_url } = req.body;
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu là bắt buộc',
+      });
+    }
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: passwordValidation.message,
+      });
+    }
     
     // Kiểm tra username đã tồn tại chưa
     if (username) {
@@ -183,6 +198,13 @@ const updateUser = async (req, res) => {
     
     // Hash password mới nếu có
     if (password) {
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: passwordValidation.message,
+        });
+      }
       const saltRounds = 12;
       updateData.password_hash = await bcrypt.hash(password, saltRounds);
     }
@@ -296,6 +318,44 @@ const restoreUser = async (req, res) => {
   }
 };
 
+const checkAvailability = async (req, res) => {
+  try {
+    const rawUsername = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
+    const rawEmail = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+    const { exclude_id: excludeId } = req.body || {};
+    const excludeCondition =
+      excludeId && mongoose.isValidObjectId(excludeId) ? { _id: { $ne: excludeId } } : {};
+
+    const [usernameTaken, emailTaken] = await Promise.all([
+      rawUsername
+        ? User.exists({
+            username: rawUsername,
+            ...(excludeCondition || {}),
+          })
+        : false,
+      rawEmail
+        ? User.exists({
+            email: rawEmail,
+            ...(excludeCondition || {}),
+          })
+        : false,
+    ]);
+
+    return res.json({
+      success: true,
+      usernameTaken: Boolean(usernameTaken),
+      emailTaken: Boolean(emailTaken),
+    });
+  } catch (error) {
+    console.error('Error checking availability:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Không thể kiểm tra username/email',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -303,5 +363,6 @@ module.exports = {
   updateUser,
   deleteUser,
   hardDeleteUser,
-  restoreUser
+  restoreUser,
+  checkAvailability,
 };

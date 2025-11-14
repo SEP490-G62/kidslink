@@ -107,39 +107,67 @@ exports.getStudentDetail = async (req, res) => {
 exports.getAllStudents = async (req, res) => {
   try {
     const students = await Student.find().lean();
+    if (students.length === 0) {
+      return res.json({ students: [] });
+    }
 
-    // Populate parents and class for each student
-    const studentsWithDetails = await Promise.all(
-      students.map(async (student) => {
-        const parentLinks = await ParentStudent.find({ student_id: student._id }).lean();
-        const parentIds = parentLinks.map((p) => p.parent_id);
-        const parents = await Parent.find({ _id: { $in: parentIds } })
+    const studentIds = students.map((s) => s._id);
+
+    // --- Parents ---
+    const parentLinks = await ParentStudent.find({ student_id: { $in: studentIds } }).lean();
+    const parentIdSet = new Set(parentLinks.map((link) => String(link.parent_id)));
+    const parentDocs = parentIdSet.size > 0
+      ? await Parent.find({ _id: { $in: Array.from(parentIdSet) } })
           .populate('user_id', 'full_name email phone_number address')
-          .lean();
-        
-        const parentsWithRelationship = parents.map((parent) => {
-          const link = parentLinks.find((l) => String(l.parent_id) === String(parent._id));
-          return {
-            ...parent,
-            relationship: link?.relationship || null,
-          };
-        });
+          .lean()
+      : [];
+    const parentMap = new Map(parentDocs.map((parent) => [String(parent._id), parent]));
+    const parentsByStudent = new Map();
+    parentLinks.forEach((link) => {
+      const parent = parentMap.get(String(link.parent_id));
+      if (!parent) return;
+      const formatted = {
+        ...parent,
+        relationship: link.relationship || null,
+      };
+      const key = String(link.student_id);
+      if (!parentsByStudent.has(key)) {
+        parentsByStudent.set(key, []);
+      }
+      parentsByStudent.get(key).push(formatted);
+    });
 
-        // Get class info
-        const studentClass = await StudentClass.findOne({ student_id: student._id }).lean();
-        const classInfo = studentClass ? await ClassModel.findById(studentClass.class_id).lean() : null;
+    // --- Classes ---
+    const studentClasses = await StudentClass.find({ student_id: { $in: studentIds } }).lean();
+    const classIdSet = new Set(studentClasses.map((sc) => String(sc.class_id)));
+    const classDocsRaw = classIdSet.size > 0
+      ? await ClassModel.find({ _id: { $in: Array.from(classIdSet) } }).lean()
+      : [];
+    const classDocs = classDocsRaw.map((cls) => ({
+      ...cls,
+      name: cls.name || cls.class_name || cls.className || 'Không tên',
+      code: cls.code || cls.class_code || cls.classCode || null,
+    }));
+    const classMap = new Map(classDocs.map((cls) => [String(cls._id), cls]));
+    const classByStudent = new Map();
+    studentClasses.forEach((sc) => {
+      const cls = classMap.get(String(sc.class_id));
+      if (!cls) return;
+      const key = String(sc.student_id);
+      classByStudent.set(key, cls);
+    });
 
-        // Convert gender number to string for frontend
-        const genderString = student.gender === 1 ? 'female' : 'male';
-
-        return {
-          ...student,
-          gender: genderString,
-          parents: parentsWithRelationship,
-          class_id: classInfo,
-        };
-      })
-    );
+    const studentsWithDetails = students.map((student) => {
+      const key = String(student._id);
+      const classInfo = classByStudent.get(key) || null;
+      return {
+        ...student,
+        gender: student.gender === 1 ? 'female' : 'male',
+        parents: parentsByStudent.get(key) || [],
+        class_id: classInfo,
+        class: classInfo,
+      };
+    });
 
     return res.json({ students: studentsWithDetails });
   } catch (err) {

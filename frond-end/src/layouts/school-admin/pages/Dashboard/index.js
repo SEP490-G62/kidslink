@@ -15,6 +15,9 @@ import { useAuth } from "context/AuthContext";
 import api from "services/api";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
 
 function SchoolDashboard() {
   const { token } = useAuth();
@@ -103,6 +106,30 @@ function SchoolDashboard() {
     return Array.from(set).sort();
   }, [students]);
 
+  // Filter months for start selector: only show months <= monthEnd
+  const availableMonthsForStart = useMemo(() => {
+    if (!monthEnd) return availableMonths;
+    return availableMonths.filter(m => m <= monthEnd);
+  }, [availableMonths, monthEnd]);
+
+  // Filter months for end selector: only show months >= monthStart
+  const availableMonthsForEnd = useMemo(() => {
+    if (!monthStart) return availableMonths;
+    return availableMonths.filter(m => m >= monthStart);
+  }, [availableMonths, monthStart]);
+
+  // Filter years for start selector: only show years <= yearEnd
+  const availableYearsForStart = useMemo(() => {
+    if (!yearEnd) return availableYears;
+    return availableYears.filter(y => y <= yearEnd);
+  }, [availableYears, yearEnd]);
+
+  // Filter years for end selector: only show years >= yearStart
+  const availableYearsForEnd = useMemo(() => {
+    if (!yearStart) return availableYears;
+    return availableYears.filter(y => y >= yearStart);
+  }, [availableYears, yearStart]);
+
   useEffect(() => {
     if (!monthStart && availableMonths.length) setMonthStart(availableMonths[0]);
     if (!monthEnd && availableMonths.length) setMonthEnd(availableMonths[availableMonths.length - 1]);
@@ -112,6 +139,20 @@ function SchoolDashboard() {
     if (!yearStart && availableYears.length) setYearStart(availableYears[0]);
     if (!yearEnd && availableYears.length) setYearEnd(availableYears[availableYears.length - 1]);
   }, [availableYears, yearStart, yearEnd]);
+
+  // Auto-adjust monthEnd if monthStart is after it
+  useEffect(() => {
+    if (monthStart && monthEnd && monthStart > monthEnd) {
+      setMonthEnd(monthStart);
+    }
+  }, [monthStart, monthEnd]);
+
+  // Auto-adjust yearEnd if yearStart is after it
+  useEffect(() => {
+    if (yearStart && yearEnd && yearStart > yearEnd) {
+      setYearEnd(yearStart);
+    }
+  }, [yearStart, yearEnd]);
 
   const doughnutConfig = useMemo(() => ({
     labels: Object.keys(counts.roleBreakdown || {}),
@@ -255,52 +296,95 @@ function SchoolDashboard() {
 
             <Grid container spacing={3} mb={3} sx={{ mt: 0, position: 'relative', zIndex: 5 }}>
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, bgcolor: 'white', borderRadius: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', height: 420, display: 'flex', flexDirection: 'column' }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1} gap={1}>
-                    <ArgonTypography variant="h6">Tăng trưởng số lượng học sinh</ArgonTypography>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Select value={growthView} size="small" onChange={(e) => setGrowthView(e.target.value)} sx={{ minWidth: 120 }}>
-                        <MenuItem value="month">Theo tháng</MenuItem>
-                        <MenuItem value="year">Theo năm</MenuItem>
-                      </Select>
+                <Paper sx={{ p: 2, bgcolor: 'white', borderRadius: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', height: 450, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <Box mb={1.5} display="flex" alignItems="flex-start" justifyContent="space-between" gap={2} flexWrap="wrap">
+                    <ArgonTypography variant="h6" fontWeight="bold">
+                      Tăng trưởng số lượng học sinh
+                    </ArgonTypography>
+                    <Box display="flex" alignItems="flex-start" gap={2} flexWrap="wrap">
+                      <Box>
+                        <ArgonTypography variant="caption" fontWeight="bold" color="text" mb={0.5} display="block">
+                          Xem theo
+                        </ArgonTypography>
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                          <Select value={growthView} onChange={(e) => setGrowthView(e.target.value)}>
+                            <MenuItem value="month">Theo tháng</MenuItem>
+                            <MenuItem value="year">Theo năm</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Box>
                       {growthView === 'month' ? (
-                        <>
-                          <Select size="small" value={monthStart} onChange={(e) => setMonthStart(e.target.value)} sx={{ minWidth: 120 }}>
-                            {availableMonths.map((m) => (
-                              <MenuItem key={m} value={m}>{m}</MenuItem>
-                            ))}
-                          </Select>
-                          <Select size="small" value={monthEnd} onChange={(e) => setMonthEnd(e.target.value)} sx={{ minWidth: 120 }}>
-                            {availableMonths.map((m) => (
-                              <MenuItem key={m} value={m}>{m}</MenuItem>
-                            ))}
-                          </Select>
-                        </>
+                        <Box display="flex" alignItems="flex-start" gap={1}>
+                          <Box>
+                            <ArgonTypography variant="caption" fontWeight="bold" color="text" mb={0.5} display="block">
+                              Từ tháng
+                            </ArgonTypography>
+                            <FormControl size="small" sx={{ minWidth: 130 }}>
+                              <Select value={monthStart} onChange={(e) => setMonthStart(e.target.value)}>
+                                {availableMonthsForStart.map((m) => (
+                                  <MenuItem key={m} value={m}>{m}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </Box>
+                          <Box sx={{ mt: 3 }}>
+                            <ArrowForwardIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                          </Box>
+                          <Box>
+                            <ArgonTypography variant="caption" fontWeight="bold" color="text" mb={0.5} display="block">
+                              Đến tháng
+                            </ArgonTypography>
+                            <FormControl size="small" sx={{ minWidth: 130 }}>
+                              <Select value={monthEnd} onChange={(e) => setMonthEnd(e.target.value)}>
+                                {availableMonthsForEnd.map((m) => (
+                                  <MenuItem key={m} value={m}>{m}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </Box>
+                        </Box>
                       ) : (
-                        <>
-                          <Select size="small" value={yearStart} onChange={(e) => setYearStart(e.target.value)} sx={{ minWidth: 100 }}>
-                            {availableYears.map((y) => (
-                              <MenuItem key={y} value={y}>{y}</MenuItem>
-                            ))}
-                          </Select>
-                          <Select size="small" value={yearEnd} onChange={(e) => setYearEnd(e.target.value)} sx={{ minWidth: 100 }}>
-                            {availableYears.map((y) => (
-                              <MenuItem key={y} value={y}>{y}</MenuItem>
-                            ))}
-                          </Select>
-                        </>
+                        <Box display="flex" alignItems="flex-start" gap={1}>
+                          <Box>
+                            <ArgonTypography variant="caption" fontWeight="bold" color="text" mb={0.5} display="block">
+                              Từ năm
+                            </ArgonTypography>
+                            <FormControl size="small" sx={{ minWidth: 110 }}>
+                              <Select value={yearStart} onChange={(e) => setYearStart(e.target.value)}>
+                                {availableYearsForStart.map((y) => (
+                                  <MenuItem key={y} value={y}>{y}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </Box>
+                          <Box sx={{ mt: 3 }}>
+                            <ArrowForwardIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                          </Box>
+                          <Box>
+                            <ArgonTypography variant="caption" fontWeight="bold" color="text" mb={0.5} display="block">
+                              Đến năm
+                            </ArgonTypography>
+                            <FormControl size="small" sx={{ minWidth: 110 }}>
+                              <Select value={yearEnd} onChange={(e) => setYearEnd(e.target.value)}>
+                                {availableYearsForEnd.map((y) => (
+                                  <MenuItem key={y} value={y}>{y}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </Box>
+                        </Box>
                       )}
                     </Box>
                   </Box>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <DefaultLineChart icon={{}} title="" description="" height={300} chart={studentsGrowthLine} />
+                  <Box sx={{ flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
+                    <DefaultLineChart icon={{}} title="" description="" height={280} chart={studentsGrowthLine} />
                   </Box>
                 </Paper>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, bgcolor: 'white', borderRadius: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', height: 420, display: 'flex', flexDirection: 'column' }}>
-                  <ArgonTypography variant="h6" mb={1}>Phân bố độ tuổi / lớp</ArgonTypography>
-                  <Box sx={{ flexGrow: 1 }}>
+                <Paper sx={{ p: 2, bgcolor: 'white', borderRadius: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', height: 450, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <ArgonTypography variant="h6" mb={1}>Phân bố độ tuổi</ArgonTypography>
+                  <Box sx={{ flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
                     <DefaultDoughnutChart title="" height={280} chart={ageOrClassDistribution} />
                   </Box>
                   <Box display="flex" flexWrap="wrap" gap={0.75} mt={1} sx={{ maxWidth: '100%', justifyContent: 'center' }}>
