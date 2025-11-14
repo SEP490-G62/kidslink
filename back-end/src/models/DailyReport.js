@@ -7,7 +7,7 @@ const dailyReportSchema = new mongoose.Schema({
   },
   checkin_time: {
     type: String,
-    required: true
+    required: false
   },
   checkout_time: {
     type: String,

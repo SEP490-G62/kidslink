@@ -1,0 +1,247 @@
+[{
+  "_id": {
+    "$oid": "671000000000000000000301"
+  },
+  "full_name": "Nguyen Van A",
+  "username": "parent1",
+  "password_hash": "$2a$10$Ygfv/yNcVOgEnRHxD.4DHerxqH8S1Bx9R6WxaYyPNIG0gyNU8KsYS",
+  "role": "parent",
+  "avatar_url": "https://picsum.photos/seed/parent1/200",
+  "status": 1,
+  "email": "winfourt4@gmail.com",
+  "phone_number": "0900000001",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-04T05:47:34.552Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000302"
+  },
+  "full_name": "Tran Thi B",
+  "username": "parent2",
+  "password_hash": "$2a$10$/l.TtsULmdhbmX.vc.hR6unXwywf5LQN0nOLCHkT2gnNOOAqU0NAm",
+  "role": "parent",
+  "avatar_url": "https://picsum.photos/seed/parent2/200",
+  "status": 1,
+  "email": "thangndhe172360@fpt.edu.vn",
+  "phone_number": "0900000002",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-06T14:55:48.653Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000303"
+  },
+  "full_name": "Le Van C",
+  "username": "parent3",
+  "password_hash": "$2b$10$parent3hashxxxxxxxxxxxxxxx",
+  "role": "parent",
+  "avatar_url": "https://picsum.photos/seed/parent3/200",
+  "status": 1,
+  "email": "parent3@example.com",
+  "phone_number": "0900000003",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000304"
+  },
+  "full_name": "Pham Thi D",
+  "username": "parent4",
+  "password_hash": "$2b$10$parent4hashxxxxxxxxxxxxxxx",
+  "role": "parent",
+  "avatar_url": "https://picsum.photos/seed/parent4/200",
+  "status": 1,
+  "email": "parent4@example.com",
+  "phone_number": "0900000004",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000305"
+  },
+  "full_name": "Do Van E",
+  "username": "parent5",
+  "password_hash": "$2b$10$parent5hashxxxxxxxxxxxxxxx",
+  "role": "parent",
+  "avatar_url": "https://picsum.photos/seed/parent5/200",
+  "status": 1,
+  "email": "parent5@example.com",
+  "phone_number": "0900000005",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000311"
+  },
+  "full_name": "Nguyễn Đức Thắng",
+  "username": "thangnd11",
+  "password_hash": "$2a$10$znfk/7MPNBMJC.9dkJnqaO1YDi82xc.OcVjG9vKyELvWjPpgJ4dY2",
+  "role": "teacher",
+  "avatar_url": "https://res.cloudinary.com/dzfwlfyu8/image/upload/v1762426360/kidslink/avatars/kidslink/avatars/user_671000000000000000000311_1762426360138.jpg",
+  "status": 1,
+  "email": "thangnguyen11112002@gmail.com",
+  "phone_number": "0910000002",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-06T15:03:56.031Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000312"
+  },
+  "full_name": "Teacher Two",
+  "username": "teacher2",
+  "password_hash": "$2b$10$teacher2hashxxxxxxxxxxxxxx",
+  "role": "teacher",
+  "avatar_url": "https://picsum.photos/seed/teacher2/200",
+  "status": 1,
+  "email": "t2@school.com",
+  "phone_number": "0910000002",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000313"
+  },
+  "full_name": "Teacher Three",
+  "username": "teacher3",
+  "password_hash": "$2b$10$teacher3hashxxxxxxxxxxxx",
+  "role": "teacher",
+  "avatar_url": "https://picsum.photos/seed/teacher3/200",
+  "status": 1,
+  "email": "t3@school.com",
+  "phone_number": "0910000003",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000314"
+  },
+  "full_name": "Teacher Four",
+  "username": "teacher4",
+  "password_hash": "$2b$10$teacher4hashxxxxxxxxxxxxx",
+  "role": "teacher",
+  "avatar_url": "https://picsum.photos/seed/teacher4/200",
+  "status": 1,
+  "email": "t4@school.com",
+  "phone_number": "0910000004",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000315"
+  },
+  "full_name": "Teacher Five",
+  "username": "teacher5",
+  "password_hash": "$2b$10$teacher5hashxxxxxxxxxxxxx",
+  "role": "teacher",
+  "avatar_url": "https://picsum.photos/seed/teacher5/200",
+  "status": 1,
+  "email": "t5@school.com",
+  "phone_number": "0910000005",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000321"
+  },
+  "full_name": "Nguyen Nurse",
+  "username": "nurse1",
+  "password_hash": "$2b$10$nursehashxxxxxxxxxxxxxxxxx",
+  "role": "health_care_staff",
+  "avatar_url": "https://picsum.photos/seed/nurse/200",
+  "status": 1,
+  "email": "nurse@school.com",
+  "phone_number": "0920000001",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000322"
+  },
+  "full_name": "Tran Cook",
+  "username": "cook1",
+  "password_hash": "$2b$10$cookhashxxxxxxxxxxxxxxxxxx",
+  "role": "nutrition_staff",
+  "avatar_url": "https://picsum.photos/seed/cook/200",
+  "status": 1,
+  "email": "cook@school.com",
+  "phone_number": "0920000002",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000330"
+  },
+  "full_name": "School Admin",
+  "username": "schooladmin",
+  "password_hash": "$2b$10$schooladminhashxxxxxxxxxxxxxxxxxxxx",
+  "role": "school_admin",
+  "avatar_url": "https://picsum.photos/seed/schooladmin/200",
+  "status": 1,
+  "email": "admin@kidslink.vn",
+  "phone_number": "0909999999",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+}]

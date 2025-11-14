@@ -1,6 +1,7 @@
 /**
 =========================================================
 * KidsLink Parent Dashboard - Class Calendar
+* Redesigned for better UX in kindergarten management
 =========================================================
 */
 
@@ -10,20 +11,25 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
-import ListItemIcon from "@mui/material/ListItemIcon";
 import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
-import Divider from "@mui/material/Divider";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "context/AuthContext";
+import Footer from "examples/Footer";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -32,7 +38,6 @@ import ArgonTypography from "components/ArgonTypography";
 // Argon Dashboard 2 MUI example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/ParentNavBar";
-import Footer from "examples/Footer";
 import parentService from "services/parentService";
 
 function ClassCalendar() {
@@ -40,15 +45,61 @@ function ClassCalendar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [calendarData, setCalendarData] = useState(null);
-  const [filterMonth, setFilterMonth] = useState("");
+  const [timeSlotsApi, setTimeSlotsApi] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedWeek, setSelectedWeek] = useState(0);
 
-  const categories = [
-    { value: "Meeting", label: "Cuộc họp" },
-    { value: "Event", label: "Sự kiện" },
-    { value: "Health", label: "Y tế" },
-    { value: "Holiday", label: "Nghỉ lễ" },
-    { value: "Activity", label: "Hoạt động" }
-  ];
+  // Tính toán ngày bắt đầu tuần (Thứ 2)
+  const getMonday = (date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - diff);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  };
+
+  const getCurrentWeekMonday = () => getMonday(new Date());
+  
+  const getSelectedWeekMonday = () => {
+    const currentMonday = getCurrentWeekMonday();
+    const selectedMonday = new Date(currentMonday);
+    selectedMonday.setDate(currentMonday.getDate() + (selectedWeek * 7));
+    return selectedMonday;
+  };
+
+  // Helper: chuyển Date -> chuỗi YYYY-MM-DD theo múi giờ địa phương (tránh lệch UTC)
+  const toLocalISO = (dateInput) => {
+    const d = new Date(dateInput);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  // Tạo danh sách 7 ngày trong tuần (T2-CN)
+  const weekDays = useMemo(() => {
+    const monday = getSelectedWeekMonday();
+    const days = [];
+    const dayNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+    const dayShortNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      const isToday = day.toDateString() === new Date().toDateString();
+      days.push({
+        name: dayNames[i],
+        shortName: dayShortNames[i],
+        date: day,
+        dateStr: `${String(day.getDate()).padStart(2, '0')}/${String(day.getMonth() + 1).padStart(2, '0')}`,
+        isoDate: toLocalISO(day),
+        isToday,
+      });
+    }
+    return days;
+  }, [selectedWeek]);
 
   useEffect(() => {
     let mounted = true;
@@ -58,6 +109,9 @@ function ClassCalendar() {
         setError("");
         const data = await parentService.getLatestClassCalendar(selectedChild?._id);
         if (mounted) setCalendarData(data);
+        // Lấy danh sách khung giờ chuẩn
+        const slots = await parentService.getClassTimeSlots();
+        if (mounted) setTimeSlotsApi(slots);
       } catch (e) {
         if (mounted) setError(e.message || 'Không thể tải lịch lớp');
       } finally {
@@ -67,282 +121,657 @@ function ClassCalendar() {
     return () => { mounted = false; };
   }, [selectedChild]);
 
-  const groupedEvents = useMemo(() => {
-    if (!calendarData || !calendarData.calendars) return [];
+  // Tạo map slots theo ngày (gom nhiều calendar cùng ngày, mỗi calendar 1 slot)
+  const slotsByDay = useMemo(() => {
+    if (!calendarData || !calendarData.calendars) return new Map();
+    
     const map = new Map();
-    for (const c of calendarData.calendars) {
-      const dateObj = new Date(c.date);
-      const yyyy = dateObj.getFullYear();
-      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const dd = String(dateObj.getDate()).padStart(2, '0');
-      const isoMonth = `${yyyy}-${mm}`;
-      if (filterMonth && isoMonth !== filterMonth) continue;
-      const key = `${yyyy}-${mm}-${dd}`;
-      const label = `${dd}/${mm}/${yyyy}`;
-      if (!map.has(key)) map.set(key, { key, label, items: [] });
-      for (const s of (c.slots || [])) {
-        map.get(key).items.push({
-          id: `${c.id}-${s.id}`,
-          slotName: s.slotName,
-          activityName: s.activity?.name || 'Hoạt động',
-          activityDescription: s.activity?.description || '',
-          requireOutdoor: s.activity?.require_outdoor === 1,
-          startTime: s.startTime,
-          endTime: s.endTime,
-          teacherName: s.teacher?.fullName || '',
-        });
-      }
-    }
-    // sort each day's items by time asc
-    const groups = Array.from(map.values()).map(g => ({
-      ...g,
-      items: g.items.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
-    }));
-    // sort days by date desc (newest first)
-    groups.sort((a, b) => new Date(b.key) - new Date(a.key));
-    return groups;
-  }, [calendarData, filterMonth]);
+    
+    weekDays.forEach(day => {
+      const calendarsOfDay = calendarData.calendars.filter(c => {
+        const calDate = new Date(c.date);
+        const calDateStr = toLocalISO(calDate);
+        return calDateStr === day.isoDate;
+      });
+      
+      const slots = calendarsOfDay.flatMap(c => Array.isArray(c.slots) ? c.slots : []);
 
-  const getTypeColor = (type) => {
-    switch (type) {
-      case "Meeting":
-        return "primary";
-      case "Event":
-        return "success";
-      case "Health":
-        return "info";
-      case "Holiday":
-        return "warning";
-      case "Activity":
-        return "secondary";
-      default:
-        return "default";
+      if (slots.length > 0) {
+        const sortedSlots = [...slots].sort((a, b) => {
+          const timeA = a.startTime || '00:00';
+          const timeB = b.startTime || '00:00';
+          return timeA.localeCompare(timeB);
+        });
+        map.set(day.isoDate, sortedSlots);
+      }
+    });
+    
+    return map;
+  }, [calendarData, weekDays]);
+
+  // Danh sách khung giờ duy nhất (start-end) từ tất cả ngày trong tuần, sắp xếp tăng dần
+  const timeSlots = useMemo(() => {
+    // Nếu API có trả danh sách slot -> dùng để đảm bảo các hàng cố định
+    if (Array.isArray(timeSlotsApi) && timeSlotsApi.length > 0) {
+      const list = timeSlotsApi.map(s => ({
+        label: `${s.startTime || '00:00'} - ${s.endTime || '00:00'}`,
+        name: s.slotName || ''
+      }));
+      // Unique theo label, giữ tên đầu tiên
+      const map = new Map();
+      list.forEach(it => { if (!map.has(it.label)) map.set(it.label, it.name); });
+      return Array.from(map.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([label, name]) => ({ label, name }));
+    }
+    // Fallback: tự gom từ data lịch và lấy tên slot phổ biến nhất theo label
+    const labelToNames = new Map(); // label -> array names
+    weekDays.forEach(day => {
+      const slots = slotsByDay.get(day.isoDate) || [];
+      slots.forEach(s => {
+        const start = s.startTime || '00:00';
+        const end = s.endTime || '00:00';
+        const label = `${start} - ${end}`;
+        const name = s.slotName || '';
+        if (!labelToNames.has(label)) labelToNames.set(label, []);
+        if (name) labelToNames.get(label).push(name);
+      });
+    });
+    const labels = Array.from(labelToNames.keys()).sort((a, b) => a.localeCompare(b));
+    return labels.map(label => {
+      const names = labelToNames.get(label) || [];
+      // chọn tên xuất hiện nhiều nhất
+      const freq = new Map();
+      names.forEach(n => freq.set(n, (freq.get(n) || 0) + 1));
+      let best = '';
+      let bestCount = 0;
+      freq.forEach((count, n) => { if (count > bestCount) { best = n; bestCount = count; } });
+      return { label, name: best };
+    });
+  }, [timeSlotsApi, slotsByDay, weekDays]);
+
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const yearsList = [];
+    for (let i = currentYear - 2; i <= currentYear + 2; i++) {
+      yearsList.push(i);
+    }
+    return yearsList;
+  }, []);
+
+  const formatWeekRange = () => {
+    const monday = getSelectedWeekMonday();
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const monStr = `${String(monday.getDate()).padStart(2, '0')}/${String(monday.getMonth() + 1).padStart(2, '0')}`;
+    const sunStr = `${String(sunday.getDate()).padStart(2, '0')}/${String(sunday.getMonth() + 1).padStart(2, '0')}`;
+    return `${monStr} - ${sunStr}`;
+  };
+
+  // Tính toán tuần đầu tiên của một năm
+  const getFirstWeekOfYear = (year) => {
+    const janFirst = new Date(year, 0, 1); // 1/1 của năm
+    const firstMonday = getMonday(janFirst);
+    const currentMonday = getCurrentWeekMonday();
+    // Tính số tuần từ tuần hiện tại đến tuần đầu của năm
+    const diffMs = firstMonday.getTime() - currentMonday.getTime();
+    const diffWeeks = Math.round(diffMs / (1000 * 60 * 60 * 24 * 7));
+    return diffWeeks;
+  };
+
+  const handleYearChange = (newYear) => {
+    setSelectedYear(newYear);
+    const currentYear = new Date().getFullYear();
+    
+    if (newYear === currentYear) {
+      // Năm hiện tại → chuyển về tuần hiện tại
+      setSelectedWeek(0);
+    } else {
+      // Năm khác → chuyển về tuần đầu của năm đó
+      const firstWeek = getFirstWeekOfYear(newYear);
+      setSelectedWeek(firstWeek);
     }
   };
 
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case "Meeting":
-        return "ni ni-calendar-grid-58";
-      case "Event":
-        return "ni ni-app";
-      case "Health":
-        return "ni ni-ambulance";
-      case "Holiday":
-        return "ni ni-calendar-grid-58";
-      case "Activity":
-        return "ni ni-world";
-      default:
-        return "ni ni-calendar-grid-58";
+  const handleWeekChange = (direction) => {
+    if (direction === 'prev') {
+      setSelectedWeek(selectedWeek - 1);
+    } else {
+      setSelectedWeek(selectedWeek + 1);
     }
+  };
+
+  const getDayActivities = (day) => {
+    const slots = slotsByDay.get(day.isoDate) || [];
+    
+    if (slots.length === 0) {
+      return (
+        <ArgonBox 
+          display="flex" 
+          flexDirection="column"
+          justifyContent="center" 
+          alignItems="center"
+          sx={{ 
+            py: 4,
+            minHeight: 150
+          }}
+        >
+          <Typography 
+            variant="body2" 
+            color="text.secondary"
+            sx={{ 
+              fontSize: '0.875rem'
+            }}
+          >
+            Không có hoạt động
+          </Typography>
+        </ArgonBox>
+      );
+    }
+    
+    return (
+      <ArgonBox sx={{ p: 1.5 }}>
+        {slots.map((slot, idx) => {
+          const activityName = slot.activity?.name || slot.slotName || 'Hoạt động';
+          const timeRange = slot.startTime && slot.endTime ? `${slot.startTime}-${slot.endTime}` : '';
+          
+          return (
+            <Card
+              key={`${slot.id}-${idx}`}
+              sx={{
+                mb: idx < slots.length - 1 ? 2 : 0,
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                backgroundColor: '#fff'
+              }}
+            >
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                <ArgonBox sx={{ flex: 1, minWidth: 0 }}>
+                    <ArgonTypography 
+                      variant="body2" 
+                      fontWeight="bold" 
+                      sx={{ 
+                        mb: 0.5,
+                        color: '#1976d2',
+                        fontSize: '0.95rem',
+                        lineHeight: 1.4
+                      }}
+                    >
+                      {activityName}
+                    </ArgonTypography>
+                    {timeRange && (
+                      <Chip
+                        label={timeRange}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.7rem',
+                          backgroundColor: '#4caf50',
+                          color: '#fff',
+                          fontWeight: 600,
+                          mb: 0.5
+                        }}
+                      />
+                    )}
+                    <ArgonBox display="flex" alignItems="center" mt={0.5}>
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          fontSize: '0.75rem',
+                          color: '#666'
+                        }}
+                      >
+                        Giáo viên: {slot.teacher?.fullName || calendarData?.class?.teacher?.fullName || 'Chưa xác định'}
+                      </Typography>
+                    </ArgonBox>
+                    {slot.activity?.require_outdoor === 1 && (
+                      <Chip
+                        label="Ngoài trời"
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: '0.65rem',
+                          backgroundColor: '#81c784',
+                          color: '#fff',
+                          mt: 0.5
+                        }}
+                      />
+                    )}
+                </ArgonBox>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </ArgonBox>
+    );
   };
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
       <ArgonBox py={3}>
-        {/* Header */}
-        <ArgonBox mb={3}>
-          <ArgonTypography variant="h4" fontWeight="bold" color="dark">
-            Lịch lớp học
-          </ArgonTypography>
-          <ArgonTypography variant="body2" color="text" fontWeight="regular">
-            Xem lịch học và sự kiện của lớp
-          </ArgonTypography>
+        {/* Header với gradient background */}
+        <ArgonBox 
+          mb={4}
+          sx={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: 3,
+            p: 3,
+            color: '#fff',
+            boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)'
+          }}
+        >
+          <ArgonBox display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+            <ArgonBox>
+              <ArgonTypography variant="h4" fontWeight="bold" sx={{ color: '#fff', mb: 0.5 }}>
+                Lịch Học Hàng Tuần
+              </ArgonTypography>
+              <ArgonTypography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                {calendarData?.class?.name ? (
+                  <>
+                    <strong>{calendarData.class.name}</strong> • {calendarData.class.academicYear}
+                  </>
+                ) : (
+                  'Xem lịch học và hoạt động của bé'
+                )}
+              </ArgonTypography>
+            </ArgonBox>
+          </ArgonBox>
         </ArgonBox>
 
-        {/* Filter */}
-        <ArgonBox mb={3}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                type="month"
-                label="Chọn tháng"
-                InputLabelProps={{ shrink: true }}
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Loại sự kiện</InputLabel>
-                <Select label="Loại sự kiện">
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="Meeting">Cuộc họp</MenuItem>
-                  <MenuItem value="Event">Sự kiện</MenuItem>
-                  <MenuItem value="Health">Y tế</MenuItem>
-                  <MenuItem value="Holiday">Nghỉ lễ</MenuItem>
-                  <MenuItem value="Activity">Hoạt động</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Trạng thái</InputLabel>
-                <Select label="Trạng thái">
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="upcoming">Sắp diễn ra</MenuItem>
-                  <MenuItem value="scheduled">Đã lên lịch</MenuItem>
-                  <MenuItem value="completed">Đã hoàn thành</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Button variant="contained" color="primary" fullWidth>
-                Lọc
-              </Button>
-            </Grid>
-          </Grid>
-        </ArgonBox>
+        {loading && (
+          <ArgonBox display="flex" justifyContent="center" py={5}>
+            <CircularProgress size={40} />
+          </ArgonBox>
+        )}
+        
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 3,
+              borderRadius: 2
+            }}
+          >
+            {error}
+          </Alert>
+        )}
 
-        {/* Calendar View */}
-        <Grid container spacing={3}>
-          {/* Events List */}
-          <Grid item xs={12} lg={8}>
-            <Card>
-              <CardContent>
-                <ArgonTypography variant="h6" fontWeight="bold" color="dark" mb={3}>
-                  Lịch học {calendarData?.class?.name ? `- ${calendarData.class.name} (${calendarData.class.academicYear})` : ''}
-                </ArgonTypography>
-
-                {loading && (
-                  <ArgonBox display="flex" justifyContent="center" py={3}>
-                    <CircularProgress size={24} />
-                  </ArgonBox>
-                )}
-                {error && (
-                  <Alert severity="error">{error}</Alert>
-                )}
-                {!loading && !error && (
-                  <List>
-                    {groupedEvents.length === 0 && (
-                      <ListItem sx={{ px: 0 }}>
-                        <ListItemText primary={<ArgonTypography variant="body2" color="text">Không có lịch trong tháng đã chọn</ArgonTypography>} />
-                      </ListItem>
-                    )}
-                    {groupedEvents.map((group) => (
-                      <ArgonBox key={group.key} mb={2}>
-                        <ArgonBox display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                          <ArgonTypography variant="h6" fontWeight="bold" color="dark">
-                            📅 {group.label}
-                          </ArgonTypography>
-                          <Chip label={`${group.items.length} hoạt động`} color="info" size="small" />
-                        </ArgonBox>
-                        {group.items.map((item) => (
-                          <ListItem key={item.id} sx={{ px: 0, mb: 1.25 }}>
-                            <ListItemIcon>
-                              <i className="ni ni-world" style={{ color: 'var(--secondary-main)' }} />
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={
-                                <ArgonBox display="flex" alignItems="center" justifyContent="space-between">
-                                  <ArgonTypography variant="subtitle1" fontWeight="bold" color="dark">
-                                    {item.activityName}{item.slotName ? ` • ${item.slotName}` : ''}
-                                  </ArgonTypography>
-                                  <Chip label={`${item.startTime} - ${item.endTime}`} color="secondary" size="small" />
-                                </ArgonBox>
-                              }
-                              secondary={
-                                <ArgonBox>
-                                  <ArgonBox display="flex" gap={2} mb={0.5}>
-                                    {calendarData.class?.name && (
-                                      <ArgonTypography variant="caption" color="text">📍 {calendarData.class.name}</ArgonTypography>
-                                    )}
-                                    {item.teacherName && (
-                                      <ArgonTypography variant="caption" color="text">👩‍🏫 {item.teacherName}</ArgonTypography>
-                                    )}
-                                    {item.requireOutdoor && (
-                                      <ArgonTypography variant="caption" color="text">🏞️ Ngoài trời</ArgonTypography>
-                                    )}
-                                  </ArgonBox>
-                                  {item.activityDescription && (
-                                    <ArgonTypography variant="body2" color="text">
-                                      {item.activityDescription}
-                                    </ArgonTypography>
-                                  )}
-                                </ArgonBox>
-                              }
-                            />
-                          </ListItem>
-                        ))}
-                      </ArgonBox>
-                    ))}
-                  </List>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Calendar Widget */}
-          <Grid item xs={12} lg={4}>
-            <Card>
-              <CardContent>
-                <ArgonTypography variant="h6" fontWeight="bold" color="dark" mb={3}>
-                  {filterMonth ? `Tháng ${filterMonth.split('-')[1]}/${filterMonth.split('-')[0]}` : 'Tháng hiện tại'}
-                </ArgonTypography>
-
-                {/* Simple Calendar Grid */}
-                <ArgonBox>
-                  <Grid container spacing={1}>
-                    {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(day => (
-                      <Grid item xs key={day}>
-                        <ArgonBox textAlign="center" py={1}>
-                          <ArgonTypography variant="caption" fontWeight="bold" color="text">
-                            {day}
-                          </ArgonTypography>
-                        </ArgonBox>
-                      </Grid>
-                    ))}
-                    
-                    {/* Calendar days */}
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                      <Grid item xs key={day}>
-                        <ArgonBox
-                          textAlign="center"
-                          py={1}
+        {!loading && !error && (
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              overflow: 'hidden'
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              {/* Week Navigation Header */}
+              <ArgonBox 
+                mb={3}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: '#f8f9fa',
+                  border: '1px solid #e9ecef'
+                }}
+              >
+                <Grid container spacing={2} alignItems="flex-end">
+                  <Grid item xs={12} sm={6} md={3}>
+                    <ArgonBox>
+                      <Typography variant="body2" fontWeight="medium" color="text" sx={{ mb: 1.5 }}>
+                        Năm
+                      </Typography>
+                      <FormControl fullWidth size="small">
+                        <Select
+                          value={selectedYear}
+                          onChange={(e) => handleYearChange(Number(e.target.value))}
                           sx={{
-                            cursor: "pointer",
-                            borderRadius: 1,
-                            backgroundColor: day === 15 ? "#e3f2fd" : "transparent",
-                            "&:hover": { backgroundColor: "#f5f5f5" }
+                            backgroundColor: '#fff',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#dee2e6'
+                            },
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#adb5bd'
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#667eea'
+                            }
                           }}
                         >
-                          <ArgonTypography 
-                            variant="caption" 
-                            color={day === 15 ? "primary" : "text"}
-                            fontWeight={day === 15 ? "bold" : "regular"}
-                          >
-                            {day}
-                          </ArgonTypography>
-                        </ArgonBox>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </ArgonBox>
-
-                <Divider sx={{ my: 3 }} />
-
-                <ArgonTypography variant="h6" fontWeight="bold" color="dark" mb={2}>
-                  Chú thích
-                </ArgonTypography>
-                
-                <ArgonBox display="flex" flexDirection="column" gap={1}>
-                  {categories.map((category) => (
-                    <ArgonBox key={category.value} display="flex" alignItems="center">
-                      <i className={getTypeIcon(category.value)} style={{ marginRight: 8, color: `var(--${getTypeColor(category.value)}-main)` }} />
-                      <ArgonTypography variant="caption" color="text">
-                        {category.label}
-                      </ArgonTypography>
+                          {years.map(year => (
+                            <MenuItem key={year} value={year}>{year}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
                     </ArgonBox>
-                  ))}
-                </ArgonBox>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+                  </Grid>
+                  {/* <Grid item xs={12} sm={6} md={4}>
+                    <ArgonBox>
+                      <Typography variant="body2" fontWeight="medium" color="text" sx={{ mb: 1.5 }}>
+                        Tuần
+                      </Typography>
+                      <FormControl fullWidth size="small">
+                        <Select
+                          value={selectedWeek}
+                          onChange={(e) => setSelectedWeek(Number(e.target.value))}
+                          sx={{
+                            backgroundColor: '#fff',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#dee2e6'
+                            },
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#adb5bd'
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#667eea'
+                            }
+                          }}
+                        >
+                          <MenuItem value={-2}>Hai tuần trước</MenuItem>
+                          <MenuItem value={-1}>Tuần trước</MenuItem>
+                          <MenuItem value={0}>Tuần này</MenuItem>
+                          <MenuItem value={1}>Tuần sau</MenuItem>
+                          <MenuItem value={2}>Hai tuần sau</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </ArgonBox>
+                  </Grid> */}
+                  <Grid item xs={12} md={5}>
+                    <ArgonBox display="flex" alignItems="center" gap={1}>
+                      <IconButton
+                        onClick={() => handleWeekChange('prev')}
+                        size="small"
+                        sx={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #dee2e6',
+                          '&:hover': { backgroundColor: '#f8f9fa' }
+                        }}
+                      >
+                        ‹
+                      </IconButton>
+                      <ArgonBox 
+                        sx={{ 
+                          flex: 1, 
+                          textAlign: 'center',
+                          px: 2,
+                          py: 1,
+                          backgroundColor: '#fff',
+                          borderRadius: 1,
+                          border: '1px solid #dee2e6'
+                        }}
+                      >
+                        <Typography variant="body2" fontWeight="bold" color="primary">
+                          Tuần: {formatWeekRange()}
+                        </Typography>
+                      </ArgonBox>
+                      <IconButton
+                        onClick={() => handleWeekChange('next')}
+                        size="small"
+                        sx={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #dee2e6',
+                          '&:hover': { backgroundColor: '#f8f9fa' }
+                        }}
+                      >
+                        ›
+                      </IconButton>
+                    </ArgonBox>
+                  </Grid>
+                </Grid>
+              </ArgonBox>
+
+              {/* Weekly Schedule Grid */}
+              <TableContainer 
+                component={Paper} 
+                sx={{ 
+                  overflowX: 'auto',
+                  borderRadius: 2,
+                  border: '1px solid #e9ecef'
+                }}
+              >
+                <Table 
+                  sx={{ 
+                    minWidth: 800,
+                    width: '100%',
+                    tableLayout: 'fixed',
+                    borderCollapse: 'separate',
+                    borderSpacing: 0,
+                    '& .MuiTableCell-root': {
+                      padding: '0 !important',
+                      border: '1px solid #e9ecef',
+                      boxSizing: 'border-box !important',
+                      verticalAlign: 'top',
+                      width: `${100 / weekDays.length}% !important`
+                    }
+                  }}
+                >
+                  <TableBody>
+                  {/* Header hàng tiêu đề: cột đầu là Thời gian, sau đó các ngày */}
+                    <TableRow>
+                    <TableCell 
+                      align="center"
+                      sx={{ 
+                        p: '16px 12px !important',
+                        backgroundColor: '#f1f3f5',
+                        borderBottom: '2px solid #dee2e6',
+                        width: '120px !important',
+                        maxWidth: '140px !important'
+                      }}
+                    >
+                      <ArgonTypography variant="subtitle2" fontWeight="bold" color="text">
+                        Thời gian
+                      </ArgonTypography>
+                    </TableCell>
+                      {weekDays.map(day => (
+                        <TableCell 
+                          key={`header-${day.isoDate}`}
+                          align="center"
+                          sx={{ 
+                            p: '16px 12px !important',
+                            backgroundColor: day.isToday ? '#e3f2fd' : '#f8f9fa',
+                            borderBottom: '2px solid #dee2e6'
+                          }}
+                        >
+                          <ArgonBox>
+                            <Typography 
+                              variant="subtitle1" 
+                              fontWeight="bold" 
+                              sx={{ 
+                                color: day.isToday ? '#1976d2' : '#495057',
+                                mb: 0.5
+                              }}
+                            >
+                              {day.shortName}
+                            </Typography>
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                color: '#6c757d',
+                                fontSize: '0.875rem'
+                              }}
+                            >
+                              {day.dateStr}
+                            </Typography>
+                            {day.isToday && (
+                              <Chip
+                                label="Hôm nay"
+                                size="small"
+                                sx={{
+                                  height: 18,
+                                  fontSize: '0.65rem',
+                                  mt: 0.5,
+                                  backgroundColor: '#1976d2',
+                                  color: '#fff'
+                                }}
+                              />
+                            )}
+                          </ArgonBox>
+                        </TableCell>
+                      ))}
+                    </TableRow>
+
+                  {/* Mỗi hàng tương ứng một khung giờ */}
+                  {timeSlots.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={weekDays.length + 1} align="center" sx={{ p: '24px !important' }}>
+                        <Typography variant="body2" color="text.secondary">Không có hoạt động</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    timeSlots.map(ts => (
+                      <TableRow key={`row-${ts.label}`}>
+                        {/* Cột thời gian */}
+                        <TableCell 
+                          align="center"
+                          sx={{
+                            p: '12px !important',
+                            backgroundColor: '#fff',
+                            color: '#495057',
+                            borderRight: '2px solid #e9ecef'
+                          }}
+                        >
+                          <ArgonBox>
+                            <ArgonTypography variant="button" fontWeight="bold" sx={{ color: '#343a40', display: 'block', mb: 0.5 }}>
+                              {ts.name || 'Khung giờ'}
+                            </ArgonTypography>
+                            <Chip
+                              label={ts.label}
+                              size="small"
+                              sx={{
+                                height: 22,
+                                fontSize: '0.72rem',
+                                backgroundColor: '#e9f7ef',
+                                color: '#2e7d32',
+                                fontWeight: 600
+                              }}
+                            />
+                          </ArgonBox>
+                        </TableCell>
+                        {/* Các cột ngày cho khung giờ này */}
+                        {weekDays.map(day => {
+                          const slots = slotsByDay.get(day.isoDate) || [];
+                          const slot = slots.find(s => `${s.startTime || '00:00'} - ${s.endTime || '00:00'}` === ts.label);
+                          return (
+                            <TableCell 
+                              key={`cell-${day.isoDate}-${ts.label}`}
+                              sx={{
+                                p: '8px !important',
+                                backgroundColor: day.isToday ? '#f8fbff' : '#fff',
+                                verticalAlign: 'top'
+                              }}
+                            >
+                              {slot ? (
+                                <Card
+                                  sx={{
+                                    borderRadius: 2,
+                                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.08)',
+                                    backgroundColor: '#fff',
+                                    border: '1px solid #e9ecef',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                    <ArgonBox sx={{ flex: 1, minWidth: 0 }}>
+                                      <ArgonTypography 
+                                        variant="body2" 
+                                        fontWeight="bold" 
+                                        sx={{ 
+                                          mb: 0.75,
+                                          color: '#1976d2',
+                                          fontSize: '0.98rem',
+                                          lineHeight: 1.4
+                                        }}
+                                      >
+                                        {slot.activity?.name || slot.slotName || 'Hoạt động'}
+                                      </ArgonTypography>
+                                      <ArgonBox display="flex" alignItems="center" gap={1} mb={0.5}>
+                                        <Chip
+                                          label={`${slot.startTime || ''}-${slot.endTime || ''}`}
+                                          size="small"
+                                          sx={{
+                                            height: 20,
+                                            fontSize: '0.7rem',
+                                            backgroundColor: '#e3f2fd',
+                                            color: '#1976d2',
+                                            fontWeight: 600
+                                          }}
+                                        />
+                                        {slot.slotName && (
+                                          <Chip
+                                            label={slot.slotName}
+                                            size="small"
+                                            sx={{
+                                              height: 20,
+                                              fontSize: '0.7rem',
+                                              backgroundColor: '#f1f3f5',
+                                              color: '#495057',
+                                              fontWeight: 600
+                                            }}
+                                          />
+                                        )}
+                                      </ArgonBox>
+                                      <ArgonBox display="flex" alignItems="center" mt={0.5}>
+                                        <Typography 
+                                          variant="caption" 
+                                          sx={{ 
+                                            fontSize: '0.75rem',
+                                            color: '#666'
+                                          }}
+                                        >
+                                          Giáo viên: {slot.teacher?.fullName || calendarData?.class?.teacher?.fullName || 'Chưa xác định'}
+                                        </Typography>
+                                      </ArgonBox>
+                                      {slot.activity?.require_outdoor === 1 && (
+                                        <Chip
+                                          label="Ngoài trời"
+                                          size="small"
+                                          sx={{
+                                            height: 18,
+                                            fontSize: '0.65rem',
+                                            backgroundColor: '#e8f5e9',
+                                            color: '#2e7d32',
+                                            mt: 0.5
+                                          }}
+                                        />
+                                      )}
+                                    </ArgonBox>
+                                  </CardContent>
+                                </Card>
+                              ) : null}
+                            </TableCell>
+                          );
+                        })}
+                    </TableRow>
+                    ))
+                  )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {/* Footer Note */}
+              <ArgonBox 
+                mt={3}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: '#fff3cd',
+                  border: '1px solid #ffc107'
+                }}
+              >
+                <ArgonTypography variant="body2" fontWeight="bold" color="dark" mb={0.5}>
+                  Lưu ý
+                </ArgonTypography>
+                <ArgonTypography variant="body2" sx={{ fontSize: '0.875rem', color: '#856404' }}>
+                  Lịch học có thể thay đổi theo tình hình thực tế. Vui lòng cập nhật thường xuyên để theo dõi các hoạt động của bé.
+                </ArgonTypography>
+              </ArgonBox>
+            </CardContent>
+          </Card>
+        )}
       </ArgonBox>
-      <Footer />
+            <Footer />
+
     </DashboardLayout>
   );
 }

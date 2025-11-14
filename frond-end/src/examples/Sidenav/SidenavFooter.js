@@ -15,6 +15,7 @@ Coded by www.creative-tim.com
 
 // @mui material components
 import Link from "@mui/material/Link";
+import Icon from "@mui/material/Icon";
 
 // Argon Dashboard 2 MUI components
 import ArgonButton from "components/ArgonButton";
@@ -24,47 +25,47 @@ import ArgonTypography from "components/ArgonTypography";
 // Argon Dashboard 2 MUI context
 import { useArgonController } from "context";
 
+// Auth context
+import { useAuth } from "context/AuthContext";
+
+// React Router
+import { useNavigate } from "react-router-dom";
+
 // Images
 import icon from "assets/images/illustrations/icon-documentation.svg";
 
 function SidenavFooter() {
   const [controller] = useArgonController();
   const { miniSidenav, darkSidenav } = controller;
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      // Gọi hàm logout từ AuthContext để xóa token và dữ liệu
+      await logout();
+      // Chuyển về trang đăng nhập
+      navigate("/authentication/sign-in");
+    } catch (error) {
+      console.error('Lỗi khi đăng xuất:', error);
+      // Ngay cả khi có lỗi, vẫn chuyển về trang đăng nhập
+      navigate("/authentication/sign-in");
+    }
+
+  };
 
   return (
     <ArgonBox opacity={miniSidenav ? 0 : 1} sx={{ transition: "opacity 200ms linear" }}>
-      <ArgonBox position="relative" textAlign="center">
-        <ArgonBox component="img" src={icon} alt="sidebar_illustration" width="60%" />
-        <ArgonBox
-          width="100%"
-          pb={2}
-          px={2}
-          color={darkSidenav ? "white" : "dark"}
-          textAlign="center"
-          lineHeight={0}
-        >
-          <ArgonTypography color="inherit" variant="h6">
-            Need help?
-          </ArgonTypography>
-          <ArgonTypography color="inherit" variant="caption">
-            Please check our docs
-          </ArgonTypography>
-        </ArgonBox>
-      </ArgonBox>
       <ArgonBox display="flex" flexDirection="column">
         <ArgonButton
-          component={Link}
-          href="https://www.creative-tim.com/learning-lab/react/overview/argon-dashboard/"
-          target="_blank"
-          rel="noreferrer"
-          color="dark"
+          color="error"
           size="small"
           fullWidth
-          sx={{ mb: 1 }}
+          onClick={handleLogout}
+          startIcon={<Icon>logout</Icon>}
         >
-          Documentation
+          Đăng xuất
         </ArgonButton>
-     
       </ArgonBox>
     </ArgonBox>
   );
