@@ -1,0 +1,347 @@
+{
+  "info": {
+    "name": "KidsLink - Parent Fee PayOS",
+    "_postman_id": "d4a0ad6f-0000-0000-0000-payosfee",
+    "description": "Collection kiểm thử API thanh toán học phí PayOS cho phụ huynh.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "kidslink-ai"
+  },
+  "item": [
+    {
+      "name": "1. Create PayOS Payment - Success",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{PARENT_TOKEN}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"student_id\": \"{{STUDENT_ID}}\",\n  \"student_class_id\": \"{{STUDENT_CLASS_ID}}\",\n  \"class_fee_id\": \"{{CLASS_FEE_ID}}\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/parent/fees/payos",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "parent",
+            "fees",
+            "payos"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.code === 200);",
+              "pm.test('PayOS data trả về đầy đủ', () => {",
+              "  pm.expect(res.success).to.be.true;",
+              "  pm.expect(res.data.checkout_url).to.exist;",
+              "  pm.expect(res.data.qr_code).to.exist;",
+              "});",
+              "pm.environment.set('PAYOS_ORDER_CODE', res.data.order_code);",
+              "pm.environment.set('PAYOS_CHECKOUT_URL', res.data.checkout_url);",
+              "pm.environment.set('PAYOS_QR_CODE', res.data.qr_code);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Missing Required Fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{PARENT_TOKEN}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"student_id\": \"{{STUDENT_ID}}\",\n  \"student_class_id\": \"{{STUDENT_CLASS_ID}}\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/parent/fees/payos",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "parent",
+            "fees",
+            "payos"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', () => pm.response.code === 400);",
+              "pm.test('Thông báo thiếu tham số', () => pm.response.json().message.includes('bắt buộc'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Invalid ObjectId",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{PARENT_TOKEN}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"student_id\": \"123\",\n  \"student_class_id\": \"{{STUDENT_CLASS_ID}}\",\n  \"class_fee_id\": \"{{CLASS_FEE_ID}}\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/parent/fees/payos",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "parent",
+            "fees",
+            "payos"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', () => pm.response.code === 400);",
+              "pm.test('Thông báo ID không hợp lệ', () => pm.response.json().message.includes('ID không hợp lệ'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Unauthorized Student",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{PARENT_TOKEN}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"student_id\": \"{{OTHER_STUDENT_ID}}\",\n  \"student_class_id\": \"{{OTHER_STUDENT_CLASS_ID}}\",\n  \"class_fee_id\": \"{{CLASS_FEE_ID}}\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/parent/fees/payos",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "parent",
+            "fees",
+            "payos"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 403', () => pm.response.code === 403);",
+              "pm.test('Thông báo không có quyền', () => pm.response.json().message.includes('không có quyền'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Invoice Already Paid",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{PARENT_TOKEN}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"student_id\": \"{{STUDENT_ID}}\",\n  \"student_class_id\": \"{{STUDENT_CLASS_ID}}\",\n  \"class_fee_id\": \"{{PAID_CLASS_FEE_ID}}\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/parent/fees/payos",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "parent",
+            "fees",
+            "payos"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', () => pm.response.code === 400);",
+              "pm.test('Thông báo đã thanh toán', () => pm.response.json().message.includes('đã được thanh toán'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. School PayOS Config Missing",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{PARENT_TOKEN}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"student_id\": \"{{STUDENT_ID}}\",\n  \"student_class_id\": \"{{STUDENT_CLASS_ID}}\",\n  \"class_fee_id\": \"{{CLASS_FEE_NO_PAYOS}}\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/parent/fees/payos",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "parent",
+            "fees",
+            "payos"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', () => pm.response.code === 400);",
+              "pm.test('Thông báo chưa kích hoạt PayOS', () => pm.response.json().message.includes('chưa kích hoạt'));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{PARENT_TOKEN}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "PARENT_TOKEN",
+      "value": ""
+    },
+    {
+      "key": "STUDENT_ID",
+      "value": ""
+    },
+    {
+      "key": "STUDENT_CLASS_ID",
+      "value": ""
+    },
+    {
+      "key": "CLASS_FEE_ID",
+      "value": ""
+    },
+    {
+      "key": "PAID_CLASS_FEE_ID",
+      "value": ""
+    },
+    {
+      "key": "CLASS_FEE_NO_PAYOS",
+      "value": ""
+    },
+    {
+      "key": "OTHER_STUDENT_ID",
+      "value": ""
+    },
+    {
+      "key": "OTHER_STUDENT_CLASS_ID",
+      "value": ""
+    }
+  ]
+}
+
+
+
+

@@ -91,7 +91,7 @@ const parentRoutes = [
   },
   {
     type: "route",
-    name: "Học phí",
+    name: "Phí",
     key: "parent-fee-payment",
     route: "/parent/fee-payment",
     icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-credit-card" />,

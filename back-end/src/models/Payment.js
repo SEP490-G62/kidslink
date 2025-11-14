@@ -8,7 +8,8 @@ const paymentSchema = new mongoose.Schema({
   payment_method: {
     type: Number,
     required: true,
-    enum: [1, 2, 3, 4] // 1: cash, 2: bank transfer, 3: credit card, 4: other
+    enum: [0, 1], // 0: offline, 1: online
+    default: 1
   },
   total_amount: {
     type: mongoose.Schema.Types.Decimal128,

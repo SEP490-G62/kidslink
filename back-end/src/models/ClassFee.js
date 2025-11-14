@@ -17,7 +17,7 @@ const classFeeSchema = new mongoose.Schema({
   },
   note: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   status: {
