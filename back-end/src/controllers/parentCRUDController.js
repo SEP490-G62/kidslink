@@ -38,6 +38,23 @@ async function generateUniqueUsername({ email, phone }) {
   }
 }
 
+// --- Lấy danh sách tất cả phụ huynh trong trường ---
+exports.getAllParents = async (req, res) => {
+  try {
+    const parents = await Parent.find()
+      .populate({
+        path: 'user_id',
+        select: 'full_name email phone_number address avatar_url',
+      })
+      .lean();
+
+    return res.json(parents);
+  } catch (err) {
+    console.error('getAllParents error:', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
+  }
+};
+
 // --- Tạo mới phụ huynh ---
 exports.createParent = async (req, res) => {
   try {
@@ -218,6 +235,66 @@ exports.updateParent = async (req, res) => {
     return res.json({ message: 'Cập nhật phụ huynh thành công' });
   } catch (err) {
     console.error('updateParent error:', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
+  }
+};
+
+// --- Liên kết phụ huynh có sẵn với học sinh ---
+exports.linkExistingParent = async (req, res) => {
+  try {
+    const { parent_id, student_id, relationship } = req.body;
+
+    if (!parent_id || !student_id || !relationship) {
+      return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+    }
+
+    if (!mongoose.isValidObjectId(parent_id) || !mongoose.isValidObjectId(student_id)) {
+      return res.status(400).json({ message: 'ID không hợp lệ' });
+    }
+
+    // Kiểm tra parent tồn tại
+    const parent = await Parent.findById(parent_id);
+    if (!parent) {
+      return res.status(404).json({ message: 'Không tìm thấy phụ huynh' });
+    }
+
+    // Kiểm tra xem học sinh đã có bố hoặc mẹ chưa (tùy theo relationship)
+    if (relationship === 'father' || relationship === 'mother') {
+      const existingParentWithSameRelation = await ParentStudent.findOne({
+        student_id: student_id,
+        relationship: relationship
+      });
+      
+      if (existingParentWithSameRelation) {
+        const relationshipName = relationship === 'father' ? 'bố' : 'mẹ';
+        return res.status(400).json({ 
+          message: `Học sinh này đã có ${relationshipName}. Mỗi học sinh chỉ có thể có 1 ${relationshipName}.` 
+        });
+      }
+    }
+
+    // Kiểm tra relationship đã tồn tại chưa
+    const existingRelationship = await ParentStudent.findOne({
+      parent_id: parent_id,
+      student_id: student_id,
+    });
+
+    if (existingRelationship) {
+      return res.status(400).json({ message: 'Phụ huynh này đã được liên kết với học sinh' });
+    }
+
+    // Tạo relationship mới
+    await ParentStudent.create({
+      parent_id: parent_id,
+      student_id: student_id,
+      relationship: relationship,
+    });
+
+    return res.status(201).json({
+      message: 'Liên kết phụ huynh thành công',
+    });
+  } catch (err) {
+    console.error('linkExistingParent error:', err);
     return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
   }
 };
