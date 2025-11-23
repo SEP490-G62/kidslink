@@ -53,6 +53,12 @@ const invoiceSchema = new mongoose.Schema({
   payos_transaction_id: {
     type: String,
     trim: true
+  },
+  late_fee_amount: {
+    type: mongoose.Schema.Types.Decimal128
+  },
+  late_fee_applied_at: {
+    type: Date
   }
 }, {
   timestamps: true

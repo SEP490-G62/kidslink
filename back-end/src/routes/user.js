@@ -13,8 +13,8 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 // Routes
 
-// Áp dụng xác thực và phân quyền School Admin cho toàn bộ user management
-router.use(authenticate, authorize(['school_admin']));
+// Áp dụng xác thực và phân quyền School Admin và Admin cho toàn bộ user management
+router.use(authenticate, authorize(['school_admin', 'admin']));
 
 // GET /api/users - Lấy danh sách users (có phân trang và filter)
 router.get('/', getAllUsers);

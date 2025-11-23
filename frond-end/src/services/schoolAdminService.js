@@ -134,6 +134,25 @@ const schoolAdminService = {
   getClassFeePayments: async (feeId, classFeeId) => {
     return await api.get(`/school-admin/fees/${feeId}/classes/${classFeeId}/payments`, true);
   },
+
+  markInvoicePaidOffline: async (feeId, classFeeId, invoiceId, amount) => {
+    return await api.post(`/school-admin/fees/${feeId}/classes/${classFeeId}/payments/${invoiceId}/offline`, { amount }, true);
+  },
+
+  createOrGetInvoice: async (feeId, classFeeId, studentClassId) => {
+    return await api.post(`/school-admin/fees/${feeId}/classes/${classFeeId}/students/${studentClassId}/invoice`, {}, true);
+  },
+
+  // School Info
+  getSchoolInfo: async (schoolId = null) => {
+    const endpoint = schoolId ? `/school-admin/school/${schoolId}` : '/school-admin/school';
+    return await api.get(endpoint, true);
+  },
+
+  updateSchoolInfo: async (schoolId, schoolData) => {
+    const endpoint = schoolId ? `/school-admin/school/${schoolId}` : '/school-admin/school';
+    return await api.put(endpoint, schoolData, true);
+  },
 };
 
 export default schoolAdminService;

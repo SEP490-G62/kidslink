@@ -10,6 +10,7 @@ import ManageAccountPage from "layouts/school-admin/pages/ManageAccount";
 import ManageCalendar from "layouts/school-admin/pages/ManageCalendar";
 import ManageFees from "layouts/school-admin/pages/ManageFees";
 import FeeDetail from "layouts/school-admin/pages/ManageFees/FeeDetail";
+import SchoolInfo from "layouts/school-admin/pages/SchoolInfo";
 import Profile from "layouts/profile";
 import { useEffect } from "react";
 import { useAuth } from "context/AuthContext";
@@ -109,6 +110,16 @@ const schoolAdminRoutes = [
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageAccountPage /></ProtectedRoute>,
   },
+  {
+    type: "route",
+    name: "Thông tin trường học",
+    key: "school-info",
+    route: "/school-admin/school-info",
+    icon: (
+      <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-settings-gear-65" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><SchoolInfo /></ProtectedRoute>,
+  },
 
   {
     type: "divider",
@@ -118,18 +129,11 @@ const schoolAdminRoutes = [
     type: "route",
     name: "Thông tin cá nhân",
     key: "school-admin-profile",
-    route: "/profile",
+    route: "",
     icon: <ArgonBox component="i" color="dark" fontSize="14px" className="ni ni-single-02" />,
     component: <ProtectedRoute><Profile /></ProtectedRoute>,
   },
-  {
-    type: "route",
-    name: "Đăng xuất",
-    key: "school-admin-logout",
-    route: "/logout",
-    icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-user-run" />,
-    component: <ProtectedRoute requiredRoles={["school_admin"]}><Logout /></ProtectedRoute>,
-  },
+
 ];
 
 export default schoolAdminRoutes;

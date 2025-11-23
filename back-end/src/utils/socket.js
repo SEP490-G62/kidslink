@@ -46,8 +46,13 @@ function initializeSocket(io) {
     socket.join(`user:${user_id}`);
 
     // Join các conversation rooms mà user tham gia
+    // Skip cho admin user (user_id = "admin" không phải ObjectId)
     (async () => {
       try {
+        // Skip nếu user_id không phải ObjectId hợp lệ (như "admin")
+        if (user_id === 'admin' || !require('mongoose').Types.ObjectId.isValid(user_id)) {
+          return;
+        }
         const participants = await ConversationParticipant.find({ user_id });
         participants.forEach(participant => {
           socket.join(`conversation:${participant.conversation_id}`);

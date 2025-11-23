@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const School = require('../models/School');
 
 const allowedRoles = ['school_admin', 'teacher', 'parent', 'health_care_staff', 'nutrition_staff', 'admin'];
 
@@ -203,6 +204,16 @@ async function login(req, res) {
 
     if (user.status !== 1) {
       return res.status(403).json({ error: 'Tài khoản đang bị khóa' });
+    }
+
+    // Check if user's school is active (if user has school_id)
+    if (user.school_id) {
+      const school = await School.findById(user.school_id);
+      if (!school || school.status !== 1) {
+        return res.status(403).json({ 
+          error: 'Trường học của bạn đang bị vô hiệu hóa. Vui lòng liên hệ quản trị viên hệ thống.' 
+        });
+      }
     }
 
     const token = signToken(user);

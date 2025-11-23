@@ -215,6 +215,20 @@ function FeeAndPayment() {
     return date.toLocaleString('vi-VN');
   };
 
+  const getFeeTotalAmount = (fee) => {
+    if (!fee) return 0;
+    if (fee.amount_with_late_fee !== undefined && fee.amount_with_late_fee !== null) {
+      return Number(fee.amount_with_late_fee) || 0;
+    }
+    if (fee.total_amount_display !== undefined && fee.total_amount_display !== null) {
+      return Number(fee.total_amount_display) || 0;
+    }
+    if (fee.invoice?.amount_due) {
+      return Number(fee.invoice.amount_due) || 0;
+    }
+    return Number(fee.amount) || 0;
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case "paid":
@@ -245,7 +259,7 @@ function FeeAndPayment() {
     const enrichedFee = {
       ...fee,
       student: studentData.student,
-      student_class_id: studentData.student_class_id,
+      student_class_id: fee.student_class_id || studentData.student_class_id,
       class_fee_id: fee.class_fee_id || fee._id,
       feeKey: `${fee._id}_${studentData.student._id}`
     };
@@ -283,7 +297,7 @@ function FeeAndPayment() {
         {
           ...fee,
           student,
-          student_class_id: studentData.student_class_id,
+          student_class_id: fee.student_class_id || studentData.student_class_id,
           class_fee_id: fee.class_fee_id || fee._id,
           feeKey
         }
@@ -302,7 +316,7 @@ function FeeAndPayment() {
       const newFees = payableFees.map(fee => ({
         ...fee,
         student: studentData.student,
-        student_class_id: studentData.student_class_id,
+        student_class_id: fee.student_class_id || studentData.student_class_id,
         class_fee_id: fee.class_fee_id || fee._id,
         feeKey: `${fee._id}_${studentData.student._id}`
       }));
@@ -330,7 +344,7 @@ function FeeAndPayment() {
           allPayableFees.push({
             ...fee,
             student: studentData.student,
-            student_class_id: studentData.student_class_id,
+            student_class_id: fee.student_class_id || studentData.student_class_id,
             class_fee_id: fee.class_fee_id || fee._id,
             feeKey: `${fee._id}_${studentData.student._id}`
           });
@@ -470,11 +484,15 @@ function FeeAndPayment() {
 
     studentsWithFees.forEach((studentData) => {
       studentData.fees?.forEach((fee) => {
-        const amount = parseFloat(fee.amount) || 0;
+        const baseAmount = parseFloat(fee.amount) || 0;
+        const amountWithLateFee = fee.amount_with_late_fee
+          ? parseFloat(fee.amount_with_late_fee)
+          : baseAmount;
+
         if (fee.status === "paid") {
-          totalPaid += amount;
+          totalPaid += amountWithLateFee;
         } else {
-          totalDebt += amount;
+          totalDebt += amountWithLateFee;
           if (fee.status === "overdue") {
             overdueCount++;
           }
@@ -851,13 +869,28 @@ function FeeAndPayment() {
                         </ArgonTypography>
                       </TableCell>
                       <TableCell>
-                              <ArgonTypography variant="body2" fontWeight="bold" color="#1976d2" sx={{ fontSize: "0.95rem" }}>
-                                {formatCurrency(fee.amount)} VNĐ
+                        <ArgonTypography variant="body2" fontWeight="bold" color="#1976d2" sx={{ fontSize: "0.95rem" }}>
+                          {formatCurrency(fee.amount_with_late_fee || fee.amount)} VNĐ
                         </ArgonTypography>
+                        <ArgonTypography variant="caption" color="#757575" display="block">
+                          Phí gốc: {formatCurrency(fee.amount)} VNĐ
+                        </ArgonTypography>
+                        {fee.late_fee?.is_applied && (
+                          <ArgonTypography variant="caption" color="warning.main" display="block">
+                            + Phụ phí quá hạn: {formatCurrency(fee.late_fee?.applied_amount || 0)} VNĐ
+                          </ArgonTypography>
+                        )}
+                        {!fee.late_fee?.is_applied && fee.late_fee?.is_applicable && fee.status !== "paid" && (
+                          <ArgonTypography variant="caption" color="warning.main" display="block">
+                            Phụ phí {fee.late_fee?.type === "percentage"
+                              ? `${fee.late_fee?.value}%`
+                              : `${formatCurrency(fee.late_fee?.value || 0)} VNĐ`} sẽ áp dụng khi quá hạn
+                          </ArgonTypography>
+                        )}
                       </TableCell>
                       <TableCell>
-                              <ArgonTypography variant="body2" fontSize="0.875rem" color="#424242">
-                                {formatDate(fee.due_date)}
+                        <ArgonTypography variant="body2" fontSize="0.875rem" color="#424242">
+                          {formatDate(fee.effective_due_date || fee.due_date)}
                         </ArgonTypography>
                       </TableCell>
                       <TableCell>
@@ -889,6 +922,11 @@ function FeeAndPayment() {
                               <ArgonTypography variant="body2" color="#424242">
                                 {fee.description || "-"}
                         </ArgonTypography>
+                        {fee.late_fee?.description && (
+                          <ArgonTypography variant="caption" color="#757575" display="block">
+                            Phụ phí: {fee.late_fee?.description}
+                          </ArgonTypography>
+                        )}
                       </TableCell>
                       <TableCell>
                               {fee.status !== "paid" && hasSelectableFees ? (
@@ -990,12 +1028,17 @@ function FeeAndPayment() {
                               </TableCell>
                               <TableCell>
                                 <ArgonTypography variant="body2" fontWeight="bold">
-                                  {formatCurrency(fee.amount)} VNĐ
+                                  {formatCurrency(getFeeTotalAmount(fee))} VNĐ
                                 </ArgonTypography>
+                                {fee.late_fee?.is_applied && (
+                                  <ArgonTypography variant="caption" color="warning.main" display="block">
+                                    Bao gồm phụ phí: {formatCurrency(fee.late_fee?.applied_amount || 0)} VNĐ
+                                  </ArgonTypography>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <ArgonTypography variant="body2">
-                                  {formatDate(fee.due_date)}
+                                  {formatDate(fee.effective_due_date || fee.due_date)}
                                 </ArgonTypography>
                               </TableCell>
                             </TableRow>
@@ -1009,8 +1052,16 @@ function FeeAndPayment() {
                         {selectedFee.fee_name}
                   </ArgonTypography>
                   <ArgonTypography variant="h4" fontWeight="bold" color="primary" mb={1}>
-                        {formatCurrency(selectedFee.amount)} VNĐ
+                        {formatCurrency(getFeeTotalAmount(selectedFee))} VNĐ
                       </ArgonTypography>
+                      <ArgonTypography variant="body2" color="text" mb={0.5}>
+                        Phí gốc: {formatCurrency(selectedFee.amount)} VNĐ
+                      </ArgonTypography>
+                      {selectedFee.late_fee?.is_applied && (
+                        <ArgonTypography variant="body2" color="warning.main" mb={0.5}>
+                          + Phụ phí quá hạn: {formatCurrency(selectedFee.late_fee?.applied_amount || 0)} VNĐ
+                        </ArgonTypography>
+                      )}
                       <ArgonTypography variant="body2" color="text" mb={1}>
                         Hạn thanh toán: {formatDate(selectedFee.due_date)}
                   </ArgonTypography>
@@ -1036,8 +1087,8 @@ function FeeAndPayment() {
                       <ArgonTypography variant="h5" fontWeight="bold" color="primary">
                         {formatCurrency(
                           selectedFees.length > 0
-                            ? selectedFees.reduce((sum, fee) => sum + (parseFloat(fee.amount) || 0), 0)
-                            : (parseFloat(selectedFee?.amount) || 0)
+                            ? selectedFees.reduce((sum, fee) => sum + getFeeTotalAmount(fee), 0)
+                            : getFeeTotalAmount(selectedFee)
                         )} VNĐ
                   </ArgonTypography>
                     </ArgonBox>
@@ -1063,8 +1114,8 @@ function FeeAndPayment() {
                     </ArgonTypography>
                     <ArgonTypography variant="body2" color="text">
                       Hệ thống mặc định sử dụng PayOS để thanh toán trực tuyến.
-                    </ArgonTypography>
-                  </ArgonBox>
+                          </ArgonTypography>
+                        </ArgonBox>
                 </ArgonBox>
 
                 {paymentError && (

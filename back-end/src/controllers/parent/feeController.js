@@ -80,6 +80,58 @@ const normalizeFeeItems = (body = {}) => {
   return [];
 };
 
+const parseDecimal128ToNumber = (value) => {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return Number(value) || 0;
+  if (value && typeof value.toString === 'function') {
+    const parsed = Number(value.toString());
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+const buildLateFeePolicy = (feeDoc = {}) => ({
+  type: feeDoc.late_fee_type || 'none',
+  value: Number(feeDoc.late_fee_value || 0),
+  description: feeDoc.late_fee_description || ''
+});
+
+const shouldApplyLateFee = (policy = {}) =>
+  policy &&
+  policy.type &&
+  policy.type !== 'none' &&
+  Number(policy.value) > 0;
+
+const roundCurrency = (value = 0) => {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return 0;
+  return Math.round(num);
+};
+
+const calculateLateFeeAmount = (policy = {}, baseAmount = 0) => {
+  if (!shouldApplyLateFee(policy)) return 0;
+  const value = Number(policy.value || 0);
+  if (policy.type === 'fixed') {
+    return roundCurrency(value);
+  }
+  if (policy.type === 'percentage') {
+    return roundCurrency(Math.max(0, baseAmount * (value / 100)));
+  }
+  return 0;
+};
+
+const isInvoiceOverdue = (invoice = null, dueDate) => {
+  if (invoice && invoice.status === 2) {
+    return true;
+  }
+  const targetDate = invoice?.due_date || dueDate;
+  if (!targetDate) return false;
+  const due = new Date(targetDate);
+  if (Number.isNaN(due.getTime())) return false;
+  return new Date() > due;
+};
+
 /**
  * GET /api/parent/fees - Lấy danh sách các khoản thu của lớp có academic year lớn nhất cho mỗi student
  */
@@ -163,7 +215,7 @@ const getStudentFees = async (req, res) => {
         })
           .populate({
             path: 'fee_id',
-            select: 'fee_name description amount'
+            select: 'fee_name description amount late_fee_type late_fee_value late_fee_description'
           })
           .lean();
 
@@ -180,11 +232,8 @@ const getStudentFees = async (req, res) => {
               class_fee_id: classFee._id
             }).lean();
 
-            // Convert Decimal128 to string
-            const feeAmount = classFee.fee_id.amount
-              ? classFee.fee_id.amount.toString()
-              : '0';
-
+            const baseAmountNumber = roundCurrency(parseDecimal128ToNumber(classFee.fee_id.amount));
+            const baseAmountStr = baseAmountNumber.toString();
             let invoiceAmount = '0';
             let invoiceStatus = null;
             let invoiceDueDate = null;
@@ -197,11 +246,15 @@ const getStudentFees = async (req, res) => {
               invoiceStatus = invoice.status; // 0: pending, 1: paid, 2: overdue
               invoiceDueDate = invoice.due_date;
               paymentId = invoice.payment_id;
+              if (invoice.amount_due) {
+                invoiceAmount = invoice.amount_due.toString();
+              }
             }
 
             // Tính toán trạng thái
             let status = 'pending'; // pending, paid, overdue
             let statusText = 'Chưa thanh toán';
+            let effectiveDueDate = invoice?.due_date || classFee.due_date;
 
             if (invoice) {
               if (invoice.status === 1) {
@@ -217,6 +270,7 @@ const getStudentFees = async (req, res) => {
                 if (now > dueDate) {
                   status = 'overdue';
                   statusText = 'Quá hạn';
+                  effectiveDueDate = dueDate;
                 } else {
                   status = 'pending';
                   statusText = 'Chưa thanh toán';
@@ -229,16 +283,43 @@ const getStudentFees = async (req, res) => {
               if (now > classFeeDueDate) {
                 status = 'overdue';
                 statusText = 'Quá hạn';
+                effectiveDueDate = classFeeDueDate;
               }
             }
+
+            const lateFeePolicy = buildLateFeePolicy(classFee.fee_id);
+            const isOverdueFee = status === 'overdue';
+            const invoiceLateFeeAmount = invoice?.late_fee_amount
+              ? parseDecimal128ToNumber(invoice.late_fee_amount)
+              : 0;
+            let appliedLateFee = 0;
+            if (isOverdueFee && shouldApplyLateFee(lateFeePolicy)) {
+              appliedLateFee = invoiceLateFeeAmount > 0
+                ? roundCurrency(invoiceLateFeeAmount)
+                : calculateLateFeeAmount(lateFeePolicy, baseAmountNumber);
+            }
+            const totalAmountWithLateFee = baseAmountNumber + appliedLateFee;
+            const totalAmountWithLateFeeStr = totalAmountWithLateFee.toString();
+            const appliedLateFeeStr = appliedLateFee.toString();
 
             return {
               _id: classFee.fee_id._id.toString(),
               fee_name: classFee.fee_id.fee_name,
               description: classFee.fee_id.description,
-              amount: feeAmount,
+              amount: baseAmountStr,
+              amount_with_late_fee: totalAmountWithLateFeeStr,
+              base_amount: baseAmountStr,
+              late_fee: {
+                type: lateFeePolicy.type,
+                value: lateFeePolicy.value,
+                description: lateFeePolicy.description,
+                applied_amount: appliedLateFeeStr,
+                is_applicable: shouldApplyLateFee(lateFeePolicy),
+                is_applied: appliedLateFee > 0
+              },
               due_date: classFee.due_date,
               class_fee_id: classFee._id.toString(),
+              student_class_id: latestStudentClass._id.toString(),
               invoice: invoice
                 ? {
                     _id: invoice._id.toString(),
@@ -246,11 +327,17 @@ const getStudentFees = async (req, res) => {
                     due_date: invoiceDueDate,
                     status: invoiceStatus,
                     payment_id: paymentId,
-                    discount: invoice.discount || 0
+                    discount: invoice.discount || 0,
+                    late_fee_amount: invoice.late_fee_amount
+                      ? invoice.late_fee_amount.toString()
+                      : appliedLateFeeStr,
+                    late_fee_applied_at: invoice.late_fee_applied_at
                   }
                 : null,
               status: status,
-              status_text: statusText
+              status_text: statusText,
+              total_amount_display: isOverdueFee ? totalAmountWithLateFeeStr : baseAmountStr,
+              effective_due_date: effectiveDueDate
             };
           })
         );
@@ -426,9 +513,29 @@ const createPayOSPaymentRequest = async (req, res) => {
         : 0;
       const discountPercent = Number(studentClass.discount || 0);
       const amountAfterDiscount = feeAmount - (feeAmount * (discountPercent / 100));
-      const amount = Math.max(0, Math.round(amountAfterDiscount));
+      const baseAmount = Math.max(0, Math.round(amountAfterDiscount));
 
-      if (amount <= 0) {
+      if (baseAmount <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Số tiền thanh toán phải lớn hơn 0'
+        });
+      }
+
+      const lateFeePolicy = buildLateFeePolicy(classFee.fee_id);
+      const isFeeOverdue = isInvoiceOverdue(invoice, classFee.due_date);
+      const persistedLateFee = invoice?.late_fee_amount
+        ? parseDecimal128ToNumber(invoice.late_fee_amount)
+        : 0;
+      let lateFeeAmount = 0;
+      if (isFeeOverdue && shouldApplyLateFee(lateFeePolicy)) {
+        lateFeeAmount = persistedLateFee > 0
+          ? roundCurrency(persistedLateFee)
+          : calculateLateFeeAmount(lateFeePolicy, baseAmount);
+      }
+      const finalAmount = baseAmount + lateFeeAmount;
+
+      if (finalAmount <= 0) {
         return res.status(400).json({
           success: false,
           message: 'Số tiền thanh toán phải lớn hơn 0'
@@ -440,14 +547,17 @@ const createPayOSPaymentRequest = async (req, res) => {
         studentClass,
         classFee,
         invoice,
-        amount,
+        amount: finalAmount,
+        baseAmount,
+        lateFeeAmount,
+        isLateFeeApplied: lateFeeAmount > 0,
         discountPercent,
         student_id,
         student_class_id,
         class_fee_id
       });
 
-      totalAmount += amount;
+      totalAmount += finalAmount;
       const schoolId = studentClass.class_id.school_id?.toString();
       if (schoolId) {
         schoolIds.add(schoolId);
@@ -574,6 +684,13 @@ const createPayOSPaymentRequest = async (req, res) => {
       fee.invoice.amount_due = mongoose.Types.Decimal128.fromString(fee.amount.toFixed(2));
       fee.invoice.discount = fee.discountPercent;
       fee.invoice.due_date = fee.classFee.due_date || fee.invoice.due_date;
+      if (fee.lateFeeAmount > 0) {
+        fee.invoice.late_fee_amount = mongoose.Types.Decimal128.fromString(fee.lateFeeAmount.toFixed(2));
+        fee.invoice.late_fee_applied_at = new Date();
+        if (fee.invoice.status !== 2) {
+          fee.invoice.status = 2;
+        }
+      }
       fee.invoice.payos_order_code = orderCode;
       fee.invoice.payos_checkout_url = paymentData.checkoutUrl || paymentData.checkout_url || paymentData.shortLink || null;
       fee.invoice.payos_qr_code = paymentData.qrCode || paymentData.qrContent || paymentData.qrData || null;
@@ -611,7 +728,9 @@ const createPayOSPaymentRequest = async (req, res) => {
           class_fee_id: fee.class_fee_id,
           fee_id: fee.classFee.fee_id._id,
           fee_name: fee.classFee.fee_id.fee_name,
-          amount: fee.amount
+          amount: fee.amount,
+          base_amount: fee.baseAmount,
+          late_fee_amount: fee.lateFeeAmount
         }))
       }
     });

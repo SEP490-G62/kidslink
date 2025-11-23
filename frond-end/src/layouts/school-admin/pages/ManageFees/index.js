@@ -296,14 +296,43 @@ const ManageFees = () => {
                 placeholder="Tìm kiếm theo tên phí hoặc mô tả..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                sx={{ flex: 1, minWidth: 200, maxWidth: 400,  
+                  width: '100%',
+                  borderRadius: 2,
+                  '& .MuiOutlinedInput-root': {
+                    width: '100%',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    width: '100% !important',
+                  }
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: "#1976d2" }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                select
+                size="small"
+                value={filterClass}
+                onChange={(e) => setFilterClass(e.target.value)}
                 sx={{
-                  flex: "1 1 300px",
-                  minWidth: 250,
+                  minWidth: 280,
                   "& .MuiOutlinedInput-root": {
                     bgcolor: "#fff",
                     borderRadius: 2,
                     transition: "all 0.3s ease",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                    pl: 1,
                   },
                   "& .MuiOutlinedInput-notchedOutline": {
                     borderColor: "#e0e0e0",
@@ -320,129 +349,68 @@ const ManageFees = () => {
                       borderWidth: 2,
                     },
                   },
+                  "& .MuiInputBase-input": {
+                    fontWeight: filterClass ? 600 : 400,
+                  },
                 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: "#1976d2" }} />
+                      <IconButton
+                        size="small"
+                        edge="start"
+                        sx={{ color: "#1976d2" }}
+                        onMouseDown={(event) => event.preventDefault()}
+                      >
+                        <FilterListIcon />
+                      </IconButton>
                     </InputAdornment>
                   ),
                 }}
-              />
-              <Box display="flex" alignItems="center" gap={1}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: "#e3f2fd",
-                    border: "1px solid #1976d2",
-                    transition: "all 0.3s ease",
-                  }}
-                >
-                  <FilterListIcon sx={{ fontSize: 22, color: "#1976d2" }} />
-                </Box>
-                <FormControl
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    minWidth: 260,
-                    "& .MuiOutlinedInput-root": {
-                      bgcolor: "#fff",
-                      borderRadius: 2,
-                      transition: "all 0.3s ease",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                    },
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                      borderWidth: 1.5,
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#1976d2",
-                      boxShadow: "0 2px 6px rgba(25, 118, 210, 0.15)",
-                    },
-                    "& .MuiOutlinedInput-root.Mui-focused": {
-                      boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#1976d2",
-                        borderWidth: 2,
-                      },
-                    },
-                  }}
-                >
-                  <InputLabel
-                    id="class-filter-label"
-                    sx={{ 
-                      backgroundColor: "transparent", 
-                      px: 0.5,
-                      fontWeight: 500,
-                      color: "#424242",
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    Lọc theo lớp
-                  </InputLabel>
-                  <Select
-                    labelId="class-filter-label"
-                    id="class-filter"
-                    value={filterClass}
-                    label="Lọc theo lớp"
-                    onChange={(e) => setFilterClass(e.target.value)}
-                    renderValue={(value) => {
-                      if (!value) return "Tất cả lớp học";
-                      const selectedClass = classes.find((cls) => cls._id === value);
-                      return selectedClass 
-                        ? `${selectedClass.class_name} (${selectedClass.academic_year})`
-                        : value;
-                    }}
-                    MenuProps={{
-                      PaperProps: {
-                        sx: { 
-                          borderRadius: 2,
-                          mt: 1,
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                          "& .MuiMenuItem-root": {
-                            borderRadius: 1,
-                            mx: 0.5,
-                            my: 0.25,
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (value) => {
+                    if (!value) return "Tất cả lớp học";
+                    const selectedClass = classes.find((cls) => cls._id === value);
+                    return selectedClass
+                      ? `${selectedClass.class_name} (${selectedClass.academic_year})`
+                      : value;
+                  },
+                  MenuProps: {
+                    PaperProps: {
+                      sx: {
+                        borderRadius: 2,
+                        mt: 1,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        "& .MuiMenuItem-root": {
+                          borderRadius: 1,
+                          mx: 0.5,
+                          my: 0.25,
+                          "&:hover": {
+                            backgroundColor: "#e3f2fd",
+                          },
+                          "&.Mui-selected": {
+                            backgroundColor: "#1976d2",
+                            color: "#fff",
                             "&:hover": {
-                              backgroundColor: "#e3f2fd",
-                            },
-                            "&.Mui-selected": {
-                              backgroundColor: "#1976d2",
-                              color: "#fff",
-                              "&:hover": {
-                                backgroundColor: "#1565c0",
-                              },
+                              backgroundColor: "#1565c0",
                             },
                           },
                         },
                       },
-                    }}
-                    sx={{
-                      "& .MuiSelect-select": {
-                        display: "flex",
-                        alignItems: "center",
-                      },
-                      "& .MuiSelect-icon": {
-                        color: "#1976d2",
-                      },
-                    }}
-                  >
-                    <MenuItem value="">
-                      <em>Tất cả lớp học</em>
-                    </MenuItem>
-                    {classes.map((cls) => (
-                      <MenuItem key={cls._id} value={cls._id}>
-                        {cls.class_name} ({cls.academic_year})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="">
+                  <em>Tất cả lớp học</em>
+                </MenuItem>
+                {classes.map((cls) => (
+                  <MenuItem key={cls._id} value={cls._id}>
+                    {cls.class_name} ({cls.academic_year})
+                  </MenuItem>
+                ))}
+              </TextField>
               <ArgonButton
                 size="small"
                 variant="outlined"
