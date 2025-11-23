@@ -38,6 +38,12 @@ const {
   deleteComment,
   createCommentValidators
 } = require('../controllers/teacher/commentsController');
+const {
+  getComplaintTypes,
+  createComplaint,
+  getMyComplaints,
+  getComplaintById
+} = require('../controllers/teacher/complaintController');
 
 // Middleware xác thực cho tất cả routes
 router.use(authenticate);
@@ -86,6 +92,12 @@ router.post('/posts/:postId/comments', authorize(['teacher']), createCommentVali
 router.get('/posts/:postId/comments', authorize(['teacher']), getComments);
 router.put('/comments/:commentId', authorize(['teacher']), updateComment);
 router.delete('/comments/:commentId', authorize(['teacher']), deleteComment);
+
+// Routes cho complaints
+router.get('/complaints/types', authorize(['teacher']), getComplaintTypes);
+router.post('/complaints', authorize(['teacher']), createComplaint);
+router.get('/complaints', authorize(['teacher']), getMyComplaints);
+router.get('/complaints/:complaintId', authorize(['teacher']), getComplaintById);
 
 module.exports = router;
 

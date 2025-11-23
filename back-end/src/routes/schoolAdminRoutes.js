@@ -7,6 +7,7 @@ const schoolAdminPostRouter = require('./schoolAdminPost');
 const schoolAdminCalendarRouter = require('./schoolAdminCalendar');
 const feeRouter = require('./fee');
 const schoolAdminSchoolRouter = require('./schoolAdminSchool');
+const schoolAdminComplaintRouter = require('./schoolAdminComplaint');
 
 // Áp dụng xác thực và authorization cho tất cả routes
 
@@ -16,7 +17,7 @@ router.use('/posts', schoolAdminPostRouter);
 router.use('/calendar', schoolAdminCalendarRouter);
 router.use('/fees', feeRouter);
 router.use('/school', schoolAdminSchoolRouter);
-
+router.use('/complaints', schoolAdminComplaintRouter);
 module.exports = router;
 
 
