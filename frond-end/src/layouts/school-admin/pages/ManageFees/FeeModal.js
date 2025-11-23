@@ -15,19 +15,76 @@ import {
   CircularProgress,
   Alert,
   Paper,
+  FormControl,
+  Select,
+  MenuItem,
+  Grid,
+  Divider,
 } from "@mui/material";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import CloseIcon from "@mui/icons-material/Close";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
+import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import ArgonButton from "components/ArgonButton";
 import schoolAdminService from "services/schoolAdminService";
 import api from "services/api";
 
+const SectionCard = ({ icon, title, subtitle, children }) => (
+  <Paper
+    sx={{
+      p: 3,
+      borderRadius: 3,
+      border: "1px solid #e3f2fd",
+      background: "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(243,248,255,0.98) 100%)",
+      boxShadow: "0 12px 30px rgba(25,118,210,0.12)",
+    }}
+  >
+    <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          borderRadius: "50%",
+          backgroundColor: "#e3f2fd",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#1976d2",
+        }}
+      >
+        {icon}
+      </Box>
+      <Box>
+        <ArgonTypography variant="subtitle1" fontWeight="bold" color="dark">
+          {title}
+        </ArgonTypography>
+        {subtitle && (
+          <ArgonTypography variant="caption" color="text" fontWeight="regular">
+            {subtitle}
+          </ArgonTypography>
+        )}
+      </Box>
+    </Stack>
+    <Divider sx={{ mb: 2 }} />
+    {children}
+  </Paper>
+);
+
+SectionCard.propTypes = {
+  icon: PropTypes.node.isRequired,
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
+  children: PropTypes.node.isRequired,
+};
+
 const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [classes, setClasses] = useState([]);
+  const [originalDueDates, setOriginalDueDates] = useState({}); // Map class_id -> original due_date
   const [formData, setFormData] = useState({
     fee_name: "",
     description: "",
@@ -35,6 +92,9 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
     class_ids: [], // Array of class_id (for create mode)
     due_date: "", // Common due_date for all classes (create mode)
     class_fees: [], // Array of { class_id, due_date } (for edit mode)
+    late_fee_type: "none",
+    late_fee_value: "",
+    late_fee_description: "",
   });
 
   const isEditMode = !!feeData;
@@ -64,37 +124,71 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
     if (open && feeData) {
       // Convert class_fees or classes to class_fees format
       let classFees = [];
+      const originalDueDatesMap = {};
+      
       if (feeData.class_fees && Array.isArray(feeData.class_fees)) {
-        classFees = feeData.class_fees.map(cf => ({
-          class_id: cf.class_id,
-          due_date: cf.due_date ? new Date(cf.due_date).toISOString().split('T')[0] : ''
-        }));
+        classFees = feeData.class_fees.map(cf => {
+          // Ensure class_id is a string
+          const classId = typeof cf.class_id === 'object' && cf.class_id?._id 
+            ? cf.class_id._id.toString() 
+            : (cf.class_id?.toString() || String(cf.class_id));
+          const dueDateStr = cf.due_date ? new Date(cf.due_date).toISOString().split('T')[0] : '';
+          // Store original due_date
+          if (dueDateStr) {
+            originalDueDatesMap[classId] = dueDateStr;
+          }
+          return {
+            class_id: classId,
+            due_date: dueDateStr
+          };
+        });
       } else if (feeData.classes && Array.isArray(feeData.classes)) {
-        classFees = feeData.classes.map(c => ({
-          class_id: c._id || c.class_id,
-          due_date: c.due_date ? new Date(c.due_date).toISOString().split('T')[0] : ''
-        }));
+        classFees = feeData.classes.map(c => {
+          // Ensure class_id is a string
+          const classId = (c._id || c.class_id)?.toString() || String(c._id || c.class_id);
+          const dueDateStr = c.due_date ? new Date(c.due_date).toISOString().split('T')[0] : '';
+          // Store original due_date
+          if (dueDateStr) {
+            originalDueDatesMap[classId] = dueDateStr;
+          }
+          return {
+            class_id: classId,
+            due_date: dueDateStr
+          };
+        });
       } else if (feeData.class_ids && Array.isArray(feeData.class_ids)) {
         // Fallback: convert class_ids to class_fees format
         const now = new Date();
         const defaultDueDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        classFees = feeData.class_ids.map(classId => ({
-          class_id: classId,
-          due_date: defaultDueDate.toISOString().split('T')[0]
-        }));
+        const defaultDueDateStr = defaultDueDate.toISOString().split('T')[0];
+        classFees = feeData.class_ids.map(classId => {
+          const classIdStr = String(classId);
+          originalDueDatesMap[classIdStr] = defaultDueDateStr;
+          return {
+            class_id: classIdStr,
+            due_date: defaultDueDateStr
+          };
+        });
       }
       
+      setOriginalDueDates(originalDueDatesMap);
       setFormData({
         fee_name: feeData.fee_name || "",
         description: feeData.description || "",
         amount: feeData.amount || "",
         class_fees: classFees,
+        late_fee_type: feeData.late_fee_type || "none",
+        late_fee_value: feeData.late_fee_value !== undefined && feeData.late_fee_value !== null
+          ? feeData.late_fee_value.toString()
+          : "",
+        late_fee_description: feeData.late_fee_description || "",
       });
       setError(null);
     } else if (open && !feeData) {
       // Reset form for create mode
       const now = new Date();
       const defaultDueDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      setOriginalDueDates({});
       setFormData({
         fee_name: "",
         description: "",
@@ -102,16 +196,31 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
         class_ids: [],
         due_date: defaultDueDate.toISOString().split('T')[0],
         class_fees: [],
+        late_fee_type: "none",
+        late_fee_value: "",
+        late_fee_description: "",
       });
       setError(null);
+    } else if (!open) {
+      // Reset when modal is closed
+      setOriginalDueDates({});
     }
   }, [open, feeData]);
 
   const handleChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => {
+      if (field === "late_fee_type" && value === "none") {
+        return {
+          ...prev,
+          late_fee_type: value,
+          late_fee_value: "",
+        };
+      }
+      return {
+        ...prev,
+        [field]: value,
+      };
+    });
     setError(null);
   };
 
@@ -120,7 +229,8 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
       // Edit mode: handle class_fees with individual due_date
       setFormData((prev) => {
         const currentClassFees = prev.class_fees || [];
-        const existingIndex = currentClassFees.findIndex(cf => cf.class_id === classId);
+        const classIdStr = String(classId);
+        const existingIndex = currentClassFees.findIndex(cf => String(cf.class_id) === classIdStr);
         
         if (existingIndex >= 0) {
           // Remove class
@@ -137,7 +247,7 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
             class_fees: [
               ...currentClassFees,
               {
-                class_id: classId,
+                class_id: classIdStr,
                 due_date: defaultDueDate.toISOString().split('T')[0]
               }
             ],
@@ -148,12 +258,13 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
       // Create mode: handle class_ids only
       setFormData((prev) => {
         const currentIds = prev.class_ids || [];
-        const isSelected = currentIds.includes(classId);
+        const classIdStr = String(classId);
+        const isSelected = currentIds.some(id => String(id) === classIdStr);
         return {
           ...prev,
           class_ids: isSelected
-            ? currentIds.filter((id) => id !== classId)
-            : [...currentIds, classId],
+            ? currentIds.filter((id) => String(id) !== classIdStr)
+            : [...currentIds, classIdStr],
         };
       });
     }
@@ -162,7 +273,8 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
   const handleDueDateChange = (classId, dueDate) => {
     setFormData((prev) => {
       const currentClassFees = prev.class_fees || [];
-      const existingIndex = currentClassFees.findIndex(cf => cf.class_id === classId);
+      const classIdStr = String(classId);
+      const existingIndex = currentClassFees.findIndex(cf => String(cf.class_id) === classIdStr);
       
       if (existingIndex >= 0) {
         // Update due_date for existing class
@@ -194,6 +306,18 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
       setError("Số tiền phải là số hợp lệ và >= 0");
       return;
     }
+    const lateFeeType = formData.late_fee_type || "none";
+    const lateFeeValueNumber = formData.late_fee_value === "" ? 0 : Number(formData.late_fee_value);
+    if (lateFeeType !== "none") {
+      if (!Number.isFinite(lateFeeValueNumber) || lateFeeValueNumber <= 0) {
+        setError("Giá trị phụ phí phải lớn hơn 0");
+        return;
+      }
+      if (lateFeeType === "percentage" && lateFeeValueNumber > 100) {
+        setError("Phụ phí phần trăm không được vượt quá 100%");
+        return;
+      }
+    }
 
     setLoading(true);
     setError(null);
@@ -206,6 +330,9 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
           fee_name: formData.fee_name.trim(),
           description: formData.description.trim(),
           amount: parseFloat(formData.amount),
+          late_fee_type: lateFeeType,
+          late_fee_value: lateFeeType === "none" ? 0 : lateFeeValueNumber,
+          late_fee_description: formData.late_fee_description?.trim() || "",
           class_fees: formData.class_fees.map(cf => ({
             class_id: cf.class_id,
             due_date: cf.due_date || null
@@ -219,6 +346,9 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
           amount: parseFloat(formData.amount),
           class_ids: formData.class_ids,
           due_date: formData.due_date || null,
+          late_fee_type: lateFeeType,
+          late_fee_value: lateFeeType === "none" ? 0 : lateFeeValueNumber,
+          late_fee_description: formData.late_fee_description?.trim() || "",
         };
       }
 
@@ -261,6 +391,9 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
     if (parts[1] && parts[1].length > 2) return;
     handleChange("amount", value);
   };
+
+  const classIds = Array.isArray(formData.class_ids) ? formData.class_ids : [];
+  const classFees = Array.isArray(formData.class_fees) ? formData.class_fees : [];
 
   return (
     <Dialog
@@ -334,207 +467,231 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
         )}
 
         <Stack spacing={3}>
-          {/* Tên phí */}
-          <Box>
-            <ArgonTypography
-              variant="body2"
-              fontWeight="bold"
-              color="#424242"
-              mb={1}
-            >
-              Tên phí <span style={{ color: "#d32f2f" }}>*</span>
-            </ArgonTypography>
-            <TextField
-              fullWidth
-              placeholder="Nhập tên phí..."
-              value={formData.fee_name}
-              onChange={(e) => handleChange("fee_name", e.target.value)}
-              variant="outlined"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: "#fff",
-                  borderRadius: 2,
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e0e0e0",
-                    borderWidth: 1.5,
-                  },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#1976d2",
-                    boxShadow: "0 2px 6px rgba(25, 118, 210, 0.15)",
-                  },
-                  "&.Mui-focused": {
-                    boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#1976d2",
-                      borderWidth: 2,
-                    },
-                  },
-                },
-              }}
-            />
-          </Box>
-
-          {/* Mô tả */}
-          <Box>
-            <ArgonTypography
-              variant="body2"
-              fontWeight="bold"
-              color="#424242"
-              mb={1}
-            >
-              Mô tả <span style={{ color: "#d32f2f" }}>*</span>
-            </ArgonTypography>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              placeholder="Nhập mô tả phí..."
-              value={formData.description}
-              onChange={(e) => handleChange("description", e.target.value)}
-              variant="outlined"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: "#fff",
-                  borderRadius: 2,
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e0e0e0",
-                    borderWidth: 1.5,
-                  },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#1976d2",
-                    boxShadow: "0 2px 6px rgba(25, 118, 210, 0.15)",
-                  },
-                  "&.Mui-focused": {
-                    boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#1976d2",
-                      borderWidth: 2,
-                    },
-                  },
-                },
-              }}
-            />
-          </Box>
-
-          {/* Số tiền */}
-          <Box>
-            <ArgonTypography
-              variant="body2"
-              fontWeight="bold"
-              color="#424242"
-              mb={1}
-            >
-              Số tiền (VNĐ) <span style={{ color: "#d32f2f" }}>*</span>
-            </ArgonTypography>
-            <TextField
-              fullWidth
-              placeholder="Nhập số tiền..."
-              value={formData.amount}
-              onChange={handleAmountChange}
-              variant="outlined"
-              InputProps={{
-                endAdornment: (
-                  <ArgonTypography variant="body2" color="#757575" sx={{ mr: 1 }}>
-                    VNĐ
-                  </ArgonTypography>
-                ),
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: "#fff",
-                  borderRadius: 2,
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e0e0e0",
-                    borderWidth: 1.5,
-                  },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#1976d2",
-                    boxShadow: "0 2px 6px rgba(25, 118, 210, 0.15)",
-                  },
-                  "&.Mui-focused": {
-                    boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#1976d2",
-                      borderWidth: 2,
-                    },
-                  },
-                },
-              }}
-            />
-            {formData.amount && !isNaN(parseFloat(formData.amount)) && (
-              <ArgonTypography
-                variant="caption"
-                color="#1976d2"
-                sx={{ mt: 0.5, display: "block", fontWeight: 500 }}
-              >
-                {formatCurrency(formData.amount)} VNĐ
-              </ArgonTypography>
-            )}
-          </Box>
-
-          {/* Hạn thanh toán (chỉ cho create mode) */}
-          {!isEditMode && (
-            <Box>
-              <ArgonTypography
-                variant="body2"
-                fontWeight="bold"
-                color="#424242"
-                mb={1}
-              >
-                Hạn thanh toán (áp dụng cho tất cả lớp) <span style={{ color: "#d32f2f" }}>*</span>
-              </ArgonTypography>
-              <TextField
-                type="date"
-                fullWidth
-                value={formData.due_date || ''}
-                onChange={(e) => handleChange("due_date", e.target.value)}
-                variant="outlined"
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    bgcolor: "#fff",
+          <SectionCard
+            icon={<InfoOutlinedIcon />}
+            title="Thông tin phí"
+            subtitle="Nhập các chi tiết cơ bản cho khoản thu"
+          >
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                  Tên phí <span style={{ color: "#d32f2f" }}>*</span>
+                </ArgonTypography>
+                <TextField
+                  fullWidth
+                  placeholder="Nhập tên phí..."
+                  value={formData.fee_name}
+                  onChange={(e) => handleChange("fee_name", e.target.value)}
+                  variant="outlined"
+                  sx={{ flex: 1, minWidth: 200, maxWidth: 1000,  
+                    width: '100%',
                     borderRadius: 2,
-                    transition: "all 0.3s ease",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                      borderWidth: 1.5,
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#1976d2",
-                      boxShadow: "0 2px 6px rgba(25, 118, 210, 0.15)",
-                    },
-                    "&.Mui-focused": {
-                      boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#1976d2",
-                        borderWidth: 2,
+                    '& .MuiOutlinedInput-root': {
+                      width: '100%',
+                      '&:hover fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'primary.main',
                       },
                     },
-                  },
-                }}
-              />
-            </Box>
-          )}
+                    '& .MuiInputBase-input': {
+                      width: '100% !important',
+                    }
+                  }}
+                />
+              </Grid>
 
-          {/* Lớp học áp dụng */}
-          <Box>
-            <ArgonTypography
-              variant="body2"
-              fontWeight="bold"
-              color="#424242"
-              mb={1.5}
-            >
-              Lớp học áp dụng
-            </ArgonTypography>
+              <Grid item xs={12}>
+                <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                  Mô tả <span style={{ color: "#d32f2f" }}>*</span>
+                </ArgonTypography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  placeholder="Nhập mô tả phí..."
+                  value={formData.description}
+                  onChange={(e) => handleChange("description", e.target.value)}
+                  variant="outlined"
+                  sx={{ flex: 1, minWidth: 200, maxWidth: 1000,  
+                    width: '100%',
+                    borderRadius: 2,
+                    '& .MuiOutlinedInput-root': {
+                      width: '100%',
+                      '&:hover fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                    },
+                    '& .MuiInputBase-input': {
+                      width: '100% !important',
+                    }
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                  Số tiền (VNĐ) <span style={{ color: "#d32f2f" }}>*</span>
+                </ArgonTypography>
+                <TextField
+                  fullWidth
+                  placeholder="Nhập số tiền..."
+                  value={formData.amount}
+                  onChange={handleAmountChange}
+                  variant="outlined"
+                  InputProps={{
+                    endAdornment: (
+                      <ArgonTypography variant="body2" color="#757575" sx={{ mr: 1 }}>
+                        VNĐ
+                      </ArgonTypography>
+                    ),
+                  }}
+                  sx={{ flex: 1, minWidth: 200, maxWidth: 400,  
+                    width: '100%',
+                    borderRadius: 2,
+                    '& .MuiOutlinedInput-root': {
+                      width: '100%',
+                      '&:hover fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                    },
+                    '& .MuiInputBase-input': {
+                      width: '100% !important',
+                    }
+                  }}
+                />
+                {formData.amount && !isNaN(parseFloat(formData.amount)) && (
+                  <ArgonTypography
+                    variant="caption"
+                    color="#1976d2"
+                    sx={{ mt: 0.5, display: "block", fontWeight: 500 }}
+                  >
+                    {formatCurrency(formData.amount)} VNĐ
+                  </ArgonTypography>
+                )}
+              </Grid>
+
+              {!isEditMode && (
+                <Grid item xs={12} md={6}>
+                  <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                    Hạn thanh toán <span style={{ color: "#d32f2f" }}>*</span>
+                  </ArgonTypography>
+                  <TextField
+                    type="date"
+                    fullWidth
+                    value={formData.due_date || ''}
+                    onChange={(e) => handleChange("due_date", e.target.value)}
+                    variant="outlined"
+                    sx={{ flex: 1, minWidth: 200, maxWidth: 400,  
+                    width: '100%',
+                    borderRadius: 2,
+                    '& .MuiOutlinedInput-root': {
+                      width: '100%',
+                      '&:hover fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                    },
+                    '& .MuiInputBase-input': {
+                      width: '100% !important',
+                    }
+                  }}
+                  />
+                </Grid>
+              )}
+            </Grid>
+          </SectionCard>
+
+          <SectionCard
+            icon={<GavelOutlinedIcon />}
+            title="Phụ phí quá hạn"
+            subtitle="Thiết lập phụ phí khi phụ huynh thanh toán chậm"
+          >
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                  Loại phụ phí
+                </ArgonTypography>
+                <FormControl fullWidth>
+                  <Select
+                    value={formData.late_fee_type}
+                    onChange={(e) => handleChange("late_fee_type", e.target.value)}
+                    displayEmpty
+                    renderValue={(value) => {
+                      const map = {
+                        none: "Không áp dụng",
+                        fixed: "Cố định (VNĐ)",
+                        percentage: "Phần trăm (%)",
+                      };
+                      return map[value] || "Chọn loại phụ phí";
+                    }}
+                  >
+                    <MenuItem value="none">Không áp dụng</MenuItem>
+                    <MenuItem value="fixed">Cố định (VNĐ)</MenuItem>
+                    <MenuItem value="percentage">Phần trăm (%)</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {formData.late_fee_type !== "none" && (
+                <Grid item xs={12} md={6}>
+                  <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                    {formData.late_fee_type === "fixed" ? "Giá trị phụ phí (VNĐ)" : "Phụ phí (%)"}
+                  </ArgonTypography>
+                  <TextField
+                    type="number"
+                    fullWidth
+                    value={formData.late_fee_value}
+                    onChange={(e) => handleChange("late_fee_value", e.target.value)}
+                    inputProps={{
+                      min: 0,
+                      step: formData.late_fee_type === "percentage" ? 0.1 : 1000,
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <ArgonTypography variant="body2" color="#757575" sx={{ mr: 1 }}>
+                          {formData.late_fee_type === "fixed" ? "VNĐ" : "%"}
+                        </ArgonTypography>
+                      ),
+                    }}
+                  />
+                </Grid>
+              )}
+
+              <Grid item xs={12}>
+                <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                  Ghi chú phụ phí (tuỳ chọn)
+                </ArgonTypography>
+                <TextField
+                  fullWidth
+                  placeholder="Ví dụ: Phụ phí áp dụng khi quá hạn 3 ngày..."
+                  value={formData.late_fee_description}
+                  onChange={(e) => handleChange("late_fee_description", e.target.value)}
+                  multiline
+                  rows={2}
+                />
+                <ArgonTypography variant="caption" color="#757575" mt={1} display="block">
+                  Nếu chọn phụ phí cố định, giá trị sẽ cộng thêm vào khoản phí ban đầu khi quá hạn.
+                  Nếu chọn phần trăm, hệ thống tính theo tỷ lệ của giá trị phí gốc.
+                </ArgonTypography>
+              </Grid>
+            </Grid>
+          </SectionCard>
+
+          <SectionCard
+            icon={<ClassOutlinedIcon />}
+            title="Lớp học áp dụng"
+            subtitle="Chọn lớp và hạn nộp phí tương ứng"
+          >
             {classes.length === 0 ? (
               <ArgonBox
                 sx={{
@@ -578,76 +735,141 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
                   {classes.map((cls) => {
                     if (isEditMode) {
                       // Edit mode: show class_fees with individual due_date
-                      const classFee = formData.class_fees.find(cf => cf.class_id === cls._id);
+                      // Ensure both are strings for comparison
+                      const clsIdStr = String(cls._id);
+                      const classFee = classFees.find(cf => String(cf.class_id) === clsIdStr);
                       const isChecked = !!classFee;
+                      // Get original due_date from originalDueDates (before editing)
+                      const originalDueDateStr = originalDueDates[clsIdStr];
+                      // Format date from YYYY-MM-DD to DD/MM/YYYY to avoid timezone issues
+                      const formatDateDisplay = (dateStr) => {
+                        if (!dateStr) return null;
+                        const parts = dateStr.split('-');
+                        if (parts.length === 3) {
+                          return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                        }
+                        // Fallback to Date parsing if format is different
+                        try {
+                          const date = new Date(dateStr);
+                          return date.toLocaleDateString('vi-VN', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                          });
+                        } catch {
+                          return null;
+                        }
+                      };
+                      const originalDueDate = formatDateDisplay(originalDueDateStr);
+                      const currentDueDate = formatDateDisplay(classFee?.due_date);
+                      
                       return (
-                        <Box key={cls._id}>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={isChecked}
-                                onChange={() => handleClassToggle(cls._id)}
-                                sx={{
-                                  color: "#1976d2",
-                                  "&.Mui-checked": {
+                        <Box 
+                          key={cls._id}
+                          sx={{
+                            mb: 1.5,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            border: isChecked ? "1px solid #1976d2" : "1px solid #e0e0e0",
+                            bgcolor: isChecked ? "#e3f2fd" : "#fff",
+                            transition: "all 0.2s ease",
+                            "&:hover": {
+                              bgcolor: isChecked ? "#e3f2fd" : "#f5f5f5",
+                            },
+                          }}
+                        >
+                          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={isChecked}
+                                  onChange={() => handleClassToggle(cls._id)}
+                                  sx={{
                                     color: "#1976d2",
-                                  },
-                                  "&:hover": {
-                                    backgroundColor: "rgba(25, 118, 210, 0.08)",
-                                  },
-                                }}
-                              />
-                            }
-                            label={
-                              <ArgonTypography
-                                variant="body2"
-                                fontWeight={isChecked ? 600 : 400}
-                                color={isChecked ? "#1976d2" : "#424242"}
-                              >
-                                {cls.class_name} ({cls.academic_year})
-                              </ArgonTypography>
-                            }
-                            sx={{
-                              mb: 0.5,
-                              px: 1.5,
-                              py: 0.75,
-                              borderRadius: 1.5,
-                              transition: "all 0.2s ease",
-                              "&:hover": {
-                                bgcolor: "#e3f2fd",
-                              },
-                              ...(isChecked && {
-                                bgcolor: "#e3f2fd",
-                                border: "1px solid #1976d2",
-                              }),
-                            }}
-                          />
-                          {isChecked && (
-                            <Box sx={{ ml: 4.5, mb: 1 }}>
-                              <TextField
-                                type="date"
-                                label="Hạn thanh toán"
-                                value={classFee.due_date || ''}
-                                onChange={(e) => handleDueDateChange(cls._id, e.target.value)}
-                                size="small"
-                                InputLabelProps={{
-                                  shrink: true,
-                                }}
-                                sx={{
-                                  minWidth: 200,
-                                  "& .MuiOutlinedInput-root": {
-                                    bgcolor: "#fff",
-                                    borderRadius: 1.5,
-                                  },
-                                }}
-                              />
-                            </Box>
-                          )}
+                                    "&.Mui-checked": {
+                                      color: "#1976d2",
+                                    },
+                                    "&:hover": {
+                                      backgroundColor: "rgba(25, 118, 210, 0.08)",
+                                    },
+                                  }}
+                                />
+                              }
+                              label={
+                                <ArgonTypography
+                                  variant="body2"
+                                  fontWeight={isChecked ? 600 : 400}
+                                  color={isChecked ? "#1976d2" : "#424242"}
+                                  sx={{ minWidth: 150 }}
+                                >
+                                  {cls.class_name} ({cls.academic_year})
+                                </ArgonTypography>
+                              }
+                            />
+                            {isChecked && (
+                              <>
+                                {/* Always show original due date if exists */}
+                                {originalDueDate && (
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                    <ArgonTypography variant="caption" color="#757575">
+                                      Hạn cũ:
+                                    </ArgonTypography>
+                                    <Chip
+                                      label={originalDueDate}
+                                      size="small"
+                                      sx={{
+                                        bgcolor: "#f5f5f5",
+                                        color: "#757575",
+                                        border: "1px solid #e0e0e0",
+                                        fontWeight: 500,
+                                        height: 24,
+                                      }}
+                                    />
+                                  </Box>
+                                )}
+                                {/* Show current/new due date if different from original */}
+                                {currentDueDate && currentDueDate !== originalDueDate && (
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                    <ArgonTypography variant="caption" color="#1976d2">
+                                      Hạn mới:
+                                    </ArgonTypography>
+                                    <Chip
+                                      label={currentDueDate}
+                                      size="small"
+                                      sx={{
+                                        bgcolor: "#e3f2fd",
+                                        color: "#1976d2",
+                                        border: "1px solid #1976d2",
+                                        fontWeight: 600,
+                                        height: 24,
+                                      }}
+                                    />
+                                  </Box>
+                                )}
+                                <TextField
+                                  type="date"
+                                  value={classFee.due_date || ''}
+                                  onChange={(e) => handleDueDateChange(cls._id, e.target.value)}
+                                  size="small"
+                                  InputLabelProps={{
+                                    shrink: true,
+                                  }}
+                                  sx={{
+                                    minWidth: 200,
+                                    "& .MuiOutlinedInput-root": {
+                                      bgcolor: "#fff",
+                                      borderRadius: 1.5,
+                                    },
+                                  }}
+                                />
+                              </>
+                            )}
+                          </Stack>
                         </Box>
                       );
                     } else {
                       // Create mode: show class_ids only
-                      const isChecked = formData.class_ids.includes(cls._id);
+                      const isChecked = classIds.includes(cls._id);
                       return (
                         <FormControlLabel
                           key={cls._id}
@@ -696,11 +918,12 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
                 </FormGroup>
               </Paper>
             )}
-            {((isEditMode && formData.class_fees.length > 0) || (!isEditMode && formData.class_ids.length > 0)) && (
+            {((isEditMode && classFees.length > 0) || (!isEditMode && classIds.length > 0)) && (
               <Box sx={{ mt: 1.5, display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                 {isEditMode ? (
-                  formData.class_fees.map((classFee) => {
-                    const cls = classes.find((c) => c._id === classFee.class_id);
+                  classFees.map((classFee) => {
+                    const classIdStr = String(classFee.class_id);
+                    const cls = classes.find((c) => String(c._id) === classIdStr);
                     if (!cls) return null;
                     const dueDate = classFee.due_date 
                       ? new Date(classFee.due_date).toLocaleDateString('vi-VN')
@@ -724,7 +947,8 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
                   })
                 ) : (
                   formData.class_ids.map((classId) => {
-                    const cls = classes.find((c) => c._id === classId);
+                    const classIdStr = String(classId);
+                    const cls = classes.find((c) => String(c._id) === classIdStr);
                     if (!cls) return null;
                     const dueDate = formData.due_date 
                       ? new Date(formData.due_date).toLocaleDateString('vi-VN')
@@ -749,16 +973,16 @@ const FeeModal = ({ open, onClose, feeData, onSuccess }) => {
                 )}
               </Box>
             )}
-            {((isEditMode && formData.class_fees.length > 0) || (!isEditMode && formData.class_ids.length > 0)) && (
+            {((isEditMode && classFees.length > 0) || (!isEditMode && classIds.length > 0)) && (
               <ArgonTypography
                 variant="caption"
                 color="#1976d2"
                 sx={{ mt: 1, display: "block", fontWeight: 500 }}
               >
-                Đã chọn {isEditMode ? formData.class_fees.length : formData.class_ids.length} lớp học
+                Đã chọn {isEditMode ? classFees.length : classIds.length} lớp học
               </ArgonTypography>
             )}
-          </Box>
+          </SectionCard>
         </Stack>
       </DialogContent>
 
@@ -831,6 +1055,9 @@ FeeModal.propTypes = {
     fee_name: PropTypes.string,
     description: PropTypes.string,
     amount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    late_fee_type: PropTypes.string,
+    late_fee_value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    late_fee_description: PropTypes.string,
     class_ids: PropTypes.arrayOf(PropTypes.string),
     class_fees: PropTypes.arrayOf(PropTypes.shape({
       class_id: PropTypes.string,

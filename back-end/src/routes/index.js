@@ -15,6 +15,7 @@ const classRouter = require('./class');
 const classAgeRouter = require('./classAge');
 const studentRouter = require('./student');
 const schoolAdminRouter = require('./schoolAdminRoutes');
+const adminSchoolRouter = require('./adminSchool');
 const payosRouter = require('./payos');
 
 // Định tuyến các API endpoints
@@ -29,6 +30,7 @@ router.use('/classes', classRouter);
 router.use('/class-ages', classAgeRouter);
 router.use('/student', studentRouter);
 router.use('/school-admin', schoolAdminRouter);
+router.use('/admin/schools', adminSchoolRouter);
 router.use('/payos', payosRouter);
 
 router.use('/api/messaging', messagingRouter);
