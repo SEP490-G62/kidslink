@@ -32,5 +32,12 @@ complaintTypeSchema.statics.findParentTypeById = function(typeId) {
   });
 };
 
+complaintTypeSchema.statics.findTeacherTypeById = function(typeId) {
+  return this.findOne({
+    _id: typeId,
+    category: { $in: ['teacher'] }
+  });
+};
+
 module.exports = mongoose.model('ComplaintType', complaintTypeSchema);
 

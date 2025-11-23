@@ -12,6 +12,8 @@ import ManageFees from "layouts/school-admin/pages/ManageFees";
 import FeeDetail from "layouts/school-admin/pages/ManageFees/FeeDetail";
 import SchoolInfo from "layouts/school-admin/pages/SchoolInfo";
 import Profile from "layouts/profile";
+import ManageComplaints from "layouts/school-admin/pages/ManageComplaints";
+
 import { useEffect } from "react";
 import { useAuth } from "context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -91,6 +93,7 @@ const schoolAdminRoutes = [
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageFees /></ProtectedRoute>,
   },
+
   {
     type: "hidden",
     name: "Chi tiết phí",
@@ -109,6 +112,16 @@ const schoolAdminRoutes = [
       <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-single-02" />
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageAccountPage /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Quản lý đơn",
+    key: "manage-complaints",
+    route: "/school-admin/complaints",
+    icon: (
+      <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-paper-diploma" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageComplaints /></ProtectedRoute>,
   },
   {
     type: "route",
