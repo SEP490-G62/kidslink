@@ -205,7 +205,7 @@ const deletePost = async (req, res) => {
 // CREATE post (school admin can create posts)
 const createPost = async (req, res) => {
   try {
-    const { content, class_id, images } = req.body;
+    const { content, class_id, images, scope = 'school' } = req.body;
 
     if (!content) {
       return res.status(400).json({
@@ -214,14 +214,15 @@ const createPost = async (req, res) => {
       });
     }
 
-    // Validate class_id exists (if provided)
-    if (class_id) {
-      const classInfo = await require('../models/Class').findById(class_id);
+    // Validate scope & class
+    if (scope === 'class') {
+      if (!class_id) {
+        return res.status(400).json({ success: false, message: 'class_id là bắt buộc khi đăng cho lớp' });
+      }
+      const ClassModel = require('../models/Class');
+      const classInfo = await ClassModel.findById(class_id);
       if (!classInfo) {
-        return res.status(404).json({
-          success: false,
-          message: 'Không tìm thấy lớp học'
-        });
+        return res.status(404).json({ success: false, message: 'Không tìm thấy lớp học' });
       }
     }
 
@@ -229,7 +230,8 @@ const createPost = async (req, res) => {
     const post = await Post.create({
       content,
       user_id: req.user.id,
-      class_id: class_id || null,
+      scope: scope === 'class' ? 'class' : 'school',
+      class_id: scope === 'class' ? class_id : null,
       status: 'approved',
       create_at: new Date()
     });
@@ -264,7 +266,7 @@ const createPost = async (req, res) => {
 const updatePost = async (req, res) => {
   try {
     const { postId } = req.params;
-    const { content, class_id, images } = req.body;
+    const { content, class_id, images, scope } = req.body;
 
     const post = await Post.findById(postId);
 
@@ -278,8 +280,28 @@ const updatePost = async (req, res) => {
     // No permission check needed - only one school in system
 
     // Update post
-    post.content = content || post.content;
-    post.class_id = class_id !== undefined ? class_id : post.class_id;
+    if (content) post.content = content;
+    if (scope) {
+      if (scope === 'school') {
+        post.scope = 'school';
+        post.class_id = null;
+      } else if (scope === 'class') {
+        if (!class_id) {
+          return res.status(400).json({ success: false, message: 'class_id là bắt buộc khi đổi sang phạm vi lớp' });
+        }
+        const ClassModel = require('../models/Class');
+        const classInfo = await ClassModel.findById(class_id);
+        if (!classInfo) {
+          return res.status(404).json({ success: false, message: 'Không tìm thấy lớp học' });
+        }
+        post.scope = 'class';
+        post.class_id = class_id;
+      }
+    } else if (class_id !== undefined) {
+      // Maintain backward compatibility if only class_id passed
+      post.scope = 'class';
+      post.class_id = class_id;
+    }
     await post.save();
 
     // Update images if provided

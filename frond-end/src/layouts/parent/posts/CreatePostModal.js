@@ -4,7 +4,7 @@
 =========================================================
 */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
 // @mui material components
@@ -14,6 +14,10 @@ import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 
@@ -23,11 +27,13 @@ import ArgonTypography from "components/ArgonTypography";
 
 // Services
 import parentService from "services/parentService";
+import schoolAdminService from "services/schoolAdminService";
 import { useAuth } from "context/AuthContext";
 
-function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
+function CreatePostModal({ open, onClose, onPostCreated, onSuccess, post = null, postData = null, isAdmin = false }) {
   const { user, selectedChild } = useAuth();
-  const isEditMode = !!post;
+  const effectivePost = post || postData || null;
+  const isEditMode = !!effectivePost;
   
   // Initialize state from post prop or empty
   const [content, setContent] = useState("");
@@ -38,9 +44,9 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
 
   // Update state when post changes (for editing)
   React.useEffect(() => {
-    if (post) {
-      setContent(post.content || "");
-      const postImages = post.images || [];
+    if (effectivePost) {
+      setContent(effectivePost.content || "");
+      const postImages = effectivePost.images || [];
       setImages(postImages);
       setImagePreviews(postImages);
     } else {
@@ -49,7 +55,7 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
       setImagePreviews([]);
     }
     setError("");
-  }, [post]);
+  }, [effectivePost]);
 
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
@@ -91,26 +97,52 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
     setLoading(true);
 
     try {
+      const done = onPostCreated || onSuccess || (() => {});
       if (isEditMode) {
-        const result = await parentService.updatePost(post._id, content, images);
-        if (result.success) {
-          onPostCreated(result.data);
-          handleCloseModal();
+        if (isAdmin) {
+          const payload = { content, images };
+          if (scope) payload.scope = scope;
+          if (scope === 'class') payload.class_id = classId;
+          const resp = await schoolAdminService.updatePost(effectivePost._id, payload);
+          if (resp && (resp.success || resp.data)) {
+            done(resp.data || resp);
+            handleCloseModal();
+          } else {
+            setError((resp && (resp.error || resp.message)) || "Có lỗi xảy ra khi cập nhật bài viết");
+          }
         } else {
-          setError(result.error || "Có lỗi xảy ra khi cập nhật bài viết");
+          const result = await parentService.updatePost(effectivePost._id, content, images);
+          if (result.success) {
+            done(result.data);
+            handleCloseModal();
+          } else {
+            setError(result.error || "Có lỗi xảy ra khi cập nhật bài viết");
+          }
         }
       } else {
-        if (!selectedChild) {
-          setError("Vui lòng chọn con để đăng bài");
-          setLoading(false);
-          return;
-        }
-        const result = await parentService.createPost(content, images, selectedChild._id);
-        if (result.success) {
-          onPostCreated(result.data);
-          handleCloseModal();
+        if (isAdmin) {
+          // Admin posts are always school-wide
+          const payload = { content, images, scope: 'school' };
+          const resp = await schoolAdminService.createPost(payload);
+          if (resp && (resp.success || resp.data)) {
+            done(resp.data || resp);
+            handleCloseModal();
+          } else {
+            setError((resp && (resp.error || resp.message)) || "Có lỗi xảy ra khi tạo bài viết");
+          }
         } else {
-          setError(result.error || "Có lỗi xảy ra khi tạo bài viết");
+          if (!selectedChild) {
+            setError("Vui lòng chọn con để đăng bài");
+            setLoading(false);
+            return;
+          }
+          const result = await parentService.createPost(content, images, selectedChild._id);
+          if (result.success) {
+            done(result.data);
+            handleCloseModal();
+          } else {
+            setError(result.error || "Có lỗi xảy ra khi tạo bài viết");
+          }
         }
       }
     } catch (err) {
@@ -208,8 +240,9 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
           sx={{ overflow: 'hidden', p: 3 }}
         >
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          {/* Selected Child Info (only for create mode) */}
-          {!isEditMode && selectedChild && (
+
+          {/* Selected Child Info (only for parent create mode) */}
+          {!isAdmin && !isEditMode && selectedChild && (
             <ArgonBox mb={2} p={2} sx={{ 
               backgroundColor: 'rgba(94, 114, 228, 0.05)', 
               borderRadius: 2,
@@ -455,8 +488,11 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
 CreatePostModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  onPostCreated: PropTypes.func.isRequired,
-  post: PropTypes.object
+  onPostCreated: PropTypes.func,
+  onSuccess: PropTypes.func,
+  post: PropTypes.object,
+  postData: PropTypes.object,
+  isAdmin: PropTypes.bool
 };
 
 export default CreatePostModal;

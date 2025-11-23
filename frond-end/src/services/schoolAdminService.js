@@ -64,6 +64,18 @@ const schoolAdminService = {
     return await api.get('/school-admin/calendar/slots', true);
   },
 
+  createSlot: async (slotData) => {
+    return await api.post('/school-admin/calendar/slots', slotData, true);
+  },
+
+  updateSlot: async (slotId, slotData) => {
+    return await api.put(`/school-admin/calendar/slots/${slotId}`, slotData, true);
+  },
+
+  deleteSlot: async (slotId) => {
+    return await api.delete(`/school-admin/calendar/slots/${slotId}`, true);
+  },
+
   createOrUpdateCalendarEntry: async (calendarId, entryData) => {
     return await api.post(`/school-admin/calendar/calendar/${calendarId}`, entryData, true);
   },

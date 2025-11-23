@@ -48,6 +48,7 @@ function Menu() {
   const [error, setError] = useState("");
   const [menuData, setMenuData] = useState(null);
   const [selectedWeek, setSelectedWeek] = useState(0); // 0: this week, -1 prev, +1 next
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const getMonday = (date) => {
     const d = new Date(date);
@@ -65,6 +66,23 @@ function Menu() {
     const selectedMonday = new Date(currentMonday);
     selectedMonday.setDate(currentMonday.getDate() + (selectedWeek * 7));
     return selectedMonday;
+  };
+
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const yearsList = [];
+    for (let i = currentYear - 2; i <= currentYear + 2; i++) {
+      yearsList.push(i);
+    }
+    return yearsList;
+  }, []);
+
+  const getFirstWeekOfYear = (year) => {
+    const janFirst = new Date(year, 0, 1);
+    const firstMonday = getMonday(janFirst);
+    const currentMonday = getCurrentWeekMonday();
+    const diffMs = firstMonday.getTime() - currentMonday.getTime();
+    return Math.round(diffMs / (1000 * 60 * 60 * 24 * 7));
   };
 
   const weekDays = useMemo(() => {
@@ -110,6 +128,17 @@ function Menu() {
 
   const handleWeekChange = (direction) => {
     setSelectedWeek((prev) => prev + (direction === 'prev' ? -1 : 1));
+  };
+
+  const handleYearChange = (newYear) => {
+    setSelectedYear(newYear);
+    const currentYear = new Date().getFullYear();
+    if (newYear === currentYear) {
+      setSelectedWeek(0);
+    } else {
+      const firstWeek = getFirstWeekOfYear(newYear);
+      setSelectedWeek(firstWeek);
+    }
   };
 
   const formatWeekRange = () => {
@@ -260,8 +289,33 @@ function Menu() {
           <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
             <CardContent sx={{ p: 3 }}>
               <ArgonBox mb={3} sx={{ p: 2, borderRadius: 2, backgroundColor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} md={5}>
+                <Grid container spacing={2} alignItems="flex-end">
+                  <Grid item xs={12} sm={6} md={3}>
+                    <ArgonBox>
+                      <ArgonTypography variant="body2" fontWeight="medium" color="text" mb={1.5}>
+                        Năm
+                      </ArgonTypography>
+                      <FormControl fullWidth size="small">
+                        <Select
+                          value={selectedYear}
+                          onChange={(e) => handleYearChange(Number(e.target.value))}
+                          sx={{
+                            backgroundColor: '#fff',
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#dee2e6' },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#adb5bd' },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#1976d2' }
+                          }}
+                        >
+                          {years.map((year) => (
+                            <MenuItem key={year} value={year}>
+                              {year}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </ArgonBox>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={5}>
                     <ArgonBox display="flex" alignItems="center" gap={1}>
                       <IconButton onClick={() => handleWeekChange('prev')} size="small" sx={{ backgroundColor: '#fff', border: '1px solid #dee2e6', '&:hover': { backgroundColor: '#f8f9fa' } }}>
                         ‹
