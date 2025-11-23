@@ -4,7 +4,6 @@ const classSchema = new mongoose.Schema({
   class_name: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   academic_year: {

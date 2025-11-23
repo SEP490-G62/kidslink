@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Class: ClassModel } = require('../models');
+const { Class: ClassModel, StudentClass } = require('../models');
 
 // GET /classes
 async function listClasses(req, res) {
@@ -98,7 +98,6 @@ async function createClass(req, res) {
       academic_year: payload.academic_year,
       start_date: payload.start_date,
       end_date: payload.end_date,
-      status: payload.status !== undefined ? payload.status : 1,
     });
 
     const created = await ClassModel.findById(doc._id)
@@ -127,7 +126,6 @@ async function updateClass(req, res) {
       teacher_id: payload.teacher_id,
       teacher_id2: payload.teacher_id2,
       academic_year: payload.academic_year,
-      status: payload.status !== undefined ? payload.status : undefined,
     };
 
     // Remove undefined fields
@@ -147,7 +145,7 @@ async function updateClass(req, res) {
   }
 }
 
-// DELETE /classes/:id (soft delete)
+// DELETE /classes/:id (hard delete - xóa vĩnh viễn)
 async function deleteClass(req, res) {
   try {
     const { id } = req.params;
@@ -156,11 +154,110 @@ async function deleteClass(req, res) {
     const exist = await ClassModel.findById(id);
     if (!exist) return res.status(404).json({ success: false, message: 'Không tìm thấy lớp' });
 
-    await ClassModel.findByIdAndUpdate(id, { status: 0 });
+    // Xóa tất cả StudentClass liên quan trước
+    await StudentClass.deleteMany({ class_id: id });
+
+    // Xóa lớp vĩnh viễn
+    await ClassModel.findByIdAndDelete(id);
     res.json({ success: true, message: 'Xóa lớp thành công' });
   } catch (err) {
     console.error('classController.deleteClass Error:', err);
     res.status(500).json({ success: false, message: 'Lỗi server', error: err.message });
+  }
+}
+
+// POST /classes/:id/promote - Lên lớp: tạo lớp mới và copy học sinh
+async function promoteClass(req, res) {
+  try {
+    const { id } = req.params; // ID lớp cũ
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+
+    const oldClass = await ClassModel.findById(id);
+    if (!oldClass) return res.status(404).json({ success: false, message: 'Không tìm thấy lớp cũ' });
+
+    const payload = req.body || {};
+    
+    // Validate required fields
+    if (!payload.class_name) {
+      return res.status(400).json({ success: false, message: 'class_name là bắt buộc' });
+    }
+    if (!payload.class_age_id) {
+      return res.status(400).json({ success: false, message: 'class_age_id là bắt buộc' });
+    }
+    if (!payload.teacher_id) {
+      return res.status(400).json({ success: false, message: 'teacher_id là bắt buộc' });
+    }
+    if (!payload.start_date) {
+      return res.status(400).json({ success: false, message: 'start_date là bắt buộc' });
+    }
+    if (!payload.end_date) {
+      return res.status(400).json({ success: false, message: 'end_date là bắt buộc' });
+    }
+    if (!payload.academic_year) {
+      return res.status(400).json({ success: false, message: 'academic_year là bắt buộc' });
+    }
+
+    // Get school_id từ lớp cũ hoặc tìm trường đầu tiên
+    let schoolId = payload.school_id || oldClass.school_id;
+    if (!schoolId) {
+      const School = require('../models/School');
+      const school = await School.findOne();
+      if (!school) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Không tìm thấy trường học trong hệ thống. Vui lòng tạo trường trước.' 
+        });
+      }
+      schoolId = school._id;
+    }
+
+    // Tạo lớp mới
+    const newClass = await ClassModel.create({
+      class_name: payload.class_name,
+      school_id: schoolId,
+      class_age_id: payload.class_age_id,
+      teacher_id: payload.teacher_id,
+      teacher_id2: payload.teacher_id2 || null,
+      academic_year: payload.academic_year,
+      start_date: payload.start_date,
+      end_date: payload.end_date,
+    });
+
+    // Lấy tất cả học sinh từ lớp cũ
+    const oldStudentClasses = await StudentClass.find({ class_id: id });
+    
+    // Copy học sinh sang lớp mới
+    if (oldStudentClasses.length > 0) {
+      const newStudentClasses = oldStudentClasses.map(sc => ({
+        student_id: sc.student_id,
+        class_id: newClass._id,
+        discount: sc.discount || 0,
+      }));
+      
+      // Sử dụng insertMany với ordered: false để bỏ qua lỗi duplicate
+      try {
+        await StudentClass.insertMany(newStudentClasses, { ordered: false });
+      } catch (insertErr) {
+        // Nếu có lỗi duplicate, vẫn tiếp tục (một số học sinh có thể đã được thêm)
+        console.warn('Một số học sinh có thể đã tồn tại trong lớp mới:', insertErr.message);
+      }
+    }
+
+    // Populate và trả về lớp mới
+    const created = await ClassModel.findById(newClass._id)
+      .populate('school_id')
+      .populate('class_age_id')
+      .populate({ path: 'teacher_id', populate: { path: 'user_id', select: 'full_name email avatar_url' } })
+      .populate({ path: 'teacher_id2', populate: { path: 'user_id', select: 'full_name email avatar_url' } });
+
+    res.status(201).json({ 
+      success: true, 
+      message: `Lên lớp thành công. Đã tạo lớp mới và chuyển ${oldStudentClasses.length} học sinh.`, 
+      data: created 
+    });
+  } catch (err) {
+    console.error('classController.promoteClass Error:', err);
+    res.status(500).json({ success: false, message: 'Lỗi lên lớp: ' + err.message, error: err.message });
   }
 }
 
@@ -170,5 +267,6 @@ module.exports = {
   createClass,
   updateClass,
   deleteClass,
+  promoteClass,
   getAllClasses: listClasses,
 };

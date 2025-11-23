@@ -483,7 +483,13 @@ const getAllTeachers = async (req, res) => {
       success: true,
       data: teachers.map(teacher => ({
         _id: teacher._id,
-        fullName: teacher.user_id?.full_name || 'Chưa xác định',
+        user_id: teacher.user_id ? {
+          _id: teacher.user_id._id,
+          full_name: teacher.user_id.full_name || 'Chưa xác định',
+          email: teacher.user_id.email,
+          avatar_url: teacher.user_id.avatar_url || ''
+        } : null,
+        fullName: teacher.user_id?.full_name || 'Chưa xác định', // Giữ lại để tương thích
         avatarUrl: teacher.user_id?.avatar_url || '',
         specialization: teacher.specialization || ''
       }))

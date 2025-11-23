@@ -17,6 +17,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import SearchIcon from "@mui/icons-material/Search";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import ArgonBox from "components/ArgonBox";
@@ -36,6 +37,7 @@ const ClassesPage = () => {
   const [yearSelectOpen, setYearSelectOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [isPromoteMode, setIsPromoteMode] = useState(false);
   const navigate = useNavigate();
 
   const fetchClasses = async () => {
@@ -89,17 +91,26 @@ const ClassesPage = () => {
 
   const handleCreate = () => {
     setSelectedClass(null);
+    setIsPromoteMode(false);
     setModalOpen(true);
   };
 
   const handleEdit = (classData) => {
     setSelectedClass(classData);
+    setIsPromoteMode(false);
+    setModalOpen(true);
+  };
+
+  const handlePromote = (classData) => {
+    setSelectedClass(classData);
+    setIsPromoteMode(true);
     setModalOpen(true);
   };
 
   const handleModalClose = () => {
     setModalOpen(false);
     setSelectedClass(null);
+    setIsPromoteMode(false);
   };
 
   const handleSuccess = () => {
@@ -110,7 +121,8 @@ const ClassesPage = () => {
     if (!window.confirm(`Bạn có chắc muốn xóa lớp "${className}"?`)) return;
     try {
       await api.delete(`/classes/${id}`, true);
-      setClasses((prev) => prev.filter((c) => c._id !== id));
+      // Refresh lại danh sách từ server thay vì chỉ filter local
+      await fetchClasses();
     } catch (e) {
       console.error("Lỗi khi xóa lớp:", e);
       alert("Không thể xóa lớp. Vui lòng thử lại.");
@@ -287,6 +299,14 @@ const ClassesPage = () => {
                         >
                           <ArrowForwardIcon fontSize="small" />
                         </IconButton>
+                        <IconButton
+                          size="small"
+                          color="success"
+                          title="Lên lớp"
+                          onClick={() => handlePromote(c)}
+                        >
+                          <TrendingUpIcon fontSize="small" />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))
@@ -311,6 +331,7 @@ const ClassesPage = () => {
           onClose={handleModalClose}
           classData={selectedClass}
           onSuccess={handleSuccess}
+          isPromoteMode={isPromoteMode}
         />
       </ArgonBox>
     </DashboardLayout>
