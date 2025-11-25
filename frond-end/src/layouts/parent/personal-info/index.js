@@ -109,6 +109,7 @@ function PersonalInformation() {
     avatar_url: "",
   });
   const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
     newPassword: "",
     confirmPassword: ""
   });
@@ -227,6 +228,9 @@ function PersonalInformation() {
 
   const handleChangePassword = async () => {
     const errors = {};
+    if (!passwordData.currentPassword) {
+      errors.currentPassword = "Vui lòng nhập mật khẩu hiện tại";
+    }
     const passwordError = getPasswordError(passwordData.newPassword);
     if (passwordError) {
       errors.newPassword = passwordError;
@@ -245,20 +249,25 @@ function PersonalInformation() {
 
     try {
       setPasswordSaving(true);
-      const result = await parentService.updatePersonalInfo({
-        password: passwordData.newPassword
-      });
+      const result = await parentService.changePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword
+      );
       if (result.success) {
         setAlert({ open: true, message: "Đổi mật khẩu thành công", severity: "success" });
-        setPasswordData({ newPassword: "", confirmPassword: "" });
+        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
         setPasswordErrors({});
         return true;
       } else {
-        setAlert({ open: true, message: result.error || "Không thể đổi mật khẩu", severity: "error" });
+        const message = result.error || "Không thể đổi mật khẩu";
+        setPasswordErrors((prev) => ({ ...prev, currentPassword: message || "Mật khẩu hiện tại không chính xác" }));
+        setAlert({ open: true, message, severity: "error" });
         return false;
       }
     } catch (error) {
-      setAlert({ open: true, message: "Có lỗi xảy ra khi đổi mật khẩu", severity: "error" });
+      const fallbackMessage = error?.message || "Có lỗi xảy ra khi đổi mật khẩu";
+      setPasswordErrors((prev) => ({ ...prev, currentPassword: fallbackMessage }));
+      setAlert({ open: true, message: fallbackMessage, severity: "error" });
       return false;
     } finally {
       setPasswordSaving(false);
@@ -288,7 +297,7 @@ function PersonalInformation() {
     setAvatarFile(null);
     setActiveForm(null);
     setPasswordErrors({});
-    setPasswordData({ newPassword: "", confirmPassword: "" });
+    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
   };
 
   const handleSaveAndClose = async () => {
@@ -762,6 +771,42 @@ function PersonalInformation() {
                 subtitle="Nhập mật khẩu mới cho tài khoản của bạn"
               >
                 <Stack spacing={2.5}>
+                  <ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={0.75}>
+                      Mật khẩu hiện tại <span style={{ color: "#d32f2f" }}>*</span>
+                    </ArgonTypography>
+                    <TextField
+                      fullWidth
+                      name="currentPassword"
+                      sx={{
+                        flex: 1,
+                        width: "100%",
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "25px",
+                          backgroundColor: "white",
+                          width: "100%",
+                          "&:hover": {
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                          },
+                          "&.Mui-focused": {
+                            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.2)"
+                          }
+                        },
+                        "& .MuiInputBase-input": {
+                          width: "100% !important",
+                          wordWrap: "break-word",
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "break-word"
+                        }
+                      }}
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      type="password"
+                      placeholder="Nhập mật khẩu hiện tại"
+                      error={Boolean(passwordErrors.currentPassword)}
+                      helperText={passwordErrors.currentPassword || "Nhập mật khẩu hiện tại để xác nhận"}
+                    />
+                  </ArgonBox>
                   <ArgonBox>
                     <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={0.75}>
                       Mật khẩu mới <span style={{ color: "#d32f2f" }}>*</span>

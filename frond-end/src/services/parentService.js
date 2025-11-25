@@ -296,6 +296,29 @@ class ParentService {
   }
 
   /**
+   * Đổi mật khẩu tài khoản phụ huynh
+   * @param {string} currentPassword
+   * @param {string} newPassword
+   * @returns {Promise<Object>}
+   */
+  async changePassword(currentPassword, newPassword) {
+    try {
+      const response = await apiService.put(
+        '/users/change-password',
+        { currentPassword, newPassword },
+        true
+      );
+      return response;
+    } catch (error) {
+      console.error('ParentService.changePassword Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi đổi mật khẩu'
+      };
+    }
+  }
+
+  /**
    * Lấy thông tin chi tiết của học sinh (thông tin cá nhân, sức khỏe, người đón)
    * @param {string} studentId - ID của học sinh
    * @returns {Promise<Object>} - Kết quả API call
