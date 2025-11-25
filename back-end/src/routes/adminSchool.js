@@ -25,3 +25,5 @@ router.put('/:schoolId/status', updateSchoolStatus);
 module.exports = router;
 
 
+
+

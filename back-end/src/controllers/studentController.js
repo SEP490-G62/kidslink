@@ -222,6 +222,12 @@ exports.createStudent = async (req, res) => {
       genderValue = 1;
     }
 
+    // Kiểm tra lớp tồn tại và lấy năm học
+    const targetClass = await ClassModel.findById(class_id);
+    if (!targetClass) {
+      return res.status(404).json({ message: 'Không tìm thấy lớp học' });
+    }
+
     const newStudent = await Student.create({
       full_name,
       dob: date_of_birth,
@@ -230,6 +236,26 @@ exports.createStudent = async (req, res) => {
       allergy: medical_condition || '',
       status: 1,
     });
+
+    // Kiểm tra học sinh đã có trong lớp nào khác trong cùng năm học chưa
+    // (Trường hợp này ít xảy ra vì đang tạo học sinh mới, nhưng để an toàn)
+    const existingStudentClasses = await StudentClass.find({ student_id: newStudent._id }).lean();
+    if (existingStudentClasses.length > 0) {
+      const existingClassIds = existingStudentClasses.map(sc => sc.class_id);
+      const existingClasses = await ClassModel.find({ 
+        _id: { $in: existingClassIds },
+        academic_year: targetClass.academic_year
+      }).lean();
+      
+      if (existingClasses.length > 0) {
+        // Xóa học sinh vừa tạo vì không thể thêm vào lớp
+        await Student.findByIdAndDelete(newStudent._id);
+        const classNames = existingClasses.map(c => c.class_name).join(', ');
+        return res.status(400).json({ 
+          message: `Học sinh đã có trong lớp khác trong năm học ${targetClass.academic_year}: ${classNames}` 
+        });
+      }
+    }
 
     // Thêm vào StudentClass
     await StudentClass.create({
@@ -287,6 +313,34 @@ exports.updateStudent = async (req, res) => {
 
     // Cập nhật lớp học nếu có thay đổi
     if (class_id) {
+      // Kiểm tra lớp tồn tại và lấy năm học
+      const targetClass = await ClassModel.findById(class_id);
+      if (!targetClass) {
+        return res.status(404).json({ message: 'Không tìm thấy lớp học' });
+      }
+
+      // Kiểm tra học sinh đã có trong lớp nào khác trong cùng năm học chưa
+      const existingStudentClasses = await StudentClass.find({ 
+        student_id: id,
+        class_id: { $ne: class_id } // Loại trừ lớp đang cập nhật
+      }).lean();
+      
+      if (existingStudentClasses.length > 0) {
+        const existingClassIds = existingStudentClasses.map(sc => sc.class_id);
+        const existingClasses = await ClassModel.find({ 
+          _id: { $in: existingClassIds },
+          academic_year: targetClass.academic_year
+        }).lean();
+        
+        if (existingClasses.length > 0) {
+          const classNames = existingClasses.map(c => c.class_name).join(', ');
+          return res.status(400).json({ 
+            message: `Học sinh đã có trong lớp khác trong năm học ${targetClass.academic_year}: ${classNames}` 
+          });
+        }
+      }
+
+      // Cập nhật hoặc tạo StudentClass
       await StudentClass.findOneAndUpdate(
         { student_id: id },
         { class_id: class_id },
@@ -297,6 +351,92 @@ exports.updateStudent = async (req, res) => {
     return res.json({ message: 'Cập nhật thành công', student });
   } catch (err) {
     console.error('updateStudent error:', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
+  }
+};
+
+// --- Chuyển lớp cho học sinh ---
+exports.transferStudent = async (req, res) => {
+  try {
+    const { id } = req.params; // student_id
+    const { new_class_id, old_class_id } = req.body;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'student_id không hợp lệ' });
+    }
+    if (!mongoose.isValidObjectId(new_class_id)) {
+      return res.status(400).json({ message: 'new_class_id không hợp lệ' });
+    }
+    if (!mongoose.isValidObjectId(old_class_id)) {
+      return res.status(400).json({ message: 'old_class_id không hợp lệ' });
+    }
+
+    // Kiểm tra học sinh tồn tại
+    const student = await Student.findById(id);
+    if (!student) {
+      return res.status(404).json({ message: 'Không tìm thấy học sinh' });
+    }
+
+    // Kiểm tra lớp mới tồn tại
+    const newClass = await ClassModel.findById(new_class_id);
+    if (!newClass) {
+      return res.status(404).json({ message: 'Không tìm thấy lớp mới' });
+    }
+
+    // Kiểm tra học sinh đã có trong lớp nào khác trong cùng năm học chưa
+    const allStudentClasses = await StudentClass.find({ student_id: id }).lean();
+    const classIds = allStudentClasses.map(sc => sc.class_id);
+    
+    if (classIds.length > 0) {
+      const existingClasses = await ClassModel.find({ 
+        _id: { $in: classIds },
+        academic_year: newClass.academic_year
+      }).lean();
+      
+      // Loại bỏ lớp cũ khỏi danh sách kiểm tra
+      const otherClassesInSameYear = existingClasses.filter(
+        cls => cls._id.toString() !== old_class_id.toString()
+      );
+      
+      if (otherClassesInSameYear.length > 0) {
+        const classNames = otherClassesInSameYear.map(c => c.class_name).join(', ');
+        return res.status(400).json({ 
+          message: `Học sinh đã có trong lớp khác trong năm học ${newClass.academic_year}: ${classNames}` 
+        });
+      }
+    }
+
+    // Xóa StudentClass cũ
+    await StudentClass.findOneAndDelete({
+      student_id: id,
+      class_id: old_class_id
+    });
+
+    // Kiểm tra xem học sinh đã có trong lớp mới chưa (double check)
+    const existingStudentClass = await StudentClass.findOne({
+      student_id: id,
+      class_id: new_class_id
+    });
+
+    if (existingStudentClass) {
+      return res.status(400).json({ message: 'Học sinh đã có trong lớp này' });
+    }
+
+    // Tạo StudentClass mới
+    await StudentClass.create({
+      student_id: id,
+      class_id: new_class_id,
+      discount: 0
+    });
+
+    return res.json({ 
+      message: 'Chuyển lớp thành công', 
+      student_id: id,
+      old_class_id,
+      new_class_id
+    });
+  } catch (err) {
+    console.error('transferStudent error:', err);
     return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
   }
 };

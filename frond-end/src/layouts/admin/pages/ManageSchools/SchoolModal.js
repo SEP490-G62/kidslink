@@ -394,3 +394,5 @@ SchoolModal.propTypes = {
 export default SchoolModal;
 
 
+
+
