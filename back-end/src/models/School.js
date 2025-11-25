@@ -32,7 +32,6 @@ const schoolSchema = new mongoose.Schema({
   },
   qr_data: {
     type: String,
-    unique: true
   },
   payos_config: {
     client_id: {

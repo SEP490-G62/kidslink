@@ -29,18 +29,8 @@ const adminRoutes = [
     ),
     component: <ProtectedRoute requiredRoles={["admin"]}><ManageSchools /></ProtectedRoute>,
   },
-  {
-    type: "divider",
-    key: "admin-divider-1",
-  },
-  {
-    type: "route",
-    name: "Thông tin cá nhân",
-    key: "admin-profile",
-    route: "/admin/profile",
-    icon: <ArgonBox component="i" color="dark" fontSize="14px" className="ni ni-single-02" />,
-    component: <ProtectedRoute requiredRoles={["admin"]}><Profile /></ProtectedRoute>,
-  },
+
+
 ];
 
 export default adminRoutes;

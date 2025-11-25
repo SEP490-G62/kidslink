@@ -7,13 +7,19 @@ const {
   updateUser,
   deleteUser,
   hardDeleteUser,
-  restoreUser
+  restoreUser,
+  getCurrentUser,
+  updateCurrentUser,
+  changePassword
 } = require('../controllers/userController');
 const { authenticate, authorize } = require('../middleware/auth');
 
-// Routes
+// Các API dành cho người dùng hiện tại (áp dụng cho mọi vai trò đã đăng nhập)
+router.get('/me', authenticate, getCurrentUser);
+router.put('/me', authenticate, updateCurrentUser);
+router.put('/change-password', authenticate, changePassword);
 
-// Áp dụng xác thực và phân quyền School Admin và Admin cho toàn bộ user management
+// Các API quản trị user dành riêng cho School Admin & Admin
 router.use(authenticate, authorize(['school_admin', 'admin']));
 
 // GET /api/users - Lấy danh sách users (có phân trang và filter)
@@ -38,3 +44,4 @@ router.delete('/:id/hard', hardDeleteUser);
 router.put('/:id/restore', restoreUser);
 
 module.exports = router;
+

@@ -48,14 +48,7 @@ const teacherRoutes = [
     icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-books" />,
     component: <ProtectedRoute requiredRoles={['teacher']}><TeacherClasses /></ProtectedRoute>,
   },
-  {
-    type: "route",
-    name: "Học sinh",
-    key: "teacher-students",
-    route: "/teacher/students",
-    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-single-02" />,
-    component: <ProtectedRoute requiredRoles={['teacher']}><TeacherStudents /></ProtectedRoute>,
-  },
+
   // Trang chi tiết học sinh (không hiển thị ở menu)
   {
     type: "hidden",
@@ -98,7 +91,7 @@ const teacherRoutes = [
   },
   {
     type: "route",
-    name: "Khiếu nại & Góp ý",
+    name: "Đơn",
     key: "teacher-complaints",
     route: "/teacher/complaints",
     icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-paper-diploma" />,
@@ -113,14 +106,7 @@ const teacherRoutes = [
     icon: <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-circle-08" />,
     component: <ProtectedRoute requiredRoles={['teacher']}><TeacherProfile /></ProtectedRoute>,
   },
-  {
-    type: "route",
-    name: "Cài đặt",
-    key: "teacher-settings",
-    route: "/teacher/settings",
-    icon: <ArgonBox component="i" color="text" fontSize="14px" className="ni ni-settings-gear-65" />,
-    component: <ProtectedRoute requiredRoles={['teacher']}><TeacherSettings /></ProtectedRoute>,
-  },
+
 ];
 
 export default teacherRoutes;

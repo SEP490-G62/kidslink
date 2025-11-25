@@ -1,6 +1,8 @@
+const bcrypt = require('bcryptjs');
 const School = require('../models/School');
 const User = require('../models/User');
 const cloudinary = require('../utils/cloudinary');
+const { sendMail } = require('../utils/mailer');
 
 const pickPayosConfigFields = (config = {}) => {
   const allowedFields = [
@@ -20,6 +22,34 @@ const pickPayosConfigFields = (config = {}) => {
     }
     return acc;
   }, {});
+};
+
+const generateRandomPassword = (length = 10) => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz0123456789!@#$%';
+  let password = '';
+  for (let i = 0; i < length; i += 1) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+};
+
+const buildUsernameFromSchoolName = async (schoolName) => {
+  const normalized = (schoolName || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase();
+
+  const base = normalized || `school${Date.now()}`;
+  let candidate = base;
+  let suffix = 1;
+
+  while (await User.findOne({ username: candidate })) {
+    candidate = `${base}${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
 };
 
 // GET all schools with pagination
@@ -124,7 +154,6 @@ const createSchool = async (req, res) => {
       phone,
       email,
       logo_url,
-      qr_data,
       payos_config
     } = req.body;
 
@@ -152,15 +181,6 @@ const createSchool = async (req, res) => {
         School.findOne({ email }).then((found) => {
           if (found) {
             throw new Error('Email đã tồn tại');
-          }
-        })
-      );
-    }
-    if (qr_data) {
-      uniqueChecks.push(
-        School.findOne({ qr_data }).then((found) => {
-          if (found) {
-            throw new Error('QR data đã tồn tại');
           }
         })
       );
@@ -213,15 +233,71 @@ const createSchool = async (req, res) => {
       email: email || undefined,
       logo_url: finalLogoUrl,
       status: 1, // Default active
-      qr_data: qr_data || undefined,
       payos_config: payosConfigObj
     });
 
-    return res.status(201).json({
-      success: true,
-      message: 'Tạo trường học thành công',
-      data: school
-    });
+    // Create default school admin account
+    try {
+      const username = await buildUsernameFromSchoolName(school_name);
+      const plainPassword = generateRandomPassword(12);
+      const passwordHash = await bcrypt.hash(plainPassword, 10);
+      const avatar_url = `https://ui-avatars.com/api/?name=${encodeURIComponent(school_name)}&background=random`;
+
+      const schoolAdminUser = await User.create({
+        full_name: `${school_name} Admin`,
+        username,
+        password_hash: passwordHash,
+        role: 'school_admin',
+        avatar_url,
+        status: 1,
+        email: email || undefined,
+        phone_number: phone || undefined,
+        school_id: school._id,
+        address
+      });
+
+      if (email) {
+        try {
+          await sendMail({
+            to: email,
+            subject: 'Thông tin tài khoản School Admin',
+            html: `
+              <p>Xin chào ${school_name},</p>
+              <p>Tài khoản quản trị trường của bạn đã được tạo trên KidsLink.</p>
+              <ul>
+                <li><strong>Username:</strong> ${username}</li>
+                <li><strong>Password:</strong> ${plainPassword}</li>
+              </ul>
+              <p>Vui lòng đăng nhập và đổi mật khẩu ngay sau lần đăng nhập đầu tiên.</p>
+              <p>Trân trọng,<br/>KidsLink Team</p>
+            `
+          });
+        } catch (mailError) {
+          console.error('sendMail school admin error:', mailError);
+        }
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: 'Tạo trường học thành công',
+        data: {
+          school,
+          school_admin: {
+            _id: schoolAdminUser._id,
+            username,
+            email: schoolAdminUser.email
+          }
+        }
+      });
+    } catch (userError) {
+      console.error('Error creating school admin account:', userError);
+      await School.findByIdAndDelete(school._id);
+      return res.status(500).json({
+        success: false,
+        message: 'Không thể tạo tài khoản quản trị cho trường học mới',
+        error: userError.message
+      });
+    }
   } catch (error) {
     console.error('createSchool error:', error);
     return res.status(500).json({
