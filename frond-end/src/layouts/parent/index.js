@@ -631,16 +631,16 @@ function ParentDashboard() {
             }}>
               {/* Date Filter Section */}
               <ArgonBox p={3} pb={2}>
-                <ArgonBox display="flex" alignItems="center" gap={1} mb={1.5}>
+                {/* <ArgonBox display="flex" alignItems="center" gap={1} mb={1.5}>
                   <i className="ni ni-calendar-grid-58" style={{ fontSize: '20px', color: '#5e72e4' }} />
                   <ArgonTypography variant="h6" fontWeight="bold" color="dark">
                     Lọc theo ngày
                   </ArgonTypography>
-                </ArgonBox>
+                </ArgonBox> */}
                 <ArgonBox 
                   display="flex" 
                   flexDirection={{ xs: 'column', sm: 'row' }}
-                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                  alignItems={{ xs: 'stretch', sm: 'flex-end' }}
                   gap={2}
                   sx={{
                     p: 2,
@@ -748,8 +748,9 @@ function ParentDashboard() {
                           fontWeight: 'bold',
                           borderColor: 'rgba(244, 67, 54, 0.5)',
                           color: '#f44336',
-                          px: 2,
-                          py: 1.5,
+                          px: 3,
+                          py: 0,
+                          minHeight: 31,
                           width: { xs: '100%', sm: 'auto' },
                           '&:hover': {
                             borderColor: '#f44336',
