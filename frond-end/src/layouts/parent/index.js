@@ -645,8 +645,8 @@ function ParentDashboard() {
                   sx={{
                     p: 2,
                     borderRadius: 2,
-                    backgroundColor: 'rgba(94, 114, 228, 0.03)',
-                    border: '1px solid rgba(94, 114, 228, 0.1)'
+                    // backgroundColor: 'rgba(94, 114, 228, 0.03)',
+                    // border: '1px solid rgba(94, 114, 228, 0.1)'
                   }}
                 >
                   <ArgonBox 
