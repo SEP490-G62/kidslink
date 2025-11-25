@@ -251,6 +251,8 @@ function ChildInformation() {
     return d.toLocaleDateString('vi-VN');
   };
 
+  const SECTION_HEIGHT = 660;
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -266,18 +268,25 @@ function ChildInformation() {
         </ArgonBox>
 
         <Grid container spacing={3}>
-          {/* Left Column: Child Info + Pickup Management */}
-          <Grid item xs={12} lg={4}>
-            {/* Child Basic Info */}
-            <Card 
+          {/* Child Info */}
+          <Grid item xs={12} lg={8} sx={{ display: "flex" }}>
+            <Card
               sx={{ 
                 mb: 3,
                 borderRadius: 3,
                 boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                width: "100%",
+                height: { xs: 'auto', lg: SECTION_HEIGHT }
               }}
             >
-              <CardContent sx={{ p: 3 }}>
+              <CardContent 
+                sx={{ 
+                  p: 3,
+                  height: '100%',
+                  overflowY: { xs: 'visible', lg: 'auto' }
+                }}
+              >
                 {/* Header Section - Avatar & Name */}
                 <ArgonBox 
                   display="flex" 
@@ -579,10 +588,26 @@ function ChildInformation() {
                 </ArgonBox>
               </CardContent>
             </Card>
+          </Grid>
 
-            {/* Pickup Management */}
-            <Card>
-              <CardContent>
+          {/* Pickup Management */}
+          <Grid item xs={12} lg={4} sx={{ display: "flex" }}>
+            <Card
+              sx={{
+                width: "100%",
+                height: { xs: 'auto', lg: SECTION_HEIGHT },
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              <CardContent
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  overflow: 'hidden'
+                }}
+              >
                 <ArgonBox display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                   <ArgonTypography variant="h6" fontWeight="bold" color="dark">
                     Quản lý người đón
@@ -610,152 +635,90 @@ function ChildInformation() {
                     </ArgonTypography>
                   </ArgonBox>
                 ) : (
-                  <Grid container spacing={2}>
-                    {pickups.map((person, index) => (
-                      <Grid item xs={12} key={person._id || index}>
-                        <Card 
-                          sx={{ 
-                            height: '100%',
-                            border: "1px solid #e0e0e0",
-                            boxShadow: 1,
-                            backgroundColor: "white",
-                            transition: 'all 0.3s ease',
-                            '&:hover': {
-                              boxShadow: 4,
-                              transform: 'translateY(-4px)'
-                            }
-                          }}
-                        >
-                          <CardContent>
-                            <ArgonBox display="flex" alignItems="flex-start" gap={2}>
-                              <Avatar
-                                src={person.avatar_url}
-                                alt={person.full_name}
-                                sx={{ 
-                                  width: 60, 
-                                  height: 60,
-                                  border: '2px solid',
-                                  borderColor: 'primary.main'
-                                }}
-                              >
-                                {person.full_name?.charAt(0) || 'P'}
-                              </Avatar>
-                              <ArgonBox flex={1}>
-                                <ArgonBox display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-                                  <ArgonBox>
-                                    <ArgonTypography variant="body1" fontWeight="bold" color="dark" mb={0.5}>
-                                      {person.full_name}
-                                    </ArgonTypography>
-                                    <Chip 
-                                      label={person.relationship} 
-                                      size="small" 
-                                      color="info"
-                                      sx={{ height: 20, fontSize: '10px' }}
-                                    />
+                  <ArgonBox flex={1} overflow="auto" pr={1}>
+                    <Grid container spacing={2} sx={{ minWidth: '100%' }}>
+                      {pickups.map((person, index) => (
+                        <Grid item xs={12} key={person._id || index}>
+                          <Card 
+                            sx={{ 
+                              height: '100%',
+                              border: "1px solid #e0e0e0",
+                              boxShadow: 1,
+                              backgroundColor: "white",
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                boxShadow: 4,
+                                transform: 'translateY(-4px)'
+                              }
+                            }}
+                          >
+                            <CardContent>
+                              <ArgonBox display="flex" alignItems="flex-start" gap={2}>
+                                <Avatar
+                                  src={person.avatar_url}
+                                  alt={person.full_name}
+                                  sx={{ 
+                                    width: 60, 
+                                    height: 60,
+                                    border: '2px solid',
+                                    borderColor: 'primary.main'
+                                  }}
+                                >
+                                  {person.full_name?.charAt(0) || 'P'}
+                                </Avatar>
+                                <ArgonBox flex={1}>
+                                  <ArgonBox display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                                    <ArgonBox>
+                                      <ArgonTypography variant="body1" fontWeight="bold" color="dark" mb={0.5}>
+                                        {person.full_name}
+                                      </ArgonTypography>
+                                      <Chip 
+                                        label={person.relationship} 
+                                        size="small" 
+                                        color="info"
+                                        sx={{ height: 20, fontSize: '10px' }}
+                                      />
+                                    </ArgonBox>
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => handleMenuOpen(e, person)}
+                                        sx={{ 
+                                          width: 32, 
+                                          height: 32,
+                                          color: 'text.secondary',
+                                          '&:hover': {
+                                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                                            color: 'primary.main'
+                                          }
+                                        }}
+                                      >
+                                        <i className="ni ni-settings-gear-65" style={{ fontSize: '14px' }} />
+                                      </IconButton>
                                   </ArgonBox>
-                                  <IconButton
-                                      size="small"
-                                      onClick={(e) => handleMenuOpen(e, person)}
-                                      sx={{ 
-                                        width: 32, 
-                                        height: 32,
-                                        color: 'text.secondary',
-                                        '&:hover': {
-                                          backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                                          color: 'primary.main'
-                                        }
-                                      }}
-                                    >
-                                      <i className="ni ni-settings-gear-65" style={{ fontSize: '14px' }} />
-                                    </IconButton>
-                                </ArgonBox>
-                                <Divider sx={{ my: 1 }} />
-                                <ArgonBox display="flex" flexDirection="column" gap={0.5}>
-                                  <ArgonTypography variant="body2" color="text">
-                                    📞 {person.phone}
-                                  </ArgonTypography>
-                                  <ArgonTypography variant="body2" color="text">
-                                    CCCD: {person.id_card_number}
-                                  </ArgonTypography>
+                                  <Divider sx={{ my: 1 }} />
+                                  <ArgonBox display="flex" flexDirection="column" gap={0.5}>
+                                    <ArgonTypography variant="body2" color="text">
+                                      📞 {person.phone}
+                                    </ArgonTypography>
+                                    <ArgonTypography variant="body2" color="text">
+                                      CCCD: {person.id_card_number}
+                                    </ArgonTypography>
+                                  </ArgonBox>
                                 </ArgonBox>
                               </ArgonBox>
-                            </ArgonBox>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    ))}
-                  </Grid>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </ArgonBox>
                 )}
               </CardContent>
             </Card>
-
-            {/* Menu for pickup options */}
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              PaperProps={{
-                sx: {
-                  minWidth: 180,
-                  mt: 1,
-                  borderRadius: 2,
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                  border: '1px solid rgba(0,0,0,0.05)'
-                }
-              }}
-              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-            >
-              <MenuItem 
-                onClick={handleEditFromMenu}
-                sx={{
-                  py: 1,
-                  px: 2,
-                  '&:hover': {
-                    backgroundColor: 'rgba(94, 114, 228, 0.08)'
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 32 }}>
-                  <i className="ni ni-settings-gear-65" style={{ fontSize: '16px', color: '#5e72e4' }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Chỉnh sửa"
-                  primaryTypographyProps={{
-                    fontSize: '13px',
-                    fontWeight: 500
-                  }}
-                />
-              </MenuItem>
-              
-              <Divider sx={{ my: 0.5 }} />
-              <MenuItem 
-                onClick={handleDeleteFromMenu}
-                sx={{
-                  py: 1,
-                  px: 2,
-                  '&:hover': {
-                    backgroundColor: 'rgba(244, 67, 54, 0.08)'
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 32 }}>
-                  <i className="ni ni-fat-remove" style={{ fontSize: '16px', color: '#f44336' }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Xóa"
-                  primaryTypographyProps={{
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    color: '#f44336'
-                  }}
-                />
-              </MenuItem>
-            </Menu>
           </Grid>
 
-          {/* Right Column: Health Records */}
-          <Grid item xs={12} lg={8}>
+          {/* Health Records */}
+          <Grid item xs={12}>
             <Card>
               <CardContent>
                 <ArgonTypography variant="h6" fontWeight="bold" color="dark" mb={3}>
@@ -844,6 +807,70 @@ function ChildInformation() {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Menu for pickup options */}
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+          PaperProps={{
+            sx: {
+              minWidth: 180,
+              mt: 1,
+              borderRadius: 2,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+              border: '1px solid rgba(0,0,0,0.05)'
+            }
+          }}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        >
+          <MenuItem 
+            onClick={handleEditFromMenu}
+            sx={{
+              py: 1,
+              px: 2,
+              '&:hover': {
+                backgroundColor: 'rgba(94, 114, 228, 0.08)'
+              }
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 32 }}>
+              <i className="ni ni-settings-gear-65" style={{ fontSize: '16px', color: '#5e72e4' }} />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Chỉnh sửa"
+              primaryTypographyProps={{
+                fontSize: '13px',
+                fontWeight: 500
+              }}
+            />
+          </MenuItem>
+          
+          <Divider sx={{ my: 0.5 }} />
+          <MenuItem 
+            onClick={handleDeleteFromMenu}
+            sx={{
+              py: 1,
+              px: 2,
+              '&:hover': {
+                backgroundColor: 'rgba(244, 67, 54, 0.08)'
+              }
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 32 }}>
+              <i className="ni ni-fat-remove" style={{ fontSize: '16px', color: '#f44336' }} />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Xóa"
+              primaryTypographyProps={{
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#f44336'
+              }}
+            />
+          </MenuItem>
+        </Menu>
       </ArgonBox>
 
       {/* Pickup Modal */}
