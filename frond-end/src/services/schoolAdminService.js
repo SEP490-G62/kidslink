@@ -38,6 +38,10 @@ const schoolAdminService = {
     }, true);
   },
 
+  updateComment: async (commentId, contents) => {
+    return await api.put(`/school-admin/posts/comments/${commentId}`, { contents }, true);
+  },
+
   deleteComment: async (commentId) => {
     return await api.delete(`/school-admin/posts/comments/${commentId}`, true);
   },
