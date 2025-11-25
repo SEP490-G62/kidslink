@@ -397,170 +397,190 @@ export default function NutritionDashboard() {
                       })}
                     </TableRow>
                   <TableBody>
-                    {classAges.map((classAge, index) => (
-                      <TableRow 
-                        key={classAge._id}
-                        sx={{
-                          '&:hover': {
-                            backgroundColor: '#f9f9f9'
-                          },
-                          backgroundColor: index % 2 === 0 ? '#fff' : '#fafafa'
-                        }}
-                      >
-                        <TableCell 
-                          sx={{ 
-                            fontWeight: 700, 
-                            fontSize: '14px', 
-                            position: 'sticky', 
-                            left: 0, 
-                            zIndex: 2, 
-                            backgroundColor: index % 2 === 0 ? '#fff' : '#fafafa',
-                            borderRight: '2px solid #e0e0e0',
-                            py: 2,
-                            color: '#2e7d32',
-                            boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
-                            width: '200px'
-                          }}
-                        >
-                          <Tooltip title={classAge.age_name} arrow placement="right">
-                            <ArgonBox display="flex" alignItems="center" gap={1}>
-                              <ArgonBox
-                                sx={{
-                                  width: 8,
-                                  height: 8,
-                                  borderRadius: '50%',
-                                  backgroundColor: '#43a047',
-                                  flexShrink: 0
+                    {classAges.map((classAge, classAgeIndex) => (
+                      meals.map((meal, mealIndex) => {
+                        const mealColor = mealColors[meal.meal] || '#666';
+                        const rowIndex = classAgeIndex * meals.length + mealIndex;
+                        return (
+                          <TableRow 
+                            key={`${classAge._id}-${meal._id}`}
+                            sx={{
+                              '&:hover': {
+                                backgroundColor: '#f9f9f9'
+                              },
+                              backgroundColor: classAgeIndex % 2 === 0 ? '#fff' : '#fafafa',
+                              height: '100%'
+                            }}
+                          >
+                            {mealIndex === 0 && (
+                              <TableCell 
+                                rowSpan={meals.length}
+                                sx={{ 
+                                  fontWeight: 700, 
+                                  fontSize: '14px', 
+                                  position: 'sticky', 
+                                  left: 0, 
+                                  zIndex: 2, 
+                                  backgroundColor: classAgeIndex % 2 === 0 ? '#fff' : '#fafafa',
+                                  borderRight: '2px solid #e0e0e0',
+                                  py: 2,
+                                  color: '#2e7d32',
+                                  boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                                  width: '200px',
+                                  verticalAlign: 'middle'
                                 }}
-                              />
-                              <ArgonTypography variant="body2" noWrap sx={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
-                                {classAge.age_name}
-                              </ArgonTypography>
-                            </ArgonBox>
-                          </Tooltip>
-                        </TableCell>
-                        {weekDaysOptions.map((wd, dayIndex) => {
-                          const isWeekend = dayIndex >= 5;
-                          return (
-                            <TableCell 
-                              key={wd.id}
-                              sx={{ 
-                                py: 1.5,
-                                px: 1.5,
-                                borderLeft: dayIndex > 0 ? '1px solid #e0e0e0' : 'none',
-                                verticalAlign: 'top',
-                                width: '220px',
-                                backgroundColor: isWeekend ? '#f5f5f5' : (index % 2 === 0 ? '#fff' : '#fafafa'),
-                                overflow: 'visible'
-                              }}
-                            >
-                              {isWeekend ? (
-                                <ArgonBox textAlign="center" py={2}>
-                                  <ArgonTypography variant="caption" color="text.secondary">
-                                    Nghỉ
-                                  </ArgonTypography>
-                                </ArgonBox>
-                              ) : (
-                                <ArgonBox>
-                                  {meals.map((meal) => {
-                                    const dishes = getDishesForSlot(classAge._id, meal._id, wd.id);
-                                    const mealColor = mealColors[meal.meal] || '#666';
-                                    
-                                    return (
-                                      <ArgonBox 
-                                        key={meal._id}
-                                        sx={{
-                                          border: `2px solid ${mealColor}`,
-                                          borderRadius: 1.5,
-                                          p: 1.2,
-                                          mb: 1.2,
-                                          backgroundColor: '#fff',
-                                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                                          transition: 'all 0.2s',
-                                          width: '100%',
-                                          maxWidth: '100%',
-                                          overflow: 'hidden',
-                                          '&:hover': {
-                                            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                                            transform: 'translateY(-1px)'
-                                          }
-                                        }}
-                                      >
-                                        <ArgonBox display="flex" alignItems="center" gap={0.5} mb={0.8}>
-                                          <ArgonBox
-                                            sx={{
-                                              width: 10,
-                                              height: 10,
-                                              borderRadius: '50%',
-                                              backgroundColor: mealColor,
-                                              flexShrink: 0
-                                            }}
-                                          />
-                                          <ArgonTypography 
-                                            variant="caption" 
-                                            fontWeight="bold"
-                                            sx={{ color: mealColor, fontSize: '12px' }}
-                                            noWrap
-                                          >
-                                            {meal.meal}
-                                          </ArgonTypography>
-                                        </ArgonBox>
-                                        {dishes.length === 0 ? (
-                                          <ArgonTypography 
-                                            variant="caption" 
-                                            sx={{ 
-                                              fontSize: '11px', 
-                                              color: 'text.secondary', 
-                                              fontStyle: 'italic',
-                                              display: 'block',
-                                              textAlign: 'center',
-                                              py: 0.5
-                                            }}
-                                          >
-                                            Chưa có món
-                                          </ArgonTypography>
-                                        ) : (
-                                          <ArgonBox display="flex" flexDirection="column" gap={0.6} sx={{ width: '100%' }}>
-                                            {dishes.map((dish, idx) => {
-                                              const dishName = dish.dish_name || dish.name || '';
-                                              return (
-                                                <Tooltip key={dish._id || idx} title={dishName} arrow placement="top">
-                                                  <Chip
-                                                    label={dishName}
-                                                    size="small"
-                                                    sx={{
-                                                      height: 'auto',
-                                                      minHeight: '24px',
-                                                      fontSize: '11px',
-                                                      fontWeight: 500,
-                                                      backgroundColor: '#f5f5f5',
-                                                      border: '1px solid #e0e0e0',
-                                                      maxWidth: '100%',
-                                                      cursor: 'pointer',
-                                                      '& .MuiChip-label': {
-                                                        px: 1,
-                                                        py: 0.5,
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap',
-                                                        display: 'block'
-                                                      }
-                                                    }}
-                                                  />
-                                                </Tooltip>
-                                              );
-                                            })}
-                                          </ArgonBox>
-                                        )}
+                              >
+                                <Tooltip title={classAge.age_name} arrow placement="right">
+                                  <ArgonBox display="flex" alignItems="center" gap={1}>
+                                    <ArgonBox
+                                      sx={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: '50%',
+                                        backgroundColor: '#43a047',
+                                        flexShrink: 0
+                                      }}
+                                    />
+                                    <ArgonTypography variant="body2" noWrap sx={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                                      {classAge.age_name}
+                                    </ArgonTypography>
+                                  </ArgonBox>
+                                </Tooltip>
+                              </TableCell>
+                            )}
+                            {weekDaysOptions.map((wd, dayIndex) => {
+                              const isWeekend = dayIndex >= 5;
+                              const dishes = getDishesForSlot(classAge._id, meal._id, wd.id);
+                              
+                              return (
+                                <TableCell 
+                                  key={wd.id}
+                                  sx={{ 
+                                    py: 1.5,
+                                    px: 1.5,
+                                    borderLeft: dayIndex > 0 ? '1px solid #e0e0e0' : 'none',
+                                    verticalAlign: 'top',
+                                    width: '220px',
+                                    backgroundColor: isWeekend ? '#f5f5f5' : (classAgeIndex % 2 === 0 ? '#fff' : '#fafafa'),
+                                    overflow: 'visible',
+                                    height: '100%'
+                                  }}
+                                >
+                                  {isWeekend ? (
+                                    <ArgonBox textAlign="center" py={2}>
+                                      <ArgonTypography variant="caption" color="text.secondary">
+                                        Nghỉ
+                                      </ArgonTypography>
+                                    </ArgonBox>
+                                  ) : (
+                                    <ArgonBox 
+                                      sx={{
+                                        border: `2px solid ${mealColor}`,
+                                        borderRadius: 1.5,
+                                        p: 1.2,
+                                        backgroundColor: '#fff',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                        transition: 'all 0.2s',
+                                        width: '100%',
+                                        height: '100%',
+                                        minHeight: '100px',
+                                        maxWidth: '100%',
+                                        overflow: 'hidden',
+                                        boxSizing: 'border-box',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        '&:hover': {
+                                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                          transform: 'translateY(-1px)'
+                                        }
+                                      }}
+                                    >
+                                      <ArgonBox display="flex" alignItems="center" gap={0.5} mb={0.8} flexShrink={0}>
+                                        <ArgonBox
+                                          sx={{
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: '50%',
+                                            backgroundColor: mealColor,
+                                            flexShrink: 0
+                                          }}
+                                        />
+                                        <ArgonTypography 
+                                          variant="caption" 
+                                          fontWeight="bold"
+                                          sx={{ color: mealColor, fontSize: '12px' }}
+                                          noWrap
+                                        >
+                                          {meal.meal}
+                                        </ArgonTypography>
                                       </ArgonBox>
-                                    );
-                                  })}
-                                </ArgonBox>
-                              )}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
+                                      {dishes.length === 0 ? (
+                                        <ArgonTypography 
+                                          variant="caption" 
+                                          sx={{ 
+                                            fontSize: '11px', 
+                                            color: 'text.secondary', 
+                                            fontStyle: 'italic',
+                                            textAlign: 'center',
+                                            py: 0.5,
+                                            flex: 1,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                          }}
+                                        >
+                                          Chưa có món
+                                        </ArgonTypography>
+                                      ) : (
+                                        <ArgonBox 
+                                          display="flex" 
+                                          flexDirection="column" 
+                                          gap={0.6} 
+                                          sx={{ 
+                                            width: '100%',
+                                            flex: 1,
+                                            overflow: 'auto'
+                                          }}
+                                        >
+                                          {dishes.map((dish, idx) => {
+                                            const dishName = dish.dish_name || dish.name || '';
+                                            return (
+                                              <Tooltip key={dish._id || idx} title={dishName} arrow placement="top">
+                                                <Chip
+                                                  label={dishName}
+                                                  size="small"
+                                                  sx={{
+                                                    height: 'auto',
+                                                    minHeight: '24px',
+                                                    fontSize: '11px',
+                                                    fontWeight: 500,
+                                                    backgroundColor: '#f5f5f5',
+                                                    border: '1px solid #e0e0e0',
+                                                    maxWidth: '100%',
+                                                    cursor: 'pointer',
+                                                    '& .MuiChip-label': {
+                                                      px: 1,
+                                                      py: 0.5,
+                                                      overflow: 'hidden',
+                                                      textOverflow: 'ellipsis',
+                                                      whiteSpace: 'nowrap',
+                                                      display: 'block'
+                                                    }
+                                                  }}
+                                                />
+                                              </Tooltip>
+                                            );
+                                          })}
+                                        </ArgonBox>
+                                      )}
+                                    </ArgonBox>
+                                  )}
+                                </TableCell>
+                              );
+                            })}
+                          </TableRow>
+                        );
+                      })
                     ))}
                   </TableBody>
                 </Table>
