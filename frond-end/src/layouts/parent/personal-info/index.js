@@ -178,7 +178,7 @@ function PersonalInformation() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      
+
       const result = await parentService.updatePersonalInfo(formData);
       if (result.success) {
         setAlert({ open: true, message: "Cập nhật thông tin thành công", severity: "success" });
@@ -350,31 +350,31 @@ function PersonalInformation() {
                   <ArgonBox flex={1}>
                     <ArgonTypography variant="h5" fontWeight="bold" color="dark">
                       {profileData.full_name}
-                  </ArgonTypography>
+                    </ArgonTypography>
                     <ArgonTypography variant="body2" color="text" mb={2}>
                       Phụ huynh
-                  </ArgonTypography>
-                    
+                    </ArgonTypography>
+
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-single-02" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Username: <span style={{ fontWeight: 'bold' }}>{profileData.username}</span>
-                  </ArgonTypography>
-                </ArgonBox>
+                      </ArgonTypography>
+                    </ArgonBox>
 
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-email-83" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Email: <span style={{ fontWeight: 'bold' }}>{profileData.email}</span>
-                  </ArgonTypography>
+                      </ArgonTypography>
                     </ArgonBox>
-                    
+
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-mobile-button" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         SĐT: <span style={{ fontWeight: 'bold' }}>{profileData.phone_number}</span>
-                  </ArgonTypography>
-                </ArgonBox>
+                      </ArgonTypography>
+                    </ArgonBox>
 
                     {children.length > 0 && (
                       <ArgonBox display="flex" alignItems="center" gap={1.5}>
@@ -394,12 +394,12 @@ function PersonalInformation() {
 
                 {/* Action Buttons */}
                 <ArgonBox display="flex" gap={2} justifyContent="flex-end" mt={3}>
-                  <Button 
-                    variant="outlined" 
+                  <Button
+                    variant="outlined"
                     color="warning"
                     onClick={openPasswordForm}
                     startIcon={<i className="ni ni-lock-circle-open" />}
-                    sx={{ 
+                    sx={{
                       minWidth: 160,
                       height: 44,
                       fontSize: '14px',
@@ -418,12 +418,12 @@ function PersonalInformation() {
                   >
                     Đổi mật khẩu
                   </Button>
-                  <Button 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     color="primary"
                     onClick={openProfileForm}
                     startIcon={<i className="ni ni-single-02" />}
-                    sx={{ 
+                    sx={{
                       minWidth: 160,
                       height: 44,
                       fontSize: '14px',
@@ -435,17 +435,17 @@ function PersonalInformation() {
                     }}
                   >
                     Cập nhật thông tin
-                </Button>
+                  </Button>
                 </ArgonBox>
               </CardContent>
             </Card>
 
           </Grid>
-          </Grid>
+        </Grid>
 
         {/* Edit Profile Dialog */}
-        <Dialog 
-          open={activeForm === "profile"} 
+        <Dialog
+          open={activeForm === "profile"}
           onClose={closeForms}
           maxWidth="md"
           fullWidth
@@ -453,7 +453,7 @@ function PersonalInformation() {
             sx: { borderRadius: 3, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }
           }}
         >
-          <DialogTitle sx={{ 
+          <DialogTitle sx={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
             py: 2.5
@@ -485,9 +485,9 @@ function PersonalInformation() {
                   <Avatar
                     src={avatarPreview || formData.avatar_url}
                     alt="Avatar"
-                    sx={{ 
-                      width: 120, 
-                      height: 120, 
+                    sx={{
+                      width: 120,
+                      height: 120,
                       border: '2px solid #e0e0e0',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
@@ -526,14 +526,14 @@ function PersonalInformation() {
                             borderColor: 'primary.main',
                           },
                           '& .MuiInputBase-input': {
-                          width: '100% !important',
-                          minWidth: '0 !important',
-                          maxWidth: 'none !important',
-                          overflow: 'visible !important',
-                          textOverflow: 'unset !important',
-                          whiteSpace: 'nowrap !important',
-                          boxSizing: 'border-box !important',
-                        },
+                            width: '100% !important',
+                            minWidth: '0 !important',
+                            maxWidth: 'none !important',
+                            overflow: 'visible !important',
+                            textOverflow: 'unset !important',
+                            whiteSpace: 'nowrap !important',
+                            boxSizing: 'border-box !important',
+                          },
                           '&.Mui-focused fieldset': {
                             borderColor: 'primary.main',
                             borderWidth: '2px',
@@ -542,7 +542,7 @@ function PersonalInformation() {
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <ArgonBox mb={1}>
                       <ArgonTypography variant="body2" fontWeight="medium" color="dark">
@@ -565,7 +565,7 @@ function PersonalInformation() {
                       Username không thể thay đổi
                     </ArgonTypography>
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <ArgonBox mb={1}>
                       <ArgonTypography variant="body2" fontWeight="medium" color="dark">
@@ -607,7 +607,7 @@ function PersonalInformation() {
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <ArgonBox mb={1}>
                       <ArgonTypography variant="body2" fontWeight="medium" color="dark">
@@ -669,7 +669,7 @@ function PersonalInformation() {
             >
               Hủy
             </Button>
-            <Button 
+            <Button
               onClick={handleSaveAndClose}
               variant="contained"
               color="primary"
@@ -697,8 +697,8 @@ function PersonalInformation() {
         </Dialog>
 
         {/* Change Password Dialog */}
-        <Dialog 
-          open={activeForm === "password"} 
+        <Dialog
+          open={activeForm === "password"}
           onClose={closeForms}
           maxWidth="sm"
           fullWidth
@@ -769,6 +769,27 @@ function PersonalInformation() {
                     <TextField
                       fullWidth
                       name="newPassword"
+                      sx={{
+                        flex: 1,
+                        width: '100%',
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '25px',
+                          backgroundColor: 'white',
+                          width: '100%',
+                          '&:hover': {
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          },
+                          '&.Mui-focused': {
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+                          }
+                        },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                          wordWrap: 'break-word',
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'break-word'
+                        }
+                      }}
                       value={passwordData.newPassword}
                       onChange={handlePasswordChange}
                       type="password"
@@ -784,6 +805,27 @@ function PersonalInformation() {
                     <TextField
                       fullWidth
                       name="confirmPassword"
+                      sx={{
+                        flex: 1,
+                        width: '100%',
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '25px',
+                          backgroundColor: 'white',
+                          width: '100%',
+                          '&:hover': {
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          },
+                          '&.Mui-focused': {
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+                          }
+                        },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                          wordWrap: 'break-word',
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'break-word'
+                        }
+                      }}
                       value={passwordData.confirmPassword}
                       onChange={handlePasswordChange}
                       type="password"
@@ -833,9 +875,9 @@ function PersonalInformation() {
             >
               Hủy
             </Button>
-            <Button 
+            <Button
               onClick={handlePasswordAndClose}
-              variant="contained" 
+              variant="contained"
               color="warning"
               disabled={passwordSaving}
               sx={{
@@ -860,7 +902,7 @@ function PersonalInformation() {
           </DialogActions>
         </Dialog>
       </ArgonBox>
-            <Footer />
+      <Footer />
 
     </DashboardLayout>
   );
