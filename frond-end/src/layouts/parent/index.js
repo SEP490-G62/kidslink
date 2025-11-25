@@ -364,8 +364,22 @@ function ParentDashboard() {
     setCreatePostModalOpen(true);
   };
 
-  const handleDeletePost = (postId) => {
-    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+  const handleDeletePost = async (postId) => {
+    try {
+      const response = await parentService.deletePost(postId);
+      if (response?.success) {
+        setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+      } else {
+        const message = response?.message || response?.error || "Có lỗi xảy ra khi xóa bài viết";
+        // eslint-disable-next-line no-alert
+        alert(message);
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Error deleting post:", error);
+      // eslint-disable-next-line no-alert
+      alert(error?.response?.data?.message || error?.message || "Không thể xóa bài viết");
+    }
   };
   
   return (

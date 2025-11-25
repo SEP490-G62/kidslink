@@ -473,7 +473,7 @@ function PostCard({
             </ArgonBox>
           </ArgonBox>
           {/* Action menu với bánh răng */}
-          {(isOwnPost || onApprovePost || onDeletePost) && (
+          {(isOwnPost || onApprovePost) && (
             <>
               <IconButton
                 onClick={handleMenuOpen}
@@ -554,7 +554,7 @@ function PostCard({
                     </MenuItem>
                   </>
                 )}
-                {onDeletePost && (
+                {isOwnPost && onDeletePost && (
                   <>
                     {onEditPost && <Divider sx={{ my: 0.5 }} />}
                     <MenuItem 
