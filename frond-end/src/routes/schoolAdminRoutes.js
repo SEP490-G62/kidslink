@@ -3,6 +3,7 @@
 import ArgonBox from "components/ArgonBox";
 import ProtectedRoute from "components/ProtectedRoute";
 import ClassesPage from "layouts/school-admin/pages/Classes";
+import ClassDetail from "layouts/school-admin/pages/Classes/ClassDetail";
 import SchoolDashboard from "layouts/school-admin/pages/Dashboard";
 import ChildrenPage from "layouts/school-admin/pages/Children";
 import ManagePost from "layouts/school-admin/pages/ManagePost";
@@ -52,6 +53,14 @@ const schoolAdminRoutes = [
       <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-bullet-list-67" />
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ClassesPage /></ProtectedRoute>,
+  },
+  {
+    type: "hidden",
+    name: "Chi tiết lớp học",
+    key: "class-detail",
+    route: "/school-admin/classes/:id",
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ClassDetail /></ProtectedRoute>,
+    hideFromSidenav: true,
   },
   {
     type: "route",

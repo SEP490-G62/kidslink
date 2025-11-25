@@ -80,13 +80,17 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
             }
           }
           
-          // Tính ngày bắt đầu và kết thúc mới (tăng 1 năm)
-          const currentStartDate = classData.start_date ? new Date(classData.start_date) : new Date();
-          const currentEndDate = classData.end_date ? new Date(classData.end_date) : new Date();
-          const nextStartDate = new Date(currentStartDate);
-          nextStartDate.setFullYear(nextStartDate.getFullYear() + 1);
-          const nextEndDate = new Date(currentEndDate);
-          nextEndDate.setFullYear(nextEndDate.getFullYear() + 1);
+          // Tính ngày bắt đầu và kết thúc mới (mặc định 5/9 và 31/5)
+          let nextStartDate, nextEndDate;
+          if (nextAcademicYear) {
+            const [startYear, endYear] = nextAcademicYear.split('-');
+            nextStartDate = `${startYear}-09-05`; // Mặc định 5/9
+            nextEndDate = `${endYear}-05-31`; // Mặc định 31/5
+          } else {
+            const currentYear = new Date().getFullYear();
+            nextStartDate = `${currentYear}-09-05`; // Mặc định 5/9
+            nextEndDate = `${currentYear + 1}-05-31`; // Mặc định 31/5
+          }
           
           setFormData({
             class_name: classData.class_name || "",
@@ -94,8 +98,8 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
             teacher_id: "",
             teacher_id2: "",
             academic_year: nextAcademicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
-            start_date: nextStartDate.toISOString().split('T')[0],
-            end_date: nextEndDate.toISOString().split('T')[0],
+            start_date: nextStartDate,
+            end_date: nextEndDate,
           });
         } else if (isEdit && classData) {
           setFormData({
@@ -116,8 +120,8 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
             teacher_id: "",
             teacher_id2: "",
             academic_year: `${currentYear}-${currentYear + 1}`,
-            start_date: `${currentYear}-09-01`,
-            end_date: `${currentYear + 1}-05-31`,
+            start_date: `${currentYear}-09-05`, // Mặc định 5/9
+            end_date: `${currentYear + 1}-05-31`, // Mặc định 31/5
           });
         }
       };
