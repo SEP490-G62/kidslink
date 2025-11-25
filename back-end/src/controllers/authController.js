@@ -5,6 +5,8 @@ const User = require('../models/User');
 const School = require('../models/School');
 
 const allowedRoles = ['school_admin', 'teacher', 'parent', 'health_care_staff', 'nutrition_staff', 'admin'];
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,16}$/;
+const PASSWORD_MESSAGE = 'Mật khẩu phải có từ 8-16 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt';
 
 function signToken(user) {
   const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
@@ -21,7 +23,13 @@ function signToken(user) {
 const registerValidators = [
   body('full_name').isString().trim().notEmpty().withMessage('full_name là bắt buộc'),
   body('username').isString().trim().notEmpty().withMessage('username là bắt buộc'),
-  body('password').isString().isLength({ min: 6 }).withMessage('password tối thiểu 6 ký tự'),
+  body('password')
+    .isString()
+    .notEmpty()
+    .withMessage('password là bắt buộc')
+    .bail()
+    .matches(PASSWORD_REGEX)
+    .withMessage(PASSWORD_MESSAGE),
   body('role').isIn(allowedRoles).withMessage('role không hợp lệ'),
   body('email').isString().trim().notEmpty().withMessage('email là bắt buộc').bail().isEmail().withMessage('email không hợp lệ'),
   body('phone_number')

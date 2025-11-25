@@ -41,6 +41,26 @@ const UserFormModal = ({ open, onClose, onSuccess, user }) => {
   const labelSx = { position: 'relative', transform: 'none', mb: 0.5, fontWeight: 600 };
   const [errors, setErrors] = useState({});
 
+  const getPasswordError = (password) => {
+    if (!password) return "Vui lòng nhập mật khẩu";
+    if (password.length < 8 || password.length > 16) {
+      return "Mật khẩu phải có từ 8-16 ký tự";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 chữ hoa";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 chữ thường";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 số";
+    }
+    if (!/[!@#$%^&*(),.?\":{}|<>]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)";
+    }
+    return "";
+  };
+
   useEffect(() => {
     if (isEdit) {
       setForm({
@@ -96,11 +116,10 @@ const UserFormModal = ({ open, onClose, onSuccess, user }) => {
     }
     if (!isEdit && !form.password) {
       e.password = "Vui lòng nhập mật khẩu";
-    }
-    if (form.password) {
-      const pwRe = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/;
-      if (!pwRe.test(form.password)) {
-        e.password = "Mật khẩu ≥8 ký tự, gồm hoa, thường, số, ký tự đặc biệt";
+    } else if (form.password) {
+      const passwordError = getPasswordError(form.password);
+      if (passwordError) {
+        e.password = passwordError;
       }
     }
     setErrors(e);
