@@ -16,6 +16,7 @@ router.get('/:id', authenticate, studentController.getStudentDetail);
 // --- CRUD (school_admin/admin only) ---
 router.post('/', authenticate, authorize(['school_admin', 'admin']), studentController.createStudent);
 router.put('/:id', authenticate, authorize(['school_admin', 'admin']), studentController.updateStudent);
+router.post('/:id/transfer', authenticate, authorize(['school_admin', 'admin']), studentController.transferStudent);
 router.delete('/:id', authenticate, authorize(['school_admin', 'admin']), studentController.deleteStudent);
 
 module.exports = router;

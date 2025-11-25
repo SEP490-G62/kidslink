@@ -146,9 +146,10 @@ function ParentChat() {
           const timeB = getTime(b);
           return timeB - timeA; // Mới nhất lên đầu
         });
-        const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-        localStorage.setItem('kidslink:unread_total', String(totalUnread));
-        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+        // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+        const conversationUnreadCount = updated.filter(c => (c.unread_count || 0) > 0).length;
+        localStorage.setItem('kidslink:unread_total', String(conversationUnreadCount));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationUnreadCount } }));
         return updated;
       });
     });
@@ -188,9 +189,10 @@ function ParentChat() {
           const timeB = getTime(b);
           return timeB - timeA; // Mới nhất lên đầu
         });
-        const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-        localStorage.setItem('kidslink:unread_total', String(totalUnread));
-        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+        // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+        const conversationUnreadCount = updated.filter(c => (c.unread_count || 0) > 0).length;
+        localStorage.setItem('kidslink:unread_total', String(conversationUnreadCount));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationUnreadCount } }));
         return updated;
       });
     });
@@ -257,9 +259,10 @@ function ParentChat() {
             return { ...c, unread_count: unreadMap.get(id) || 0 };
           });
           setConversations(merged);
-          // Đồng bộ badge trên sidenav
-          localStorage.setItem('kidslink:unread_total', String(totalUnread));
-          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+          // Đồng bộ badge trên sidenav - đếm số conversation có tin nhắn chưa đọc
+          const conversationUnreadCount = merged.filter(c => (c.unread_count || 0) > 0).length;
+          localStorage.setItem('kidslink:unread_total', String(conversationUnreadCount));
+          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationUnreadCount } }));
           if (merged.length) setSelectedConversation(merged[0]);
         } else setError(convRes.error);
       } catch (e) { setError(e.message || 'Không thể tải danh sách cuộc trò chuyện'); }
@@ -295,9 +298,10 @@ function ParentChat() {
           if (id === selId) return { ...c, unread_count: 0 };
           return c;
         });
-        const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-        localStorage.setItem('kidslink:unread_total', String(totalUnread));
-        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: totalUnread } }));
+        // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+        const conversationUnreadCount = updated.filter(c => (c.unread_count || 0) > 0).length;
+        localStorage.setItem('kidslink:unread_total', String(conversationUnreadCount));
+        window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: conversationUnreadCount } }));
         return updated;
       });
     })();

@@ -68,7 +68,15 @@ class ApiService {
         data: data
       });
       
-      throw new Error((data && (data.error || data.details)) || `HTTP error! status: ${response.status}`);
+      // Extract error message from various possible formats
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      if (data) {
+        if (data.message) errorMessage = data.message;
+        else if (data.error) errorMessage = data.error;
+        else if (data.details) errorMessage = data.details;
+      }
+      
+      throw new Error(errorMessage);
     }
     
     return data;

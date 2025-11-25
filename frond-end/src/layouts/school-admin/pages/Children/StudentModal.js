@@ -64,8 +64,9 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
 
   const fetchClasses = async () => {
     try {
-      const response = await api.get("/class", true);
-      setClasses(response.classes || []);
+      const response = await api.get("/classes", true);
+      const list = Array.isArray(response) ? response : (response.data || response.classes || []);
+      setClasses(list);
     } catch (e) {
       console.error("Lỗi tải danh sách lớp:", e);
     }
@@ -120,7 +121,7 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ pb: 1 }}>
-        <ArgonTypography variant="h5" fontWeight="bold">
+        <ArgonTypography variant="h4" fontWeight="bold" color="primary.main">
           {isEdit ? "Chỉnh sửa học sinh" : "Thêm học sinh mới"}
         </ArgonTypography>
       </DialogTitle>
@@ -128,9 +129,12 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
         <ArgonBox component="form">
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
+              <ArgonTypography variant="subtitle2" fontWeight="medium" mb={0.5}>
+                Họ và tên
+              </ArgonTypography>
               <TextField
                 fullWidth
-                label="Họ và tên"
+                // label="Họ và tên"
                 required
                 value={formData.full_name}
                 onChange={handleChange("full_name")}
@@ -140,9 +144,12 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
+              <ArgonTypography variant="subtitle2" fontWeight="medium" mb={0.5}>
+                Ngày sinh
+              </ArgonTypography>
               <TextField
                 fullWidth
-                label="Ngày sinh"
+                // label="Ngày sinh"
                 type="date"
                 required
                 value={formData.date_of_birth}
@@ -153,30 +160,36 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-               <FormControl fullWidth error={!!errors.gender}>
-                 <InputLabel shrink>Giới tính</InputLabel>
-                 <Select
-                   value={formData.gender}
-                   onChange={handleChange("gender")}
-                   label="Giới tính"
-                   displayEmpty
-                   notched
-                 >
-                   <MenuItem value="">
-                     <em>-- Chọn giới tính --</em>
-                   </MenuItem>
-                   <MenuItem value="male">Nam</MenuItem>
-                   <MenuItem value="female">Nữ</MenuItem>
-                 </Select>
+              <ArgonTypography variant="subtitle2" fontWeight="medium" mb={0.5}>
+                Giới tính
+              </ArgonTypography>
+              <FormControl fullWidth error={!!errors.gender}>
+                {/* <InputLabel shrink>Giới tính</InputLabel> */}
+                <Select
+                  value={formData.gender}
+                  onChange={handleChange("gender")}
+                  // label="Giới tính"
+                  displayEmpty
+                  notched
+                >
+                  <MenuItem value="">
+                    <em>-- Chọn giới tính --</em>
+                  </MenuItem>
+                  <MenuItem value="male">Nam</MenuItem>
+                  <MenuItem value="female">Nữ</MenuItem>
+                </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-               <FormControl fullWidth error={!!errors.class_id}>
-                <InputLabel shrink>Lớp học *</InputLabel>
+              <ArgonTypography variant="subtitle2" fontWeight="medium" mb={0.5}>
+                Lớp học
+              </ArgonTypography>
+              <FormControl fullWidth error={!!errors.class_id}>
+                {/* <InputLabel shrink>Lớp học *</InputLabel> */}
                 <Select
                   value={formData.class_id}
                   onChange={handleChange("class_id")}
-                  label="Lớp học *"
+                  // label="Lớp học *"
                   displayEmpty
                   notched
                   disabled={!isEdit && classId}
@@ -185,7 +198,7 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
                     <em>-- Chọn lớp học --</em>
                   </MenuItem>
                   {classes.map((cls) => (
-                     <MenuItem key={cls._id} value={cls._id}>
+                    <MenuItem key={cls._id} value={cls._id}>
                       {cls.class_name}
                     </MenuItem>
                   ))}
@@ -203,28 +216,37 @@ const StudentModal = ({ open, onClose, studentData, classId, onSuccess }) => {
               </FormControl>
             </Grid>
             <Grid item xs={12}>
+              <ArgonTypography variant="subtitle2" fontWeight="medium" mb={0.5}>
+                Địa chỉ
+              </ArgonTypography>
               <TextField
                 fullWidth
-                label="Địa chỉ"
+                // label="Địa chỉ"
                 value={formData.address}
                 onChange={handleChange("address")}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12}>
+              <ArgonTypography variant="subtitle2" fontWeight="medium" mb={0.5}>
+                URL Avatar
+              </ArgonTypography>
               <TextField
                 fullWidth
-                label="URL Avatar"
+                // label="URL Avatar"
                 value={formData.avatar}
                 onChange={handleChange("avatar")}
                 placeholder="https://example.com/avatar.jpg"
                 InputLabelProps={{ shrink: true }}
               />
-             </Grid>
+            </Grid>
             <Grid item xs={12}>
+              <ArgonTypography variant="subtitle2" fontWeight="medium" mb={0.5}>
+                Tình trạng sức khỏe
+              </ArgonTypography>
               <TextField
                 fullWidth
-                label="Tình trạng sức khỏe"
+                // label="Tình trạng sức khỏe"
                 multiline
                 rows={3}
                 value={formData.medical_condition}

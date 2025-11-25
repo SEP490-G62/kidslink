@@ -122,7 +122,7 @@ function Illustration() {
           const userRole = result.user.role;
           switch (userRole) {
             case 'admin':
-              navigate('/dashboard');
+              navigate('/admin');
               break;
             case 'school_admin':
               navigate('/school-admin/dashboard');

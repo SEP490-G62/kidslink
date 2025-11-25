@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Tabs, Tab, Chip, IconButton, Tooltip } from "@mui/material";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import ArgonButton from "components/ArgonButton";
@@ -21,6 +22,7 @@ const ManagePost = () => {
   const [likesOpen, setLikesOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'pending', 'approved'
 
   useEffect(() => {
     // Lấy thông tin user hiện tại
@@ -84,6 +86,18 @@ const ManagePost = () => {
     }
   };
 
+  const handleApprove = async (postId) => {
+    try {
+      await schoolAdminService.updatePostStatus(postId, 'approved');
+      fetchPosts();
+    } catch (e) {
+      console.error("Approve error:", e);
+      alert("Lỗi duyệt bài: " + (e.message || "Vui lòng thử lại"));
+    }
+  };
+
+  
+
   const handleLike = async (postId) => {
     try {
       const response = await schoolAdminService.toggleLike(postId);
@@ -118,6 +132,15 @@ const ManagePost = () => {
     setSelectedPost(null);
   };
 
+  // Filter posts by status
+  const filteredPosts = posts.filter(post => {
+    if (statusFilter === 'all') return true;
+    return post.status === statusFilter;
+  });
+
+  const pendingCount = posts.filter(p => p.status === 'pending').length;
+  const approvedCount = posts.filter(p => p.status === 'approved').length;
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -130,23 +153,65 @@ const ManagePost = () => {
             + Tạo bài đăng
           </ArgonButton>
         </ArgonBox>
+        
+        {/* Status Filter Tabs */}
+        <ArgonBox mb={3} bgcolor="white" borderRadius={2} p={2}>
+          <Tabs 
+            value={statusFilter} 
+            onChange={(e, newValue) => setStatusFilter(newValue)}
+            textColor="primary"
+            indicatorColor="primary"
+          >
+            <Tab label={`Tất cả (${posts.length})`} value="all" />
+            <Tab 
+              label={
+                <ArgonBox display="flex" alignItems="center" gap={1}>
+                  Chờ duyệt
+                  {pendingCount > 0 && (
+                    <Chip 
+                      label={pendingCount} 
+                      size="small" 
+                      color="warning" 
+                      sx={{ height: 20, fontSize: '0.7rem' }}
+                    />
+                  )}
+                </ArgonBox>
+              } 
+              value="pending" 
+            />
+            <Tab label={`Đã duyệt (${approvedCount})`} value="approved" />
+          </Tabs>
+        </ArgonBox>
         {loading ? (
           <ArgonBox p={3} bgcolor="white" borderRadius={2}>
             <ArgonTypography variant="body2">Đang tải dữ liệu...</ArgonTypography>
           </ArgonBox>
-        ) : posts.length > 0 ? (
-          posts.map((post) => (
-            <PostCard
-              key={post._id}
-              post={post}
-              currentUserId={currentUserId}
-              onLike={() => handleLike(post._id)}
-              onComment={() => { setSelectedPost(post); setCommentOpen(true); }}
-              onShowLikes={() => { setSelectedPost(post); setLikesOpen(true); }}
-              onOpenGallery={() => { setSelectedPost(post); setGalleryOpen(true); }}
-              onEditPost={() => handleEdit(post)}
-              onDeletePost={() => handleDelete(post._id)}
-            />
+        ) : filteredPosts.length > 0 ? (
+          filteredPosts.map((post) => (
+            <ArgonBox key={post._id} mb={2}>
+              <ArgonBox display="flex" alignItems="center" mb={1}>
+                <Chip 
+                  label={post.status === 'pending' ? 'Chờ duyệt' : 'Đã duyệt'}
+                  color={post.status === 'pending' ? 'warning' : 'success'}
+                  size="small"
+                />
+              </ArgonBox>
+              <PostCard
+                post={post}
+                currentUserId={currentUserId}
+                onLike={() => handleLike(post._id)}
+                onComment={() => { setSelectedPost(post); setCommentOpen(true); }}
+                onShowLikes={() => { setSelectedPost(post); setLikesOpen(true); }}
+                onOpenGallery={() => { setSelectedPost(post); setGalleryOpen(true); }}
+                {...(post.status === 'pending' ? {
+                  onApprovePost: () => handleApprove(post._id)
+                } : {})}
+                {...(post.status === 'approved' ? {
+                  onEditPost: () => handleEdit(post),
+                  onDeletePost: () => handleDelete(post._id)
+                } : {})}
+              />
+            </ArgonBox>
           ))
         ) : (
           <ArgonBox p={3} bgcolor="white" borderRadius={2} textAlign="center">

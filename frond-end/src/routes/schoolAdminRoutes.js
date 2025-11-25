@@ -3,13 +3,18 @@
 import ArgonBox from "components/ArgonBox";
 import ProtectedRoute from "components/ProtectedRoute";
 import ClassesPage from "layouts/school-admin/pages/Classes";
+import ClassDetail from "layouts/school-admin/pages/Classes/ClassDetail";
 import SchoolDashboard from "layouts/school-admin/pages/Dashboard";
 import ChildrenPage from "layouts/school-admin/pages/Children";
 import ManagePost from "layouts/school-admin/pages/ManagePost";
 import ManageAccountPage from "layouts/school-admin/pages/ManageAccount";
 import ManageCalendar from "layouts/school-admin/pages/ManageCalendar";
-import ManageTuition from "layouts/school-admin/pages/ManageTuition";
+import ManageFees from "layouts/school-admin/pages/ManageFees";
+import FeeDetail from "layouts/school-admin/pages/ManageFees/FeeDetail";
+import SchoolInfo from "layouts/school-admin/pages/SchoolInfo";
 import Profile from "layouts/profile";
+import ManageComplaints from "layouts/school-admin/pages/ManageComplaints";
+
 import { useEffect } from "react";
 import { useAuth } from "context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -50,6 +55,14 @@ const schoolAdminRoutes = [
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ClassesPage /></ProtectedRoute>,
   },
   {
+    type: "hidden",
+    name: "Chi tiết lớp học",
+    key: "class-detail",
+    route: "/school-admin/classes/:id",
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ClassDetail /></ProtectedRoute>,
+    hideFromSidenav: true,
+  },
+  {
     type: "route",
     name: "Quản lý học sinh",
     key: "manage-children",
@@ -81,6 +94,26 @@ const schoolAdminRoutes = [
   },
   {
     type: "route",
+    name: "Quản lý phí",
+    key: "manage-fees",
+    route: "/school-admin/fees",
+    icon: (
+      <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-money-coins" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageFees /></ProtectedRoute>,
+  },
+
+  {
+    type: "hidden",
+    name: "Chi tiết phí",
+    key: "fee-detail",
+    route: "/school-admin/fees/:id",
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><FeeDetail /></ProtectedRoute>,
+    // Hidden from sidenav
+    hideFromSidenav: true,
+  },
+  {
+    type: "route",
     name: "Quản lý tài khoản",
     key: "manage-accounts",
     route: "/school-admin/accounts",
@@ -91,14 +124,25 @@ const schoolAdminRoutes = [
   },
   {
     type: "route",
-    name: "Quản lý học phí",
-    key: "school-admin-tuition",
-    route: "/school-admin/tuition",
+    name: "Quản lý đơn",
+    key: "manage-complaints",
+    route: "/school-admin/complaints",
     icon: (
-      <ArgonBox component="i" color="secondary" fontSize="14px" className="ni ni-money-coins" />
+      <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-paper-diploma" />
     ),
-    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageTuition /></ProtectedRoute>,
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageComplaints /></ProtectedRoute>,
   },
+  {
+    type: "route",
+    name: "Thông tin trường học",
+    key: "school-info",
+    route: "/school-admin/school-info",
+    icon: (
+      <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-settings-gear-65" />
+    ),
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><SchoolInfo /></ProtectedRoute>,
+  },
+
   {
     type: "divider",
     key: "school-admin-divider-1",
@@ -107,18 +151,11 @@ const schoolAdminRoutes = [
     type: "route",
     name: "Thông tin cá nhân",
     key: "school-admin-profile",
-    route: "/profile",
+    route: "",
     icon: <ArgonBox component="i" color="dark" fontSize="14px" className="ni ni-single-02" />,
     component: <ProtectedRoute><Profile /></ProtectedRoute>,
   },
-  {
-    type: "route",
-    name: "Đăng xuất",
-    key: "school-admin-logout",
-    route: "/logout",
-    icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-user-run" />,
-    component: <ProtectedRoute requiredRoles={["school_admin"]}><Logout /></ProtectedRoute>,
-  },
+
 ];
 
 export default schoolAdminRoutes;

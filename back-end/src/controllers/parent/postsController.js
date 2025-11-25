@@ -24,6 +24,15 @@ const getAllPosts = async (req, res) => {
         message: 'Không tìm thấy thông tin phụ huynh'
       });
     }
+    // Lấy thông tin user để kiểm tra school_id
+    const currentUser = await User.findById(req.user.id).select('school_id');
+    if (!currentUser || !currentUser.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không xác định được trường của phụ huynh'
+      });
+    }
+    const schoolId = currentUser.school_id;
     
     // Lấy student_id từ query string nếu có (filter by child)
     const studentId = req.query.student_id;
@@ -73,19 +82,19 @@ const getAllPosts = async (req, res) => {
     const orConditions = [];
     
     // Điều kiện 1: Bài viết của trường (school_admin) - TẤT CẢ user thấy
-    const schoolUserIds = await User.find({ role: { $in: ['school_admin'] }}).distinct('_id');
+    const schoolUserIds = await User.find({ role: { $in: ['school_admin'] }, school_id: schoolId }).distinct('_id');
     orConditions.push({
       'user_id': { $in: schoolUserIds }
     });
     
     // Điều kiện 2: Bài viết của phụ huynh - TẤT CẢ user thấy
-    const parentUserIds = await User.find({ role: 'parent' }).distinct('_id');
+    const parentUserIds = await User.find({ role: 'parent', school_id: schoolId }).distinct('_id');
     orConditions.push({
       'user_id': { $in: parentUserIds }
     });
     
     // Điều kiện 3: Bài viết của giáo viên - CHỈ trong phạm vi lớp con học và lớp có năm học lớn nhất
-    const teacherUserIds = await User.find({ role: 'teacher' }).distinct('_id');
+    const teacherUserIds = await User.find({ role: 'teacher', school_id: schoolId }).distinct('_id');
     if (childrenClassIds.length > 0) {
       orConditions.push({
         'user_id': { $in: teacherUserIds },

@@ -112,6 +112,10 @@ const getClassCalendars = async (req, res) => {
 // CREATE or UPDATE calendar entry (thêm nội dung activity cho 1 tiết học trong ngày cụ thể)
 const createOrUpdateCalendarEntry = async (req, res) => {
   try {
+    console.log('=== CREATE/UPDATE CALENDAR ENTRY ===');
+    console.log('Params:', req.params);
+    console.log('Body:', req.body);
+    
     const { calendarId } = req.params; // Calendar entry ID (not slot!)
     const { 
       classId,
@@ -123,6 +127,7 @@ const createOrUpdateCalendarEntry = async (req, res) => {
 
     // Validate required fields
     if (!classId || !date || !slotId || !activityId) {
+      console.log('Missing required fields:', { classId, date, slotId, activityId });
       return res.status(400).json({
         success: false,
         message: 'Vui lòng cung cấp đầy đủ: lớp học, ngày, tiết học và hoạt động'
@@ -132,34 +137,47 @@ const createOrUpdateCalendarEntry = async (req, res) => {
     // Check if class exists and get default teacher
     const classData = await Class.findById(classId).populate('teacher_id');
     if (!classData) {
+      console.log('Class not found:', classId);
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy lớp học'
       });
     }
+    console.log('Class found:', classData.name);
 
     // Verify slot exists
     const slot = await Slot.findById(slotId);
     if (!slot) {
+      console.log('Slot not found:', slotId);
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy khung giờ tiết học'
       });
     }
+    console.log('Slot found:', slot.slot_name);
 
     // Verify activity exists
     const activity = await Activity.findById(activityId);
     if (!activity) {
+      console.log('Activity not found:', activityId);
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy hoạt động'
       });
     }
+    console.log('Activity found:', activity.name);
 
     // Get weekday from date
     const dateObj = new Date(date);
+    console.log('Date object:', dateObj, 'Day of week:', dateObj.getDay());
     const dayOfWeek = dateObj.getDay();
-    const weekDay = await WeekDay.findOne({ day_of_week: dayOfWeek });
+    
+    // Convert day number to day name
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = dayNames[dayOfWeek];
+    console.log('Looking for weekday:', dayName);
+    
+    const weekDay = await WeekDay.findOne({ day_of_week: dayName });
     if (!weekDay) {
       return res.status(400).json({
         success: false,
@@ -465,7 +483,13 @@ const getAllTeachers = async (req, res) => {
       success: true,
       data: teachers.map(teacher => ({
         _id: teacher._id,
-        fullName: teacher.user_id?.full_name || 'Chưa xác định',
+        user_id: teacher.user_id ? {
+          _id: teacher.user_id._id,
+          full_name: teacher.user_id.full_name || 'Chưa xác định',
+          email: teacher.user_id.email,
+          avatar_url: teacher.user_id.avatar_url || ''
+        } : null,
+        fullName: teacher.user_id?.full_name || 'Chưa xác định', // Giữ lại để tương thích
         avatarUrl: teacher.user_id?.avatar_url || '',
         specialization: teacher.specialization || ''
       }))

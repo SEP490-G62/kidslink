@@ -36,5 +36,8 @@ router.post('/conversations/direct', messagingController.createDirectConversatio
 // Lấy giáo viên theo học sinh (lớp mới nhất)
 router.get('/teachers-by-student/:student_id', messagingController.getTeachersByStudent);
 
+// Lấy danh sách phụ huynh theo lớp của giáo viên (lớp có academic_year mới nhất)
+router.get('/parents-by-teacher-class', messagingController.getParentsByTeacherClass);
+
 module.exports = router;
 

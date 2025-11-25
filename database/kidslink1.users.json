@@ -10,6 +10,10 @@
   "status": 1,
   "email": "winfourt4@gmail.com",
   "phone_number": "0900000001",
+  "address": "123 Le Loi, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -29,6 +33,10 @@
   "status": 1,
   "email": "thangndhe172360@fpt.edu.vn",
   "phone_number": "0900000002",
+  "address": "456 Nguyen Hue, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -48,6 +56,10 @@
   "status": 1,
   "email": "parent3@example.com",
   "phone_number": "0900000003",
+  "address": "789 Dong Khoi, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -67,6 +79,10 @@
   "status": 1,
   "email": "parent4@example.com",
   "phone_number": "0900000004",
+  "address": "321 Pasteur, District 3, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -86,6 +102,10 @@
   "status": 1,
   "email": "parent5@example.com",
   "phone_number": "0900000005",
+  "address": "654 Vo Van Tan, District 3, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -104,12 +124,16 @@
   "avatar_url": "https://res.cloudinary.com/dzfwlfyu8/image/upload/v1762426360/kidslink/avatars/kidslink/avatars/user_671000000000000000000311_1762426360138.jpg",
   "status": 1,
   "email": "thangnguyen11112002@gmail.com",
-  "phone_number": "0910000002",
+  "phone_number": "09100005166",
+  "address": "123 Nguyen Trai, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
   "updatedAt": {
-    "$date": "2025-11-06T15:03:56.031Z"
+    "$date": "2025-11-07T07:33:15.050Z"
   }
 },
 {
@@ -124,6 +148,10 @@
   "status": 1,
   "email": "t2@school.com",
   "phone_number": "0910000002",
+  "address": "123 Nguyen Trai, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -143,6 +171,10 @@
   "status": 1,
   "email": "t3@school.com",
   "phone_number": "0910000003",
+  "address": "123 Nguyen Trai, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -162,6 +194,10 @@
   "status": 1,
   "email": "t4@school.com",
   "phone_number": "0910000004",
+  "address": "123 Nguyen Trai, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -181,6 +217,10 @@
   "status": 1,
   "email": "t5@school.com",
   "phone_number": "0910000005",
+  "address": "123 Nguyen Trai, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -200,6 +240,10 @@
   "status": 1,
   "email": "nurse@school.com",
   "phone_number": "0920000001",
+  "address": "123 Nguyen Trai, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -219,6 +263,10 @@
   "status": 1,
   "email": "cook@school.com",
   "phone_number": "0920000002",
+  "address": "123 Nguyen Trai, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -238,6 +286,10 @@
   "status": 1,
   "email": "admin@kidslink.vn",
   "phone_number": "0909999999",
+  "address": "123 Nguyen Trai, District 1, HCMC",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },

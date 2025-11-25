@@ -25,6 +25,7 @@ import TeacherProfile from "layouts/teacher/pages/Profile/index";
 import TeacherSettings from "layouts/teacher/pages/Settings/index";
 import DailyReportPage from "layouts/teacher/pages/DailyReport/index";
 import TeacherChat from "layouts/teacher/pages/Chat/index";
+import TeacherComplaints from "layouts/teacher/pages/Complaints/index";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -94,6 +95,14 @@ const teacherRoutes = [
     route: "/teacher/chat",
     icon: <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-chat-round" />,
     component: <ProtectedRoute requiredRoles={['teacher']}><TeacherChat /></ProtectedRoute>,
+  },
+  {
+    type: "route",
+    name: "Khiếu nại & Góp ý",
+    key: "teacher-complaints",
+    route: "/teacher/complaints",
+    icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-paper-diploma" />,
+    component: <ProtectedRoute requiredRoles={['teacher']}><TeacherComplaints /></ProtectedRoute>,
   },
   { type: "divider", key: "teacher-divider-1" },
   {

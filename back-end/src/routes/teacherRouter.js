@@ -20,6 +20,30 @@ const {
 const { getClassTimeSlots } = require('../controllers/parent/calendarController');
 const { getStudentDetail } = require('../controllers/studentController');
 const { createClassChatGroup } = require('../controllers/messagingController');
+const {
+  getAllPostsForTeacher,
+  createPost,
+  updatePost,
+  deletePost,
+  getMyPosts
+} = require('../controllers/teacher/postsController');
+const {
+  toggleLike,
+  getLikes
+} = require('../controllers/teacher/likesController');
+const {
+  createComment,
+  getComments,
+  updateComment,
+  deleteComment,
+  createCommentValidators
+} = require('../controllers/teacher/commentsController');
+const {
+  getComplaintTypes,
+  createComplaint,
+  getMyComplaints,
+  getComplaintById
+} = require('../controllers/teacher/complaintController');
 
 // Middleware xác thực cho tất cả routes
 router.use(authenticate);
@@ -51,6 +75,29 @@ router.get('/class-calendar/slots', authorize(['teacher']), getClassTimeSlots);
 router.get('/students/:id', authorize(['teacher']), getStudentDetail);
 
 router.post('/class/chat-group', authorize(['teacher']), createClassChatGroup);
+
+// Routes cho posts
+router.get('/posts', authorize(['teacher']), getAllPostsForTeacher);
+router.get('/posts/my-posts', authorize(['teacher']), getMyPosts);
+router.post('/posts', authorize(['teacher']), createPost);
+router.put('/posts/:postId', authorize(['teacher']), updatePost);
+router.delete('/posts/:postId', authorize(['teacher']), deletePost);
+
+// Routes cho likes
+router.post('/posts/:postId/like', authorize(['teacher']), toggleLike);
+router.get('/posts/:postId/likes', authorize(['teacher']), getLikes);
+
+// Routes cho comments
+router.post('/posts/:postId/comments', authorize(['teacher']), createCommentValidators, createComment);
+router.get('/posts/:postId/comments', authorize(['teacher']), getComments);
+router.put('/comments/:commentId', authorize(['teacher']), updateComment);
+router.delete('/comments/:commentId', authorize(['teacher']), deleteComment);
+
+// Routes cho complaints
+router.get('/complaints/types', authorize(['teacher']), getComplaintTypes);
+router.post('/complaints', authorize(['teacher']), createComplaint);
+router.get('/complaints', authorize(['teacher']), getMyComplaints);
+router.get('/complaints/:complaintId', authorize(['teacher']), getComplaintById);
 
 module.exports = router;
 

@@ -13,20 +13,20 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // react-router-dom components
 import { useLocation, NavLink } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
-import SidenavFooter from "examples/Sidenav/SidenavFooter";
 
 // @mui material components
 import List from "@mui/material/List";
 import Divider from "@mui/material/Divider";
 import Link from "@mui/material/Link";
 import Icon from "@mui/material/Icon";
+import SidenavFooter from "examples/Sidenav/SidenavFooter";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -42,6 +42,7 @@ import sidenavLogoLabel from "examples/Sidenav/styles/sidenav";
 // Argon Dashboard 2 MUI context
 import { useArgonController, setMiniSidenav } from "context";
 import io from "socket.io-client";
+import messagingService from "services/messagingService";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useArgonController();
@@ -50,9 +51,10 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const { pathname } = location;
   const itemName = pathname.split("/").slice(1)[0];
   const [unreadTotal, setUnreadTotal] = useState(() => {
-    const saved = localStorage.getItem('kidslink:unread_total');
+    const saved = localStorage.getItem("kidslink:unread_total");
     return saved ? parseInt(saved, 10) || 0 : 0;
   });
+  const socketRef = useRef(null);
 
   const closeSidenav = () => setMiniSidenav(dispatch, true);
 
@@ -74,45 +76,109 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     return () => window.removeEventListener("resize", handleMiniSidenav);
   }, [dispatch, location]);
 
-  // Listen total unread updates and background socket notifications
-  useEffect(() => {
-    const evt = (e) => {
-      if (e && e.detail && typeof e.detail.total !== 'undefined') {
-        setUnreadTotal(e.detail.total || 0);
-      }
-    };
-    window.addEventListener('kidslink:unread_total', evt);
-    const token = localStorage.getItem('token');
-    let s;
-    if (token) {
-      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      s = io(API_BASE_URL, { auth: { token }, transports: ['websocket','polling'], reconnection: true });
-      const handleNotify = () => {
-        setUnreadTotal(prev => {
-          const next = (prev || 0) + 1;
-          localStorage.setItem('kidslink:unread_total', String(next));
-          window.dispatchEvent(new CustomEvent('kidslink:unread_total', { detail: { total: next } }));
-          return next;
-        });
-      };
-      s.on('new_message_notification', handleNotify);
-      s.on('new_message', handleNotify);
-    }
-    return () => {
-      window.removeEventListener('kidslink:unread_total', evt);
-      try { s && s.close(); } catch {}
-    };
+  const broadcastUnread = useCallback((total) => {
+    localStorage.setItem("kidslink:unread_total", String(total));
+    window.dispatchEvent(
+      new CustomEvent("kidslink:unread_total", { detail: { total } })
+    );
   }, []);
+
+  const refreshUnread = useCallback(async () => {
+    try {
+      const res = await messagingService.getUnreadCount();
+      if (res?.success && res.data) {
+        // Đếm số conversation có tin nhắn chưa đọc thay vì tổng số tin nhắn
+        const byConversation = Array.isArray(res.data.byConversation) ? res.data.byConversation : [];
+        // Chỉ đếm những conversation có count > 0 (thực sự có tin nhắn chưa đọc)
+        const conversationCount = byConversation.filter(item => (item.count || 0) > 0).length;
+        setUnreadTotal(conversationCount);
+        broadcastUnread(conversationCount);
+      } else {
+        // Nếu không có data, set về 0
+        setUnreadTotal(0);
+        broadcastUnread(0);
+      }
+    } catch (error) {
+      console.error("Parent Sidenav refreshUnread error:", error);
+      // Khi có lỗi, set về 0 để tránh hiển thị sai
+      setUnreadTotal(0);
+      broadcastUnread(0);
+    }
+  }, [broadcastUnread]);
 
   useEffect(() => {
     const handler = (e) => {
-      if (e && e.detail && typeof e.detail.total !== 'undefined') {
+      if (e && e.detail && typeof e.detail.total !== "undefined") {
         setUnreadTotal(e.detail.total || 0);
       }
     };
-    window.addEventListener('kidslink:unread_total', handler);
-    return () => window.removeEventListener('kidslink:unread_total', handler);
+    window.addEventListener("kidslink:unread_total", handler);
+    return () => window.removeEventListener("kidslink:unread_total", handler);
   }, []);
+
+  useEffect(() => {
+    refreshUnread();
+  }, [refreshUnread]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token || socketRef.current) return;
+    const API_BASE_URL =
+      process.env.REACT_APP_API_URL || "http://localhost:5000";
+    const socket = io(API_BASE_URL, {
+      auth: { token },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+    });
+    socketRef.current = socket;
+
+    // Lấy user_id từ token để kiểm tra
+    let currentUserId = null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1] || 'e30='));
+      currentUserId = payload?.id || payload?._id;
+    } catch (e) {
+      console.error('Parent Sidenav: Cannot parse token', e);
+    }
+
+    const handleNotify = (data) => {
+      // Chỉ refresh nếu tin nhắn không phải từ chính mình
+      const message = data?.message || data;
+      if (message && currentUserId) {
+        const senderId = message.sender_id?._id || message.sender_id?.id || message.sender_id;
+        if (senderId && String(senderId) === String(currentUserId)) {
+          // Tin nhắn từ chính mình, không cần refresh
+          return;
+        }
+      }
+      // Nếu đang ở trang chat, chat page sẽ tự cập nhật badge, không cần refresh ở đây
+      // Chỉ refresh khi không ở trang chat
+      const isOnChatPage = window.location.pathname.includes('/chat');
+      if (!isOnChatPage) {
+        refreshUnread();
+      }
+    };
+
+    socket.on("new_message_notification", handleNotify);
+    socket.on("new_message", handleNotify);
+    socket.on("disconnect", (reason) => {
+      if (reason === "io server disconnect") {
+        socket.connect();
+      }
+    });
+
+    return () => {
+      if (socketRef.current) {
+        try {
+          socketRef.current.close();
+        } catch (error) {
+          console.error("Parent Sidenav socket close error:", error);
+        } finally {
+          socketRef.current = null;
+        }
+      }
+    };
+  }, [refreshUnread]);
 
   // Render all the routes from the routes.js (All the visible items on the Sidenav)
   const renderRoutes = routes.map(({ type, name, icon, title, key, href, route }) => {
@@ -126,7 +192,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name}
               icon={icon}
               active={key === itemName}
-              badgeCount={(route === '/parent/chat') ? unreadTotal : 0}
+              badgeCount={route === "/parent/chat" && unreadTotal > 0 ? unreadTotal : 0}
             />
           </Link>
         );
@@ -137,7 +203,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name} 
               icon={icon} 
               active={key === itemName}
-              badgeCount={(route === '/parent/chat') ? unreadTotal : 0}
+              badgeCount={route === "/parent/chat" && unreadTotal > 0 ? unreadTotal : 0}
             />
           </NavLink>
         );
@@ -182,7 +248,6 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           <ArgonTypography variant="h6" color="secondary">
             <Icon sx={{ fontWeight: "bold" }}>close</Icon>
           </ArgonTypography>
-          
         </ArgonBox>
         <ArgonBox 
           display="flex" 
@@ -206,12 +271,11 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               {brandName}
             </ArgonTypography>
           </ArgonBox>
-
         </ArgonBox>
-        
       </ArgonBox>
       <Divider light={darkSidenav} />
       <List>{renderRoutes}</List>
+      
       <ArgonBox pt={1} mt="auto" mb={2} mx={2}>
         <SidenavFooter />
       </ArgonBox>

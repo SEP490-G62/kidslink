@@ -33,6 +33,7 @@ import nutritionStaffRoutes from "routes/nutritionStaffRoutes";
 import teacherRoutes from "routes/teacherRoutes";
 import parentRoutes from "routes/parentRoutes";
 import schoolAdminRoutes from "routes/schoolAdminRoutes";
+import adminRoutes from "routes/adminRoutes";
 // Argon Dashboard 2 MUI contexts
 import { useArgonController, setMiniSidenav } from "context";
 import { AuthProvider } from "context/AuthContext";
@@ -133,7 +134,8 @@ export default function App() {
   const isHealthCareStaffPath = pathname.startsWith("/health-care");
   const isNutritionStaffPath = pathname.startsWith("/nutrition");
   const isSchoolAdminPath = pathname.startsWith("/school-admin");
-  // Determine role from localStorage to support role-based sidenav (school_admin)
+  const isAdminPath = pathname.startsWith("/admin");
+  // Determine role from localStorage to support role-based sidenav
   let userRole = null;
   try {
     const storedUser = localStorage.getItem("user");
@@ -143,8 +145,11 @@ export default function App() {
   } catch (e) {
     userRole = null;
   }
-  const isSchoolAdmin = userRole === "school_admin";
-  const activeRoutes = isTeacherPath
+  
+  // Nếu role là admin, luôn dùng adminRoutes
+  const activeRoutes = userRole === "admin"
+    ? adminRoutes
+    : isTeacherPath
     ? teacherRoutes
     : isParentPath
     ? parentRoutes
@@ -154,6 +159,8 @@ export default function App() {
     ? nutritionStaffRoutes
     : isSchoolAdminPath
     ? schoolAdminRoutes
+    : isAdminPath
+    ? adminRoutes
     : routes;
 
   // Ensure sidenav is not in mini overlay mode on desktop

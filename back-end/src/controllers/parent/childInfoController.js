@@ -1,11 +1,13 @@
 const Parent = require('../../models/Parent');
 const ParentStudent = require('../../models/ParentStudent');
 const Student = require('../../models/Student');
+const StudentClass = require('../../models/StudentClass');
 const HealthRecord = require('../../models/HealthRecord');
 const PickupStudent = require('../../models/PickupStudent');
 const Pickup = require('../../models/Pickup');
 const HealthCareStaff = require('../../models/HealthCareStaff');
 const HealthNotice = require('../../models/HealthNotice');
+
 const cloudinary = require('../../utils/cloudinary');
 
 // GET /api/parent/child-info/:studentId - Lấy thông tin chi tiết của học sinh
@@ -44,6 +46,19 @@ const getChildInfo = async (req, res) => {
         message: 'Không tìm thấy học sinh'
       });
     }
+
+    // Lấy lớp hiện tại của học sinh (ưu tiên năm học mới nhất)
+    const studentClasses = await StudentClass.find({ student_id: studentId })
+      .populate({
+        path: 'class_id',
+        populate: {
+          path: 'teacher_id',
+          populate: {
+            path: 'user_id',
+            select: 'full_name phone_number avatar_url'
+          }
+        }
+      });
 
     // Lấy danh sách người đón
     const pickupStudents = await PickupStudent.find({ student_id: studentId });
@@ -129,6 +144,44 @@ const getChildInfo = async (req, res) => {
       relationship: parentStudent.relationship
     };
 
+    // Xác định thông tin lớp học hiện tại
+    const parseAcademicYear = (ay) => {
+      if (!ay || typeof ay !== 'string') return -Infinity;
+      const [start] = ay.split('-');
+      const startYear = parseInt(start, 10);
+      return Number.isFinite(startYear) ? startYear : -Infinity;
+    };
+
+    let currentClassInfo = null;
+    if (Array.isArray(studentClasses) && studentClasses.length > 0) {
+      const sorted = studentClasses
+        .filter(sc => sc.class_id)
+        .sort((a, b) => {
+          const diffYear = parseAcademicYear(b.class_id?.academic_year) - parseAcademicYear(a.class_id?.academic_year);
+          if (diffYear !== 0) return diffYear;
+          const startA = new Date(a.class_id?.start_date || 0);
+          const startB = new Date(b.class_id?.start_date || 0);
+          return startB - startA;
+        });
+
+      if (sorted.length > 0) {
+        const currentClass = sorted[0].class_id;
+        currentClassInfo = {
+          id: currentClass._id,
+          name: currentClass.class_name,
+          academicYear: currentClass.academic_year,
+          startDate: currentClass.start_date,
+          endDate: currentClass.end_date,
+          teacher: currentClass.teacher_id ? {
+            id: currentClass.teacher_id._id,
+            name: currentClass.teacher_id.user_id?.full_name || '',
+            phone: currentClass.teacher_id.user_id?.phone_number || '',
+            avatar: currentClass.teacher_id.user_id?.avatar_url || ''
+          } : null
+        };
+      }
+    }
+
     // Response
     res.json({
       success: true,
@@ -136,7 +189,8 @@ const getChildInfo = async (req, res) => {
         student: formattedStudent,
         pickups: pickups,
         healthRecords: allHealthData,
-        healthNoticesCount: healthNotices.length
+        healthNoticesCount: healthNotices.length,
+        classInfo: currentClassInfo
       }
     });
   } catch (error) {

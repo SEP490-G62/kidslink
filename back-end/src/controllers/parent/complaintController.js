@@ -4,7 +4,7 @@ const cloudinary = require('../../utils/cloudinary');
 // GET /api/parent/complaints/types - Lấy danh sách các loại đơn (chỉ loại parent)
 const getComplaintTypes = async (req, res) => {
   try {
-    const complaintTypes = await ComplaintType.find({ category: 'parent' })
+    const complaintTypes = await ComplaintType.find({ category: { $in: ['parent'] } })
       .select('_id name description category')
       .sort({ createdAt: 1 });
 
@@ -45,20 +45,14 @@ const createComplaint = async (req, res) => {
     }
 
     // Kiểm tra complaint_type_id có tồn tại và thuộc category 'parent' không
-    const complaintType = await ComplaintType.findById(complaint_type_id);
+    const complaintType = await ComplaintType.findParentTypeById(complaint_type_id);
     if (!complaintType) {
       return res.status(404).json({
         success: false,
-        message: 'Loại đơn không tồn tại'
+        message: 'Loại đơn không tồn tại hoặc không dành cho phụ huynh'
       });
     }
-
-    if (complaintType.category !== 'parent') {
-      return res.status(403).json({
-        success: false,
-        message: 'Loại đơn này không dành cho phụ huynh'
-      });
-    }
+    const complaintTypeName = complaintType.name ? complaintType.name.trim() : '';
 
     // Upload ảnh lên Cloudinary nếu có
     let imageUrl = null;
@@ -82,6 +76,7 @@ const createComplaint = async (req, res) => {
     // Tạo complaint mới
     const newComplaint = await Complaint.create({
       complaint_type_id,
+      complaintTypeName: complaintTypeName || complaintType.name,
       reason: reason.trim(),
       image: imageUrl,
       status: 'pending',
@@ -90,7 +85,7 @@ const createComplaint = async (req, res) => {
 
     // Lấy complaint với thông tin đầy đủ
     const complaintWithDetails = await Complaint.findById(newComplaint._id)
-      .populate('complaint_type_id', 'name description category')
+      .select('-complaint_type_id')
       .populate('user_id', 'full_name username avatar_url');
 
     res.status(201).json({
@@ -114,7 +109,7 @@ const getMyComplaints = async (req, res) => {
     const userId = req.user.id;
 
     const complaints = await Complaint.find({ user_id: userId })
-      .populate('complaint_type_id', 'name description category')
+      .select('-complaint_type_id')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -139,7 +134,7 @@ const getComplaintById = async (req, res) => {
     const userId = req.user.id;
 
     const complaint = await Complaint.findById(complaintId)
-      .populate('complaint_type_id', 'name description category')
+      .select('-complaint_type_id')
       .populate('user_id', 'full_name username avatar_url');
 
     if (!complaint) {

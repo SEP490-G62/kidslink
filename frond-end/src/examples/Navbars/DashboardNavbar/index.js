@@ -62,13 +62,17 @@ import { useAuth } from "context/AuthContext";
 import team2 from "assets/images/team-2.jpg";
 import logoSpotify from "assets/images/small-logos/logo-spotify.svg";
 
-function DashboardNavbar({ absolute, light, isMini }) {
+function DashboardNavbar({ absolute, light, isMini, breadcrumbOverride }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useArgonController();
   const { miniSidenav, transparentNavbar, fixedNavbar } = controller;
   const [openMenu, setOpenMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
   const { user } = useAuth();
+  
+  // Allow overriding breadcrumbs (route and title) from specific pages
+  const effectiveRoute = breadcrumbOverride?.route || route;
+  const effectiveTitle = breadcrumbOverride?.title ?? route[route.length - 1];
 
   useEffect(() => {
     // Setting the navbar type
@@ -153,8 +157,8 @@ function DashboardNavbar({ absolute, light, isMini }) {
         >
           <Breadcrumbs
             icon="home"
-            title={route[route.length - 1]}
-            route={route}
+            title={effectiveTitle}
+            route={effectiveRoute}
             light={transparentNavbar ? light : false}
           />
           <Icon fontSize="medium" sx={navbarDesktopMenu} onClick={handleMiniSidenav}>
@@ -234,6 +238,10 @@ DashboardNavbar.propTypes = {
   absolute: PropTypes.bool,
   light: PropTypes.bool,
   isMini: PropTypes.bool,
+  breadcrumbOverride: PropTypes.shape({
+    route: PropTypes.arrayOf(PropTypes.string),
+    title: PropTypes.string,
+  }),
 };
 
 export default DashboardNavbar;
