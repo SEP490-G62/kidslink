@@ -628,7 +628,7 @@ function PersonalInformation() {
                       variant="outlined"
                       placeholder="Nhập họ và tên"
                       error={!!fieldErrors.full_name}
-                      // helperText={fieldErrors.full_name || 'Chỉ được nhập chữ cái'}
+                      helperText={fieldErrors.full_name}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
@@ -691,7 +691,7 @@ function PersonalInformation() {
                       type="email"
                       placeholder="Nhập email"
                       error={!!fieldErrors.email}
-                      // helperText={fieldErrors.email || 'Nhập địa chỉ email hợp lệ'}
+                      helperText={fieldErrors.email}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
@@ -735,7 +735,7 @@ function PersonalInformation() {
                       variant="outlined"
                       // placeholder="Nhập số điện thoại (10 hoặc 11 số)"
                       error={!!fieldErrors.phone_number}
-                      // helperText={fieldErrors.phone_number || 'Nhập 10 hoặc 11 số'}
+                      helperText={fieldErrors.phone_number}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
