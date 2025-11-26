@@ -120,6 +120,12 @@ function PersonalInformation() {
   const [activeForm, setActiveForm] = useState(null); // null, "profile", or "password"
   const [avatarPreview, setAvatarPreview] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({
+    full_name: '',
+    email: '',
+    phone_number: ''
+  });
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
     fetchPersonalInfo();
@@ -170,17 +176,91 @@ function PersonalInformation() {
     }
   };
 
+  // Validation functions
+  const validateFullName = (value) => {
+    if (!value) return 'Họ và tên là bắt buộc';
+    if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(value)) {
+      return 'Họ và tên chỉ được nhập chữ cái';
+    }
+    return '';
+  };
+
+  const validateEmail = (value) => {
+    if (!value) return 'Email là bắt buộc';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      return 'Email không hợp lệ';
+    }
+    return '';
+  };
+
+  const validatePhone = (value) => {
+    if (!value) return 'Số điện thoại là bắt buộc';
+    // Loại bỏ khoảng trắng, dấu + và ký tự đặc biệt
+    const cleaned = value.replace(/[\s\+\-\(\)]/g, '');
+    if (!/^\d+$/.test(cleaned)) {
+      return 'Số điện thoại chỉ được nhập số';
+    }
+    // Nếu bắt đầu bằng 84 (mã quốc gia), loại bỏ để kiểm tra số thực tế
+    let phoneNumber = cleaned;
+    if (cleaned.startsWith('84') && cleaned.length > 10) {
+      phoneNumber = cleaned.substring(2);
+    }
+    // Kiểm tra độ dài (10 hoặc 11 số)
+    if (phoneNumber.length === 10 || phoneNumber.length === 11) {
+      return '';
+    }
+    return 'Số điện thoại phải có 10 hoặc 11 số';
+  };
+
   const handleInputChange = (field) => (e) => {
+    const value = e.target.value;
+    
     setFormData({
       ...formData,
-      [field]: e.target.value
+      [field]: value
     });
+
+    // Chỉ validate nếu đã submit trước đó
+    if (hasSubmitted) {
+      let errorMessage = '';
+      if (field === 'full_name') {
+        errorMessage = validateFullName(value);
+      } else if (field === 'email') {
+        errorMessage = validateEmail(value);
+      } else if (field === 'phone_number') {
+        errorMessage = validatePhone(value);
+      }
+
+      setFieldErrors({
+        ...fieldErrors,
+        [field]: errorMessage
+      });
+    }
   };
 
   const handleSave = async () => {
+    setHasSubmitted(true);
+    
+    // Validate all fields
+    const errors = {
+      full_name: validateFullName(formData.full_name),
+      email: validateEmail(formData.email),
+      phone_number: validatePhone(formData.phone_number)
+    };
+
+    setFieldErrors(errors);
+
+    // Check if there are any errors
+    const hasErrors = Object.values(errors).some(error => error !== '');
+    if (hasErrors) {
+      setAlert({ open: true, message: "Vui lòng kiểm tra lại thông tin đã nhập", severity: "error" });
+      return false;
+    }
+
     try {
       setSaving(true);
-      
+
       const result = await parentService.updatePersonalInfo(formData);
       if (result.success) {
         setAlert({ open: true, message: "Cập nhật thông tin thành công", severity: "success" });
@@ -188,11 +268,15 @@ function PersonalInformation() {
         await fetchPersonalInfo();
         // Clear file after successful upload
         setAvatarFile(null);
+        setHasSubmitted(false);
+        return true;
       } else {
         setAlert({ open: true, message: result.error || "Không thể cập nhật thông tin", severity: "error" });
+        return false;
       }
     } catch (error) {
       setAlert({ open: true, message: "Có lỗi xảy ra khi cập nhật thông tin", severity: "error" });
+      return false;
     } finally {
       setSaving(false);
     }
@@ -278,6 +362,12 @@ function PersonalInformation() {
     setAvatarPreview(profileData.avatar_url || "");
     setAvatarFile(null);
     setActiveForm("profile");
+    setFieldErrors({
+      full_name: '',
+      email: '',
+      phone_number: ''
+    });
+    setHasSubmitted(false);
   };
 
   const openPasswordForm = () => {
@@ -295,8 +385,10 @@ function PersonalInformation() {
   };
 
   const handleSaveAndClose = async () => {
-    await handleSave();
-    closeForms();
+    const success = await handleSave();
+    if (success) {
+      closeForms();
+    }
   };
 
   const handlePasswordAndClose = async () => {
@@ -353,31 +445,31 @@ function PersonalInformation() {
                   <ArgonBox flex={1}>
                     <ArgonTypography variant="h5" fontWeight="bold" color="dark">
                       {profileData.full_name}
-                  </ArgonTypography>
+                    </ArgonTypography>
                     <ArgonTypography variant="body2" color="text" mb={2}>
                       Phụ huynh
-                  </ArgonTypography>
-                    
+                    </ArgonTypography>
+
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-single-02" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Username: <span style={{ fontWeight: 'bold' }}>{profileData.username}</span>
-                  </ArgonTypography>
-                </ArgonBox>
+                      </ArgonTypography>
+                    </ArgonBox>
 
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-email-83" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Email: <span style={{ fontWeight: 'bold' }}>{profileData.email}</span>
-                  </ArgonTypography>
+                      </ArgonTypography>
                     </ArgonBox>
-                    
+
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-mobile-button" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         SĐT: <span style={{ fontWeight: 'bold' }}>{profileData.phone_number}</span>
-                  </ArgonTypography>
-                </ArgonBox>
+                      </ArgonTypography>
+                    </ArgonBox>
 
                     {children.length > 0 && (
                       <ArgonBox display="flex" alignItems="center" gap={1.5}>
@@ -397,12 +489,12 @@ function PersonalInformation() {
 
                 {/* Action Buttons */}
                 <ArgonBox display="flex" gap={2} justifyContent="flex-end" mt={3}>
-                  <Button 
-                    variant="outlined" 
+                  <Button
+                    variant="outlined"
                     color="warning"
                     onClick={openPasswordForm}
                     startIcon={<i className="ni ni-lock-circle-open" />}
-                    sx={{ 
+                    sx={{
                       minWidth: 160,
                       height: 44,
                       fontSize: '14px',
@@ -421,12 +513,12 @@ function PersonalInformation() {
                   >
                     Đổi mật khẩu
                   </Button>
-                  <Button 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     color="primary"
                     onClick={openProfileForm}
                     startIcon={<i className="ni ni-single-02" />}
-                    sx={{ 
+                    sx={{
                       minWidth: 160,
                       height: 44,
                       fontSize: '14px',
@@ -438,17 +530,17 @@ function PersonalInformation() {
                     }}
                   >
                     Cập nhật thông tin
-                </Button>
+                  </Button>
                 </ArgonBox>
               </CardContent>
             </Card>
 
           </Grid>
-          </Grid>
+        </Grid>
 
         {/* Edit Profile Dialog */}
-        <Dialog 
-          open={activeForm === "profile"} 
+        <Dialog
+          open={activeForm === "profile"}
           onClose={closeForms}
           maxWidth="md"
           fullWidth
@@ -456,7 +548,7 @@ function PersonalInformation() {
             sx: { borderRadius: 3, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }
           }}
         >
-          <DialogTitle sx={{ 
+          <DialogTitle sx={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
             py: 2.5
@@ -488,9 +580,9 @@ function PersonalInformation() {
                   <Avatar
                     src={avatarPreview || formData.avatar_url}
                     alt="Avatar"
-                    sx={{ 
-                      width: 120, 
-                      height: 120, 
+                    sx={{
+                      width: 120,
+                      height: 120,
                       border: '2px solid #e0e0e0',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
@@ -518,34 +610,37 @@ function PersonalInformation() {
                     </ArgonBox>
                     <TextField
                       fullWidth
+                      required
                       value={formData.full_name}
                       onChange={handleInputChange("full_name")}
                       variant="outlined"
                       placeholder="Nhập họ và tên"
+                      error={!!fieldErrors.full_name}
+                      helperText={fieldErrors.full_name}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.full_name ? 'error.main' : 'primary.main',
                           },
                           '& .MuiInputBase-input': {
-                          width: '100% !important',
-                          minWidth: '0 !important',
-                          maxWidth: 'none !important',
-                          overflow: 'visible !important',
-                          textOverflow: 'unset !important',
-                          whiteSpace: 'nowrap !important',
-                          boxSizing: 'border-box !important',
-                        },
+                            width: '100% !important',
+                            minWidth: '0 !important',
+                            maxWidth: 'none !important',
+                            overflow: 'visible !important',
+                            textOverflow: 'unset !important',
+                            whiteSpace: 'nowrap !important',
+                            boxSizing: 'border-box !important',
+                          },
                           '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.full_name ? 'error.main' : 'primary.main',
                             borderWidth: '2px',
                           },
                         },
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <ArgonBox mb={1}>
                       <ArgonTypography variant="body2" fontWeight="medium" color="dark">
@@ -564,11 +659,11 @@ function PersonalInformation() {
                         },
                       }}
                     />
-                    <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: 'block' }}>
+                    {/* <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: 'block' }}>
                       Username không thể thay đổi
-                    </ArgonTypography>
+                    </ArgonTypography> */}
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <ArgonBox mb={1}>
                       <ArgonTypography variant="body2" fontWeight="medium" color="dark">
@@ -577,19 +672,22 @@ function PersonalInformation() {
                     </ArgonBox>
                     <TextField
                       fullWidth
+                      required
                       value={formData.email}
                       onChange={handleInputChange("email")}
                       variant="outlined"
                       type="email"
                       placeholder="Nhập email"
+                      error={!!fieldErrors.email}
+                      helperText={fieldErrors.email}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.email ? 'error.main' : 'primary.main',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.email ? 'error.main' : 'primary.main',
                             borderWidth: '2px',
                           },
                         },
@@ -610,7 +708,7 @@ function PersonalInformation() {
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <ArgonBox mb={1}>
                       <ArgonTypography variant="body2" fontWeight="medium" color="dark">
@@ -619,18 +717,21 @@ function PersonalInformation() {
                     </ArgonBox>
                     <TextField
                       fullWidth
+                      required
                       value={formData.phone_number}
                       onChange={handleInputChange("phone_number")}
                       variant="outlined"
-                      placeholder="Nhập số điện thoại"
+                      // placeholder="Nhập số điện thoại (10 hoặc 11 số)"
+                      error={!!fieldErrors.phone_number}
+                      helperText={fieldErrors.phone_number}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.phone_number ? 'error.main' : 'primary.main',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.phone_number ? 'error.main' : 'primary.main',
                             borderWidth: '2px',
                           },
                         },
@@ -672,7 +773,7 @@ function PersonalInformation() {
             >
               Hủy
             </Button>
-            <Button 
+            <Button
               onClick={handleSaveAndClose}
               variant="contained"
               color="primary"
@@ -700,8 +801,8 @@ function PersonalInformation() {
         </Dialog>
 
         {/* Change Password Dialog */}
-        <Dialog 
-          open={activeForm === "password"} 
+        <Dialog
+          open={activeForm === "password"}
           onClose={closeForms}
           maxWidth="sm"
           fullWidth
@@ -787,6 +888,27 @@ function PersonalInformation() {
                     <TextField
                       fullWidth
                       name="newPassword"
+                      sx={{
+                        flex: 1,
+                        width: '100%',
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '25px',
+                          backgroundColor: 'white',
+                          width: '100%',
+                          '&:hover': {
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          },
+                          '&.Mui-focused': {
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+                          }
+                        },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                          wordWrap: 'break-word',
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'break-word'
+                        }
+                      }}
                       value={passwordData.newPassword}
                       onChange={handlePasswordChange}
                       type="password"
@@ -802,6 +924,27 @@ function PersonalInformation() {
                     <TextField
                       fullWidth
                       name="confirmPassword"
+                      sx={{
+                        flex: 1,
+                        width: '100%',
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '25px',
+                          backgroundColor: 'white',
+                          width: '100%',
+                          '&:hover': {
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          },
+                          '&.Mui-focused': {
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+                          }
+                        },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                          wordWrap: 'break-word',
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'break-word'
+                        }
+                      }}
                       value={passwordData.confirmPassword}
                       onChange={handlePasswordChange}
                       type="password"
@@ -851,9 +994,9 @@ function PersonalInformation() {
             >
               Hủy
             </Button>
-            <Button 
+            <Button
               onClick={handlePasswordAndClose}
-              variant="contained" 
+              variant="contained"
               color="warning"
               disabled={passwordSaving}
               sx={{
@@ -878,7 +1021,7 @@ function PersonalInformation() {
           </DialogActions>
         </Dialog>
       </ArgonBox>
-            <Footer />
+      <Footer />
 
     </DashboardLayout>
   );

@@ -32,13 +32,11 @@ import TableContainer from "@mui/material/TableContainer";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import IconButton from "@mui/material/IconButton";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -69,6 +67,7 @@ function ManageComplaints() {
   const [selectedType, setSelectedType] = useState(null);
   const [typeFormData, setTypeFormData] = useState({ name: "", description: "", category: [] });
   const [typeLoading, setTypeLoading] = useState(false);
+  const [typeFilter, setTypeFilter] = useState("all"); // all | teacher | parent
 
   useEffect(() => {
     loadData();
@@ -193,11 +192,12 @@ function ManageComplaints() {
 
       if (result.success) {
         setSuccess(selectedType ? "Cập nhật loại đơn thành công!" : "Tạo loại đơn thành công!");
-        setTypeDialogOpen(false);
+        await loadComplaintTypes();
+        setSelectedType(null);
+        setTypeFormData({ name: "", description: "", category: [] });
         setTimeout(() => {
-          loadComplaintTypes();
           setSuccess("");
-        }, 1000);
+        }, 1500);
       } else {
         setError(result.error || "Có lỗi xảy ra");
       }
@@ -209,8 +209,14 @@ function ManageComplaints() {
     }
   };
 
+  const shouldConfirmDeletion = () => {
+    if (typeof window === "undefined") return true;
+    const hostname = window.location.hostname;
+    return hostname !== "localhost" && hostname !== "127.0.0.1";
+  };
+
   const handleDeleteComplaintType = async (typeId) => {
-    if (!window.confirm("Bạn có chắc muốn xóa loại đơn này?")) return;
+    if (shouldConfirmDeletion() && !window.confirm("Bạn có chắc muốn xóa loại đơn này?")) return;
 
     setTypeLoading(true);
     setError("");
@@ -355,17 +361,29 @@ function ManageComplaints() {
           </ArgonBox>
           <Button
             variant="contained"
-            color="primary"
+            color="inherit"
             startIcon={<i className="ni ni-fat-add" />}
             onClick={() => {
               setSelectedType(null);
               setTypeFormData({ name: "", description: "", category: [] });
               setTypeDialogOpen(true);
             }}
+            disableElevation
             sx={{
               borderRadius: 2,
               fontWeight: 600,
               textTransform: "none",
+              backgroundColor: "#ffffff",
+              color: "#111827",
+              border: "1px solid #d1d5db",
+              boxShadow: "0 6px 16px rgba(15, 23, 42, 0.12)",
+              px: 3,
+              py: 1.25,
+              "&:hover": {
+                backgroundColor: "#ffffff",
+                borderColor: "#94a3b8",
+                boxShadow: "0 10px 24px rgba(15, 23, 42, 0.18)",
+              },
             }}
           >
             Quản lý loại đơn
@@ -393,17 +411,17 @@ function ManageComplaints() {
             sx={{ borderBottom: 1, borderColor: "divider" }}
           >
             <Tab 
-              label={`Tất cả (${allStats.all?.total || 0})`}
+              label="Tất cả"
               icon={<i className="ni ni-collection" />}
               iconPosition="start"
             />
             <Tab 
-              label={`Giáo viên (${allStats.teacher?.total || 0})`}
+              label="Giáo viên"
               icon={<i className="ni ni-single-02" />}
               iconPosition="start"
             />
             <Tab 
-              label={`Phụ huynh (${allStats.parent?.total || 0})`}
+              label="Phụ huynh"
               icon={<i className="ni ni-single-02" />}
               iconPosition="start"
             />
@@ -822,6 +840,9 @@ function ManageComplaints() {
                         "& .MuiOutlinedInput-root": {
                           borderRadius: 1,
                         },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                        }
                       }}
                     />
                   )}
@@ -994,6 +1015,22 @@ function ManageComplaints() {
                 onChange={(e) => setTypeFormData({ ...typeFormData, name: e.target.value })}
                 placeholder="Nhập tên loại đơn"
                 disabled={typeLoading}
+                sx={{ 
+                  width: '100%',
+                  borderRadius: 2,
+                  '& .MuiOutlinedInput-root': {
+                    width: '100%',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    width: '100% !important',
+                  }
+                }}
               />
             </ArgonBox>
 
@@ -1009,14 +1046,63 @@ function ManageComplaints() {
                 multiline
                 rows={3}
                 disabled={typeLoading}
+                sx={{ 
+                  width: '100%',
+                  borderRadius: 2,
+                  '& .MuiOutlinedInput-root': {
+                    width: '100%',
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    width: '100% !important',
+                  }
+                }}
               />
             </ArgonBox>
 
             {/* List of existing types */}
             <ArgonBox mt={4}>
-              <ArgonTypography variant="h6" fontWeight="bold" color="dark" mb={2}>
-                Danh sách loại đơn hiện có
-              </ArgonTypography>
+              <ArgonBox display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <ArgonTypography variant="h6" fontWeight="bold" color="dark">
+                  Danh sách loại đơn hiện có
+                </ArgonTypography>
+                <ToggleButtonGroup
+                  exclusive
+                  size="small"
+                  value={typeFilter}
+                  onChange={(_, value) => value && setTypeFilter(value)}
+                  sx={{
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: 999,
+                    "& .MuiToggleButton-root": {
+                      textTransform: "none",
+                      fontWeight: 600,
+                      px: 2.5,
+                      border: "none",
+                      color: "#67748e",
+                      "&.Mui-selected": {
+                        color: "#fff",
+                        backgroundColor: "#5e72e4",
+                      },
+                      "&:first-of-type": {
+                        borderRadius: "999px 0 0 999px",
+                      },
+                      "&:last-of-type": {
+                        borderRadius: "0 999px 999px 0",
+                      },
+                    },
+                  }}
+                >
+                  <ToggleButton value="all">Tất cả</ToggleButton>
+                  <ToggleButton value="teacher">Giáo viên</ToggleButton>
+                  <ToggleButton value="parent">Phụ huynh</ToggleButton>
+                </ToggleButtonGroup>
+              </ArgonBox>
               {complaintTypes.length === 0 ? (
                 <ArgonTypography variant="body2" color="text">
                   Chưa có loại đơn nào
@@ -1031,7 +1117,15 @@ function ManageComplaints() {
                         <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Mô tả</TableCell>
                         <TableCell sx={{ fontWeight: 600, py: 1.5 }} align="center">Thao tác</TableCell>
                       </TableRow>
-                      {complaintTypes.map((type) => (
+                      {complaintTypes
+                        .filter((type) => {
+                          if (typeFilter === "all") return true;
+                          const categories = Array.isArray(type.category)
+                            ? type.category
+                            : [type.category];
+                          return categories.includes(typeFilter);
+                        })
+                        .map((type) => (
                         <TableRow key={type._id}>
                           <TableCell>
                             <ArgonBox display="flex" gap={0.5} flexWrap="wrap">

@@ -192,12 +192,26 @@ function ClassCalendar() {
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
+    let startYear = currentYear - 2; // Default fallback
+    
+    // Extract start year from academicYear (format: "2023-2024")
+    if (calendarData?.class?.academicYear) {
+      const academicYearStr = calendarData.class.academicYear;
+      const match = academicYearStr.match(/^(\d{4})/);
+      if (match) {
+        const parsedStartYear = parseInt(match[1], 10);
+        if (!isNaN(parsedStartYear)) {
+          startYear = parsedStartYear;
+        }
+      }
+    }
+    
     const yearsList = [];
-    for (let i = currentYear - 2; i <= currentYear + 2; i++) {
+    for (let i = startYear; i <= currentYear; i++) {
       yearsList.push(i);
     }
     return yearsList;
-  }, []);
+  }, [calendarData]);
 
   const formatWeekRange = () => {
     const monday = getSelectedWeekMonday();
