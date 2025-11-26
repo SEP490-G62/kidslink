@@ -75,6 +75,17 @@ const createSlot = async (req, res) => {
       end_time: endTime
     });
 
+    // Cập nhật lại tên tất cả các slot theo thứ tự thời gian
+    const allSlotsAfterInsert = await Slot.find().sort({ start_time: 1 });
+    for (let i = 0; i < allSlotsAfterInsert.length; i++) {
+      const newSlotName = `Tiết ${i + 1}`;
+      if (allSlotsAfterInsert[i].slot_name !== newSlotName) {
+        await Slot.findByIdAndUpdate(allSlotsAfterInsert[i]._id, {
+          slot_name: newSlotName
+        });
+      }
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Đã tạo khung giờ tiết học mới',
@@ -179,16 +190,7 @@ const deleteSlot = async (req, res) => {
   try {
     const { slotId } = req.params;
 
-    // Check if slot is being used in any calendar
-    const calendarsCount = await Calendar.countDocuments({ slot_id: slotId });
-    if (calendarsCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa khung giờ này vì đang được sử dụng trong ${calendarsCount} lịch học`
-      });
-    }
-
-    const slot = await Slot.findByIdAndDelete(slotId);
+    const slot = await Slot.findById(slotId);
     if (!slot) {
       return res.status(404).json({
         success: false,
@@ -196,9 +198,29 @@ const deleteSlot = async (req, res) => {
       });
     }
 
+    // Xóa tất cả calendar entries sử dụng slot này
+    const deletedCalendars = await Calendar.deleteMany({ slot_id: slotId });
+    console.log(`Deleted ${deletedCalendars.deletedCount} calendar entries associated with slot ${slotId}`);
+
+    // Xóa slot
+    await Slot.findByIdAndDelete(slotId);
+
+    // Cập nhật lại tên tất cả các slot còn lại theo thứ tự thời gian
+    const allSlots = await Slot.find().sort({ start_time: 1 });
+    for (let i = 0; i < allSlots.length; i++) {
+      const newSlotName = `Tiết ${i + 1}`;
+      if (allSlots[i].slot_name !== newSlotName) {
+        await Slot.findByIdAndUpdate(allSlots[i]._id, {
+          slot_name: newSlotName
+        });
+      }
+    }
+
     return res.json({
       success: true,
-      message: 'Đã xóa khung giờ tiết học'
+      message: deletedCalendars.deletedCount > 0 
+        ? `Đã xóa khung giờ tiết học và ${deletedCalendars.deletedCount} nội dung tiết học liên quan`
+        : 'Đã xóa khung giờ tiết học'
     });
   } catch (error) {
     console.error('deleteSlot error:', error);

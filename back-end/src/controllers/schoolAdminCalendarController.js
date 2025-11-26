@@ -475,13 +475,30 @@ const getAllTeachers = async (req, res) => {
     const Teacher = require('../models/Teacher');
     const User = require('../models/User');
 
+    // Lấy school_id từ user hiện tại (school_admin)
+    const adminUser = await User.findById(req.user.id).select('school_id');
+    if (!adminUser || !adminUser.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tài khoản quản trị không có thông tin trường'
+      });
+    }
+
+    // Lấy danh sách giáo viên có cùng school_id
     const teachers = await Teacher.find()
-      .populate('user_id', 'full_name avatar_url')
+      .populate({
+        path: 'user_id',
+        match: { school_id: adminUser.school_id },
+        select: 'full_name avatar_url email'
+      })
       .sort({ createdAt: -1 });
+
+    // Lọc bỏ teachers không có user_id (do match không khớp)
+    const filteredTeachers = teachers.filter(teacher => teacher.user_id !== null);
 
     return res.json({
       success: true,
-      data: teachers.map(teacher => ({
+      data: filteredTeachers.map(teacher => ({
         _id: teacher._id,
         user_id: teacher.user_id ? {
           _id: teacher.user_id._id,
