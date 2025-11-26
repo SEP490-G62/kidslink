@@ -41,6 +41,7 @@ import Footer from "examples/Footer";
 
 // Services
 import parentService from "services/parentService";
+import api from "services/api";
 
 const PasswordSectionCard = ({ icon, title, subtitle, children }) => (
   <Paper
@@ -109,6 +110,7 @@ function PersonalInformation() {
     avatar_url: "",
   });
   const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
     newPassword: "",
     confirmPassword: ""
   });
@@ -227,6 +229,9 @@ function PersonalInformation() {
 
   const handleChangePassword = async () => {
     const errors = {};
+    if (!passwordData.currentPassword) {
+      errors.currentPassword = "Vui lòng nhập mật khẩu hiện tại";
+    }
     const passwordError = getPasswordError(passwordData.newPassword);
     if (passwordError) {
       errors.newPassword = passwordError;
@@ -245,20 +250,18 @@ function PersonalInformation() {
 
     try {
       setPasswordSaving(true);
-      const result = await parentService.updatePersonalInfo({
-        password: passwordData.newPassword
-      });
-      if (result.success) {
-        setAlert({ open: true, message: "Đổi mật khẩu thành công", severity: "success" });
-        setPasswordData({ newPassword: "", confirmPassword: "" });
-        setPasswordErrors({});
-        return true;
-      } else {
-        setAlert({ open: true, message: result.error || "Không thể đổi mật khẩu", severity: "error" });
-        return false;
-      }
+      await api.put("/users/change-password", {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      }, true);
+      setAlert({ open: true, message: "Đổi mật khẩu thành công", severity: "success" });
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordErrors({});
+      return true;
     } catch (error) {
-      setAlert({ open: true, message: "Có lỗi xảy ra khi đổi mật khẩu", severity: "error" });
+      const message = error.message || "Không thể đổi mật khẩu";
+      setAlert({ open: true, message, severity: "error" });
+      setPasswordErrors((prev) => ({ ...prev, currentPassword: message }));
       return false;
     } finally {
       setPasswordSaving(false);
@@ -288,7 +291,7 @@ function PersonalInformation() {
     setAvatarFile(null);
     setActiveForm(null);
     setPasswordErrors({});
-    setPasswordData({ newPassword: "", confirmPassword: "" });
+    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
   };
 
   const handleSaveAndClose = async () => {
@@ -759,9 +762,24 @@ function PersonalInformation() {
               <PasswordSectionCard
                 icon={<SecurityOutlinedIcon />}
                 title="Thông tin bảo mật"
-                subtitle="Nhập mật khẩu mới cho tài khoản của bạn"
+                subtitle="Nhập mật khẩu hiện tại và mật khẩu mới của bạn"
               >
                 <Stack spacing={2.5}>
+                  <ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={0.75}>
+                      Mật khẩu hiện tại <span style={{ color: "#d32f2f" }}>*</span>
+                    </ArgonTypography>
+                    <TextField
+                      fullWidth
+                      name="currentPassword"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      type="password"
+                      placeholder="Nhập mật khẩu hiện tại"
+                      error={Boolean(passwordErrors.currentPassword)}
+                      helperText={passwordErrors.currentPassword}
+                    />
+                  </ArgonBox>
                   <ArgonBox>
                     <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={0.75}>
                       Mật khẩu mới <span style={{ color: "#d32f2f" }}>*</span>

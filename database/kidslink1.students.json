@@ -1,0 +1,132 @@
+[{
+  "_id": {
+    "$oid": "671000000000000000000401"
+  },
+  "full_name": "Be An",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "dob": {
+    "$date": "2021-09-15T00:00:00.000Z"
+  },
+  "gender": 0,
+  "avatar_url": "https://picsum.photos/seed/s1/200",
+  "status": 1,
+  "allergy": "None",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000402"
+  },
+  "full_name": "Be Binh",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "dob": {
+    "$date": "2020-07-20T00:00:00.000Z"
+  },
+  "gender": 1,
+  "avatar_url": "https://picsum.photos/seed/s2/200",
+  "status": 1,
+  "allergy": "Peanuts",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000403"
+  },
+  "full_name": "Be Chi",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "dob": {
+    "$date": "2019-11-05T00:00:00.000Z"
+  },
+  "gender": 1,
+  "avatar_url": "https://picsum.photos/seed/s3/200",
+  "status": 1,
+  "allergy": "Milk",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000404"
+  },
+  "full_name": "Be Dan",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "dob": {
+    "$date": "2021-03-08T00:00:00.000Z"
+  },
+  "gender": 0,
+  "avatar_url": "https://picsum.photos/seed/s4/200",
+  "status": 1,
+  "allergy": "None",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000405"
+  },
+  "full_name": "Be Em",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "dob": {
+    "$date": "2020-12-30T00:00:00.000Z"
+  },
+  "gender": 0,
+  "avatar_url": "https://picsum.photos/seed/s5/200",
+  "status": 1,
+  "allergy": "Seafood",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000406"
+  },
+  "full_name": "Be Gia",
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "dob": {
+    "$date": "2019-05-12T00:00:00.000Z"
+  },
+  "gender": 1,
+  "avatar_url": "https://picsum.photos/seed/s6/200",
+  "status": 1,
+  "allergy": "None",
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  }
+}]

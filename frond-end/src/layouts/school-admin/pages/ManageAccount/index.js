@@ -1,477 +1,741 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Avatar,
+  Backdrop,
   Box,
+  Card,
+  CardContent,
+  Chip,
   CircularProgress,
   IconButton,
+  InputAdornment,
   MenuItem,
-  Pagination,
-  Select,
+  Paper,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
-  Paper,
   TableHead,
   TableRow,
   TextField,
-  Tooltip
+  Tooltip,
 } from "@mui/material";
-import Switch from "@mui/material/Switch";
-import { styled } from "@mui/material/styles";
-import Chip from "@mui/material/Chip";
-import { Edit as EditIcon, Delete as DeleteIcon, Restore as RestoreIcon, Search as SearchIcon, Add as AddIcon, KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
-import InputAdornment from "@mui/material/InputAdornment";
-import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SearchIcon from "@mui/icons-material/Search";
+import LockIcon from "@mui/icons-material/Lock";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
+import RestoreIcon from "@mui/icons-material/Restore";
+import DeleteIcon from "@mui/icons-material/Delete";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import ClearIcon from "@mui/icons-material/Clear";
+import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import BlockIcon from "@mui/icons-material/Block";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import ArgonButton from "components/ArgonButton";
-import { useAuth } from "context/AuthContext";
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+import Footer from "examples/Footer";
+import schoolAdminService from "services/schoolAdminService";
 import api from "services/api";
 import UserFormModal from "./userFormModal";
 
-const ROLES = [
-  "school_admin",
-  "teacher",
-  "parent",
-  "health_care_staff",
-  "nutrition_staff",
-];
+const ROLE_LABELS = {
+  teacher: "Giáo viên",
+  parent: "Phụ huynh",
+  health_care_staff: "Nhân viên y tế",
+  nutrition_staff: "Nhân viên dinh dưỡng",
+};
 
-function ManageAccountPage() {
-  const { token } = useAuth();
+const STATUS_LABELS = {
+  1: { label: "Hoạt động", color: "success" },
+  0: { label: "Vô hiệu", color: "error" },
+};
 
-  const [loading, setLoading] = useState(false);
+const ManageAccountPage = () => {
   const [users, setUsers] = useState([]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [qRole, setQRole] = useState("");
-  const [qStatus, setQStatus] = useState("");
-  const [qSearch, setQSearch] = useState("");
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [roleOpen, setRoleOpen] = useState(false);
-  const [statusOpen, setStatusOpen] = useState(false);
-  const [limitOpen, setLimitOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
-  const StatusSwitch = useMemo(() => styled(Switch)(({ theme }) => ({
-    width: 44,
-    height: 24,
-    padding: 0,
-    display: 'inline-flex',
-    '& .MuiSwitch-switchBase': {
-      padding: 2,
-      top: 0,
-      left: 0,
-      transform: 'translateX(2px)',
-      '&.Mui-checked': {
-        transform: 'translateX(20px)',
-        '& + .MuiSwitch-track': {
-          backgroundColor: '#22c55e !important',
-          opacity: 1,
-        },
-      },
-      '&.Mui-disabled + .MuiSwitch-track': {
-        opacity: 0.5,
-      },
-    },
-    '& .MuiSwitch-thumb': {
-      width: 20,
-      height: 20,
-      boxShadow: 'none',
-      backgroundColor: '#fff',
-    },
-    '& .MuiSwitch-track': {
-      borderRadius: 12,
-      backgroundColor: '#e5e7eb !important',
-      opacity: 1,
-    },
-  })), []);
+  useEffect(() => {
+    fetchUsers();
+    fetchStudents();
+  }, []);
 
   const fetchUsers = async () => {
-    setLoading(true);
     try {
-      const params = new URLSearchParams();
-      params.set("page", String(page));
-      params.set("limit", String(limit));
-      if (qRole) params.set("role", qRole);
-      if (qStatus !== "") params.set("status", qStatus);
-      // Optional server-side search could be added later
-      const res = await api.get(`/users?${params.toString()}`, true);
-      const payload = res || {};
-      const data = payload.data || [];
-      const pagination = payload.pagination || { totalPages: 1 };
-      setUsers(Array.isArray(data) ? data : []);
-      setTotalPages(parseInt(pagination.totalPages || 1));
-    } catch (e) {
-      console.error("Failed to fetch users", e);
+      setLoading(true);
+      setError("");
+      const res = await schoolAdminService.getUsers({ limit: 200 });
+      if (res.success) {
+        setUsers(res.data || []);
+      } else {
+        setUsers([]);
+        setError(res.message || "Không thể tải danh sách người dùng");
+      }
+    } catch (err) {
+      console.error("fetchUsers error", err);
       setUsers([]);
-      setTotalPages(1);
+      setError(err.message || "Không thể tải danh sách người dùng");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, qRole, qStatus]);
-
-  const filteredUsers = useMemo(() => {
-    if (!qSearch) return users;
-    const s = qSearch.toLowerCase();
-    return users.filter((u) =>
-      [u.full_name, u.username, u.email, u.phone_number]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(s))
-    );
-  }, [users, qSearch]);
-
-  const renderRoleChip = (role) => {
-    // Custom colors per requirement
-    if (role === 'health_care_staff') {
-      return (
-        <Chip
-          size="small"
-          label="health_care_staff"
-          variant="filled"
-          sx={{ bgcolor: '#f06292', color: '#fff', borderRadius: '16px' }}
-        />
-      );
+  const fetchStudents = async () => {
+    try {
+      const res = await api.get("/student/all", true);
+      const list = Array.isArray(res) ? res : res.students || [];
+      setStudents(list);
+    } catch (err) {
+      console.error("fetchStudents error", err);
+      setStudents([]);
     }
-    if (role === 'parent') {
-      return (
-        <Chip
-          size="small"
-          label="parent"
-          variant="filled"
-          sx={{ bgcolor: '#ffca28', color: '#212121', borderRadius: '16px' }}
-        />
-      );
-    }
-    const map = {
-      school_admin: { color: 'primary', label: 'school_admin' },
-      teacher: { color: 'info', label: 'teacher' },
-      nutrition_staff: { color: 'warning', label: 'nutrition_staff' },
-      admin: { color: 'error', label: 'admin' },
-    };
-    const conf = map[role] || { color: 'default', label: role };
-    return <Chip size="small" label={conf.label} color={conf.color} variant="filled" sx={{ borderRadius: '16px' }} />;
   };
 
-  const renderStatusChip = (status) => (
-    <Chip size="small" label={status === 1 ? 'Hoạt động' : 'Không hoạt động'} color={status === 1 ? 'success' : 'error'} variant="filled" sx={{ borderRadius: '16px' }} />
-  );
+  const handleOpenCreate = () => {
+    setSelectedUser(null);
+    setModalOpen(true);
+  };
+
+  const handleEditUser = async (user) => {
+    try {
+      setProfileLoading(true);
+      const res = await schoolAdminService.getUserById(user._id);
+      if (res.success) {
+        setSelectedUser(res.data);
+        setModalOpen(true);
+      } else {
+        alert(res.message || "Không thể tải thông tin user");
+      }
+    } catch (err) {
+      console.error("getUserById error", err);
+      alert(err.message || "Không thể tải thông tin user");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   const handleToggleStatus = async (user) => {
-    const newStatus = user.status === 1 ? 0 : 1;
-    // optimistic UI update
-    setUsers((prev) => prev.map((u) => (u._id === user._id ? { ...u, status: newStatus } : u)));
+    const nextStatus = user.status === 1 ? 0 : 1;
+    if (
+      !window.confirm(
+        `Bạn có chắc muốn ${nextStatus === 1 ? "kích hoạt" : "vô hiệu hóa"} tài khoản "${user.full_name}"?`
+      )
+    ) {
+      return;
+    }
     try {
-      await api.put(`/users/${user._id}`, { status: newStatus }, true);
-    } catch (e) {
-      console.error("Toggle status failed", e);
-      // revert on failure
-      setUsers((prev) => prev.map((u) => (u._id === user._id ? { ...u, status: user.status } : u)));
+      await schoolAdminService.updateUser(user._id, { status: nextStatus });
+      setUsers((prev) =>
+        prev.map((u) => (u._id === user._id ? { ...u, status: nextStatus } : u))
+      );
+    } catch (err) {
+      console.error("toggle status error", err);
+      alert(err.message || "Không thể cập nhật trạng thái");
     }
   };
 
-  const openCreate = () => {
-    setEditingUser(null);
-    setModalOpen(true);
-  };
-
-  const openEdit = (user) => {
-    setEditingUser(user);
-    setModalOpen(true);
-  };
-
-  const handleDelete = async (userId) => {
-    if (!window.confirm("Xác nhận vô hiệu hóa tài khoản?")) return;
+  const handleDeleteUser = async (user) => {
+    if (!window.confirm(`Bạn có chắc muốn khóa tài khoản "${user.full_name}"?`)) return;
     try {
-      await api.delete(`/users/${userId}`, true);
-      fetchUsers();
-    } catch (e) {
-      console.error("Delete user failed", e);
+      await schoolAdminService.softDeleteUser(user._id);
+      setUsers((prev) => prev.map((u) => (u._id === user._id ? { ...u, status: 0 } : u)));
+    } catch (err) {
+      console.error("delete user error", err);
+      alert(err.message || "Không thể khóa tài khoản");
     }
   };
 
-  const handleHardDelete = async (userId) => {
-    if (!window.confirm("Xóa vĩnh viễn tài khoản? Không thể khôi phục.")) return;
+  const handleRestoreUser = async (user) => {
     try {
-      await api.delete(`/users/${userId}/hard`, true);
-      fetchUsers();
-    } catch (e) {
-      console.error("Hard delete user failed", e);
+      await schoolAdminService.restoreUser(user._id);
+      setUsers((prev) => prev.map((u) => (u._id === user._id ? { ...u, status: 1 } : u)));
+    } catch (err) {
+      console.error("restore user error", err);
+      alert(err.message || "Không thể khôi phục tài khoản");
     }
   };
 
-  const handleRestore = async (userId) => {
+  const filteredUsers = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return users.filter((u) => {
+      const matchesRole = !roleFilter || u.role === roleFilter;
+      const matchesStatus =
+        statusFilter === "" || Number(u.status) === Number(statusFilter);
+      const matchesSearch =
+        !keyword ||
+        (u.full_name || "").toLowerCase().includes(keyword) ||
+        (u.username || "").toLowerCase().includes(keyword) ||
+        (u.email || "").toLowerCase().includes(keyword) ||
+        (u.phone_number || "").toLowerCase().includes(keyword);
+      return matchesRole && matchesStatus && matchesSearch;
+    });
+  }, [users, search, roleFilter, statusFilter]);
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setSelectedUser(null);
+  };
+
+  const handleModalSuccess = () => {
+    handleModalClose();
+    fetchUsers();
+  };
+
+  const totalUsers = filteredUsers.length;
+  const activeCount = users.filter((u) => u.status === 1).length;
+  const inactiveCount = users.length - activeCount;
+  const teacherCount = users.filter((u) => u.role === "teacher").length;
+
+  const renderRoleChip = (role) => {
+    const label = ROLE_LABELS[role] || role;
+    let color = "default";
+    if (role === "teacher") color = "primary";
+    else if (role === "parent") color = "info";
+    else if (role === "health_care_staff") color = "success";
+    else if (role === "nutrition_staff") color = "warning";
+    return <Chip size="small" color={color} label={label} />;
+  };
+
+  const renderStatusChip = (status) => {
+    const { label, color } = STATUS_LABELS[status] || {
+      label: "Không xác định",
+      color: "default",
+    };
+    return <Chip size="small" color={color} label={label} />;
+  };
+
+  const formatDate = (value) => {
+    if (!value) return "-";
     try {
-      await api.put(`/users/${userId}/restore`, {}, true);
-      fetchUsers();
+      const date = new Date(value);
+      return date.toLocaleString("vi-VN");
     } catch (e) {
-      console.error("Restore user failed", e);
+      return "-";
     }
   };
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <ArgonBox py={3} position="relative" zIndex={3}>
-        <ArgonBox mb={3} display="flex" justifyContent="space-between" alignItems="center">
-          <ArgonTypography variant="h5" fontWeight="bold" color="white">Quản lý tài khoản</ArgonTypography>
-          <ArgonButton color="info" size="medium" onClick={openCreate} variant="gradient">+ Tạo tài khoản</ArgonButton>
-        </ArgonBox>
+      <ArgonBox py={3}>
+        <Card
+          sx={{
+            mb: 3,
+            background: "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)",
+            border: "1px solid #e3f2fd",
+            boxShadow: "0 6px 18px rgba(25,118,210,0.12)",
+          }}
+        >
+          <CardContent>
+            <Box
+              display="flex"
+              flexDirection={{ xs: "column", md: "row" }}
+              justifyContent="space-between"
+              alignItems={{ xs: "flex-start", md: "center" }}
+              gap={2}
+            >
+              <Box>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <PeopleAltIcon color="primary" />
+                  <ArgonTypography variant="h5" fontWeight="bold">
+                    Quản lý tài khoản
+                  </ArgonTypography>
+                </Stack>
+                <ArgonTypography variant="body2" color="text" mt={0.5}>
+                  Theo dõi và thao tác với tài khoản trong trường
+                </ArgonTypography>
+              </Box>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                <ArgonButton
+                  color="secondary"
+                  variant="outlined"
+                  startIcon={<RefreshIcon />}
+                  onClick={fetchUsers}
+                >
+                  Làm mới
+                </ArgonButton>
+                <ArgonButton
+                  color="info"
+                  startIcon={<AddIcon />}
+                  onClick={handleOpenCreate}
+                >
+                  Thêm tài khoản
+                </ArgonButton>
+              </Stack>
+            </Box>
 
-        <ArgonBox mb={2} display="flex" gap={2} flexWrap="wrap" alignItems="center">
-          <TextField
-            size="small"
-            placeholder="Tìm kiếm"
-            value={qSearch}
-            onChange={(e) => setQSearch(e.target.value)}
-            sx={{
-              maxWidth: 480,
-              width: "100%",
-              backgroundColor: "white",
-              borderRadius: 1,
-              '& .MuiInputBase-input': {
-                color: 'text.primary',
-                paddingRight: '14px',
-                overflow: 'visible',
-                textOverflow: 'clip',
-                '::placeholder': { color: 'text.secondary', opacity: 0.6, fontSize: '0.95rem' },
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-            InputLabelProps={{ shrink: false }}
-          />
-          <Box display="flex" alignItems="center" gap={0.5}>
-            <Select
-              size="small"
-              value={qRole}
-              onChange={(e) => setQRole(e.target.value)}
-              displayEmpty
-              open={roleOpen}
-              onOpen={() => setRoleOpen(true)}
-              onClose={() => setRoleOpen(false)}
-              sx={{
-                width: 140,
-                backgroundColor: "white",
-                borderRadius: 1,
-                "& .MuiOutlinedInput-notchedOutline": { border: "none" },
-                "& .MuiSelect-icon": { display: "none" },
-              }}
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              mt={3}
+              flexWrap="wrap"
             >
-              <MenuItem value="">Tất cả vai trò</MenuItem>
-              {ROLES.map((r) => (
-                <MenuItem key={r} value={r}>{r}</MenuItem>
-              ))}
-            </Select>
-            <IconButton size="small" onClick={() => setRoleOpen(!roleOpen)} sx={{ backgroundColor: "white", color: "text.main", minWidth: 32, height: 32 }}>
-              {roleOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-            </IconButton>
-          </Box>
-          <Box display="flex" alignItems="center" gap={0.5}>
-            <Select
-              size="small"
-              value={qStatus}
-              onChange={(e) => setQStatus(e.target.value)}
-              displayEmpty
-              open={statusOpen}
-              onOpen={() => setStatusOpen(true)}
-              onClose={() => setStatusOpen(false)}
-              sx={{
-                width: 140,
-                backgroundColor: "white",
-                borderRadius: 1,
-                "& .MuiOutlinedInput-notchedOutline": { border: "none" },
-                "& .MuiSelect-icon": { display: "none" },
-              }}
+              <Card
+                sx={{
+                  flex: 1,
+                  minWidth: 220,
+                  border: "1px solid #e0f2f1",
+                  boxShadow: "none",
+                  background:
+                    "linear-gradient(135deg, rgba(224,242,241,0.8) 0%, rgba(255,255,255,0.9) 100%)",
+                }}
+              >
+                <CardContent sx={{ py: 2 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <PeopleAltIcon color="primary" />
+                    <Box>
+                      <ArgonTypography variant="caption" color="text" textTransform="uppercase">
+                        Tổng tài khoản
+                      </ArgonTypography>
+                      <ArgonTypography variant="h5" fontWeight="bold">
+                        {totalUsers}
+                      </ArgonTypography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+              <Card
+                sx={{
+                  flex: 1,
+                  minWidth: 220,
+                  border: "1px solid #e3f2fd",
+                  boxShadow: "none",
+                  background:
+                    "linear-gradient(135deg, rgba(227,242,253,0.8) 0%, rgba(255,255,255,0.95) 100%)",
+                }}
+              >
+                <CardContent sx={{ py: 2 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <CheckCircleIcon color="success" />
+                    <Box>
+                      <ArgonTypography variant="caption" color="text" textTransform="uppercase">
+                        Đang hoạt động
+                      </ArgonTypography>
+                      <ArgonTypography variant="h5" fontWeight="bold">
+                        {activeCount}
+                      </ArgonTypography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+              <Card
+                sx={{
+                  flex: 1,
+                  minWidth: 220,
+                  border: "1px solid #ffebee",
+                  boxShadow: "none",
+                  background:
+                    "linear-gradient(135deg, rgba(255,235,238,0.85) 0%, rgba(255,255,255,0.95) 100%)",
+                }}
+              >
+                <CardContent sx={{ py: 2 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <BlockIcon color="error" />
+                    <Box>
+                      <ArgonTypography variant="caption" color="text" textTransform="uppercase">
+                        Đã khóa
+                      </ArgonTypography>
+                      <ArgonTypography variant="h5" fontWeight="bold">
+                        {inactiveCount}
+                      </ArgonTypography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+              <Card
+                sx={{
+                  flex: 1,
+                  minWidth: 220,
+                  border: "1px solid #ede7f6",
+                  boxShadow: "none",
+                  background:
+                    "linear-gradient(135deg, rgba(237,231,246,0.85) 0%, rgba(255,255,255,0.95) 100%)",
+                }}
+              >
+                <CardContent sx={{ py: 2 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Chip label="GV" color="primary" size="small" />
+                    <Box>
+                      <ArgonTypography variant="caption" color="text" textTransform="uppercase">
+                        Giáo viên
+                      </ArgonTypography>
+                      <ArgonTypography variant="h5" fontWeight="bold">
+                        {teacherCount}
+                      </ArgonTypography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        <Card
+          sx={{
+            mb: 3,
+            background: "linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)",
+            border: "1px solid #e3f2fd",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          }}
+        >
+          <CardContent>
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={2}
+              alignItems={{ xs: "stretch", md: "center" }}
             >
-              <MenuItem value="">Tất cả trạng thái</MenuItem>
-              <MenuItem value={1}>Hoạt động</MenuItem>
-              <MenuItem value={0}>Vô hiệu</MenuItem>
-            </Select>
-            <IconButton size="small" onClick={() => setStatusOpen(!statusOpen)} sx={{ backgroundColor: "white", color: "text.main", minWidth: 32, height: 32 }}>
-              {statusOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-            </IconButton>
-          </Box>
-          <Box display="flex" alignItems="center" gap={0.5}>
-            <Select
-              size="small"
-              value={limit}
-              onChange={(e) => setLimit(Number(e.target.value))}
-              open={limitOpen}
-              onOpen={() => setLimitOpen(true)}
-              onClose={() => setLimitOpen(false)}
-              sx={{
-                width: 100,
-                backgroundColor: "white",
-                borderRadius: 1,
-                "& .MuiOutlinedInput-notchedOutline": { border: "none" },
-                "& .MuiSelect-icon": { display: "none" },
-              }}
-            >
-              {[5, 10, 20, 50].map((n) => (
-                <MenuItem key={n} value={n}>{n}/trang</MenuItem>
-              ))}
-            </Select>
-            <IconButton size="small" onClick={() => setLimitOpen(!limitOpen)} sx={{ backgroundColor: "white", color: "text.main", minWidth: 32, height: 32 }}>
-              {limitOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-            </IconButton>
-          </Box>
-        </ArgonBox>
-      {loading ? (
-        <ArgonBox p={3} bgcolor="white" borderRadius={2}>
-          <ArgonTypography variant="body2">Đang tải dữ liệu...</ArgonTypography>
-        </ArgonBox>
-      ) : (
-        <TableContainer component={Paper} sx={{ boxShadow: 1 }}>
-          <Table
-            sx={{
-              tableLayout: "fixed",
-              width: "100%",
-              "& .MuiTableHead-root": {
-                display: "table-header-group !important",
-                padding: 0,
-              },
-              "& .MuiTableCell-root": {
-                padding: "12px 16px",
-                verticalAlign: "middle",
-              },
-            }}
-          >
-            <colgroup>
-              <col style={{ width: "20%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "22%" }} />
-              <col style={{ width: "14%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "8%" }} />
-            </colgroup>
-            <TableHead sx={{ display: 'table-header-group', backgroundColor: 'white' }}>
-              <TableRow>
-                <TableCell>
-                  <strong>Họ tên</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Username</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Vai trò</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Email</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>SĐT</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Trạng thái</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Thao tác</strong>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((u) => (
-                  <TableRow key={u._id} hover>
-                    <TableCell>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
-                        <Avatar src={u.avatar_url} alt={u.full_name} sx={{ width: 28, height: 28 }} />
-                        <ArgonTypography variant="body2" fontWeight="medium">
-                          {u.full_name}
-                        </ArgonTypography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <ArgonTypography variant="body2">{u.username}</ArgonTypography>
-                    </TableCell>
-                    <TableCell>
-                      {renderRoleChip(u.role)}
-                    </TableCell>
-                    <TableCell>
-                      <ArgonTypography variant="body2">{u.email || ""}</ArgonTypography>
-                    </TableCell>
-                    <TableCell>
-                      <ArgonTypography variant="body2">{u.phone_number || ""}</ArgonTypography>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
-                        <ArgonTypography variant="body2">
-                          {u.status === 1 ? "Hoạt động" : "Vô hiệu"}
-                        </ArgonTypography>
-                        <StatusSwitch
-                          size="small"
-                          checked={u.status === 1}
-                          onChange={() => handleToggleStatus(u)}
-                        />
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="inline-flex" gap={0.5}>
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          title="Chỉnh sửa"
-                          onClick={() => openEdit(u)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          title="Xóa vĩnh viễn"
-                          onClick={() => handleHardDelete(u._id)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    <ArgonTypography variant="body2" color="text">
-                      {qSearch ? "Không tìm thấy tài khoản nào phù hợp" : "Chưa có dữ liệu tài khoản"}
-                    </ArgonTypography>
-                  </TableCell>
-                </TableRow>
+              <TextField
+                size="small"
+                fullWidth
+                placeholder="Tìm kiếm theo tên, username, email, SĐT..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                sx={{
+                  flex: 1,
+                  minWidth: 220,
+                  maxWidth: 400,
+                  width: "100%",
+                  borderRadius: 2,
+                  "& .MuiOutlinedInput-root": {
+                    width: "100%",
+                    borderRadius: 2,
+                    "&:hover fieldset": {
+                      borderColor: "primary.main",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "primary.main",
+                    },
+                  },
+                  "& .MuiInputBase-input": {
+                    width: "100% !important",
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: "#1976d2" }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                select
+                size="small"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                sx={{
+                  flex: 1,
+                  minWidth: 220,
+                  maxWidth: 260,
+                  width: "100%",
+                  borderRadius: 2,
+                  "& .MuiOutlinedInput-root": {
+                    width: "100%",
+                    borderRadius: 2,
+                    "&:hover fieldset": {
+                      borderColor: "primary.main",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "primary.main",
+                    },
+                  },
+                  "& .MuiInputBase-input": {
+                    width: "100% !important",
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <FilterListIcon fontSize="small" sx={{ color: "#1976d2" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (value) => {
+                    if (!value) return "Tất cả vai trò";
+                    return ROLE_LABELS[value] || value;
+                  },
+                }}
+              >
+                <MenuItem value="">
+                  <em>Tất cả vai trò</em>
+                </MenuItem>
+                {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                size="small"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                sx={{
+                  flex: 1,
+                  minWidth: 200,
+                  maxWidth: 240,
+                  width: "100%",
+                  borderRadius: 2,
+                  "& .MuiOutlinedInput-root": {
+                    width: "100%",
+                    borderRadius: 2,
+                    "&:hover fieldset": {
+                      borderColor: "primary.main",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "primary.main",
+                    },
+                  },
+                  "& .MuiInputBase-input": {
+                    width: "100% !important",
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <FilterListIcon fontSize="small" sx={{ color: "#1976d2" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (value) => {
+                    if (value === "") return "Trạng thái bất kỳ";
+                    return Number(value) === 1 ? "Hoạt động" : "Vô hiệu";
+                  },
+                }}
+              >
+                <MenuItem value="">
+                  <em>Trạng thái bất kỳ</em>
+                </MenuItem>
+                <MenuItem value={1}>Hoạt động</MenuItem>
+                <MenuItem value={0}>Vô hiệu</MenuItem>
+              </TextField>
+              {(search || roleFilter || statusFilter !== "") && (
+                <ArgonButton
+                  size="small"
+                  color="error"
+                  variant="outlined"
+                  startIcon={<ClearIcon />}
+                  onClick={() => {
+                    setSearch("");
+                    setRoleFilter("");
+                    setStatusFilter("");
+                  }}
+                >
+                  Xóa lọc
+                </ArgonButton>
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+            </Stack>
+          </CardContent>
+        </Card>
 
-      <ArgonBox display="flex" justifyContent="center" my={2}>
-        <Pagination page={page} count={totalPages} onChange={(_, p) => setPage(p)} color="primary" />
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        <Card>
+          <CardContent>
+            <ArgonTypography variant="h6" fontWeight="bold" mb={2}>
+              Danh sách tài khoản ({filteredUsers.length})
+            </ArgonTypography>
+            {loading ? (
+              <ArgonBox
+                py={5}
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+              >
+                <CircularProgress />
+              </ArgonBox>
+            ) : filteredUsers.length === 0 ? (
+              <ArgonBox textAlign="center" py={4}>
+                <ArgonTypography variant="body1" color="text">
+                  {search || roleFilter || statusFilter !== ""
+                    ? "Không tìm thấy tài khoản phù hợp"
+                    : "Chưa có dữ liệu tài khoản"}
+                </ArgonTypography>
+              </ArgonBox>
+            ) : (
+              <TableContainer
+                component={Paper}
+                sx={{
+                  borderRadius: 2,
+                  border: (theme) => `1px solid ${theme.palette.info.light}`,
+                  boxShadow: 3,
+                }}
+              >
+                <Table
+                  sx={{
+                    tableLayout: "fixed",
+                    width: "100%",
+                    "& .MuiTableHead-root": {
+                      display: "table-header-group !important",
+                      padding: 0,
+                      backgroundColor: (theme) => theme.palette.info.main,
+                      "& .MuiTableCell-root": {
+                        fontWeight: 700,
+                        color: "#ffffff",
+                        borderBottom: (theme) => `2px solid ${theme.palette.info.dark}`,
+                      },
+                    },
+                    "& .MuiTableCell-root": {
+                      padding: "14px 16px",
+                      verticalAlign: "middle",
+                      borderBottom: (theme) => `1px solid ${theme.palette.info.light}`,
+                    },
+                    "& .MuiTableBody-root .MuiTableRow-root:hover": {
+                      backgroundColor: (theme) => `${theme.palette.info.light}33`,
+                    },
+                  }}
+                >
+                  <colgroup>
+                    <col style={{ width: "22%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "15%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "15%" }} />
+                    <col style={{ width: "12%" }} />
+                  </colgroup>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Người dùng</TableCell>
+                      <TableCell>Username</TableCell>
+                      <TableCell>Vai trò</TableCell>
+                      <TableCell>Email</TableCell>
+                      <TableCell>SĐT</TableCell>
+                      <TableCell>Ngày tạo</TableCell>
+                      <TableCell align="right">Thao tác</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user._id} hover>
+                        <TableCell>
+                          <ArgonBox display="flex" alignItems="center" gap={1.5}>
+                            <Avatar src={user.avatar_url} alt={user.full_name}>
+                              {user.full_name?.charAt(0)?.toUpperCase()}
+                            </Avatar>
+                            <ArgonBox>
+                              <ArgonTypography variant="button" fontWeight="medium">
+                                {user.full_name || "-"}
+                              </ArgonTypography>
+                              <ArgonTypography variant="caption" color="text.secondary">
+                                {ROLE_LABELS[user.role] || user.role}
+                              </ArgonTypography>
+                            </ArgonBox>
+                          </ArgonBox>
+                        </TableCell>
+                        <TableCell>
+                          <ArgonTypography variant="body2">{user.username || "-"}</ArgonTypography>
+                        </TableCell>
+                        <TableCell>{renderRoleChip(user.role)}</TableCell>
+                        <TableCell>
+                          <ArgonTypography variant="body2" color="text">
+                            {user.email || "-"}
+                          </ArgonTypography>
+                        </TableCell>
+                        <TableCell>
+                          <ArgonTypography variant="body2" color="text">
+                            {user.phone_number || "-"}
+                          </ArgonTypography>
+                        </TableCell>
+                        <TableCell>
+                          <ArgonTypography variant="body2" color="text">
+                            {formatDate(user.createdAt)}
+                          </ArgonTypography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="Chỉnh sửa">
+                            <IconButton
+                              size="small"
+                              sx={{ color: "#1976d2" }}
+                              onClick={() => handleEditUser(user)}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={user.status === 1 ? "Vô hiệu hóa" : "Kích hoạt"}>
+                            <IconButton
+                              size="small"
+                              sx={{ color: user.status === 1 ? "#f57c00" : "#2e7d32" }}
+                              onClick={() => handleToggleStatus(user)}
+                            >
+                              {user.status === 1 ? (
+                                <LockIcon fontSize="small" />
+                              ) : (
+                                <LockOpenIcon fontSize="small" />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                          {user.status === 0 ? (
+                            <Tooltip title="Khôi phục">
+                              <IconButton
+                                size="small"
+                                sx={{ color: "#2e7d32" }}
+                                onClick={() => handleRestoreUser(user)}
+                              >
+                                <RestoreIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip title="Khoá tài khoản">
+                              <IconButton
+                                size="small"
+                                sx={{ color: "#d32f2f" }}
+                                onClick={() => handleDeleteUser(user)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </CardContent>
+        </Card>
       </ArgonBox>
+      <Footer />
 
       <UserFormModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSuccess={() => { setModalOpen(false); fetchUsers(); }}
-        user={editingUser}
+        onClose={handleModalClose}
+        onSuccess={handleModalSuccess}
+        user={selectedUser}
+        students={students}
       />
-      </ArgonBox>
+
+      <Backdrop open={profileLoading} sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
     </DashboardLayout>
   );
-}
+};
 
 export default ManageAccountPage;
+
 
 

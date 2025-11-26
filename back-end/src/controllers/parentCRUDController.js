@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Parent = require('../models/Parent');
 const ParentStudent = require('../models/ParentStudent');
 const User = require('../models/User');
+const Student = require('../models/Student');
 const bcrypt = require('bcryptjs');
 
 function sanitizeUsername(base) {
@@ -10,6 +11,14 @@ function sanitizeUsername(base) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9._-]/g, '');
+}
+
+async function getSchoolIdForAdmin(userId) {
+  const admin = await User.findById(userId).select('school_id');
+  if (!admin || !admin.school_id) {
+    throw new Error('School admin chưa được gán trường học');
+  }
+  return admin.school_id;
 }
 
 async function generateUniqueUsername({ email, phone }) {
@@ -41,14 +50,28 @@ async function generateUniqueUsername({ email, phone }) {
 // --- Lấy danh sách tất cả phụ huynh trong trường ---
 exports.getAllParents = async (req, res) => {
   try {
+    let schoolFilter = null;
+    if (req.user?.role === 'school_admin') {
+      try {
+        schoolFilter = await getSchoolIdForAdmin(req.user.id);
+      } catch (err) {
+        return res.status(400).json({ message: err.message });
+      }
+    }
+
     const parents = await Parent.find()
       .populate({
         path: 'user_id',
-        select: 'full_name email phone_number address avatar_url',
+        select: 'full_name username email phone_number address avatar_url school_id',
+        match: schoolFilter ? { school_id: schoolFilter } : undefined,
       })
       .lean();
 
-    return res.json(parents);
+    const filteredParents = schoolFilter
+      ? parents.filter((p) => Boolean(p.user_id))
+      : parents;
+
+    return res.json(filteredParents);
   } catch (err) {
     console.error('getAllParents error:', err);
     return res.status(500).json({ message: 'Lỗi máy chủ', error: err.message });
@@ -253,9 +276,26 @@ exports.linkExistingParent = async (req, res) => {
     }
 
     // Kiểm tra parent tồn tại
-    const parent = await Parent.findById(parent_id);
+    const parent = await Parent.findById(parent_id).populate('user_id', 'school_id');
     if (!parent) {
       return res.status(404).json({ message: 'Không tìm thấy phụ huynh' });
+    }
+
+    // Kiểm tra học sinh tồn tại
+    const student = await Student.findById(student_id);
+    if (!student) {
+      return res.status(404).json({ message: 'Không tìm thấy học sinh' });
+    }
+
+    let adminSchoolId = null;
+    if (req.user?.role === 'school_admin') {
+      adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+      if (String(student.school_id) !== String(adminSchoolId)) {
+        return res.status(403).json({ message: 'Bạn không có quyền liên kết học sinh thuộc trường khác' });
+      }
+      if (String(parent.user_id?.school_id) !== String(adminSchoolId)) {
+        return res.status(403).json({ message: 'Phụ huynh này thuộc trường khác' });
+      }
     }
 
     // Kiểm tra xem học sinh đã có bố hoặc mẹ chưa (tùy theo relationship)

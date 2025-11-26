@@ -29,6 +29,7 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Snackbar,
   Stack,
   Tooltip,
   Dialog,
@@ -111,6 +112,7 @@ const TeacherProfile = () => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [profile, setProfile] = useState({
     teacher: {
       qualification: '',
@@ -290,22 +292,31 @@ const TeacherProfile = () => {
       errors.confirmPassword = 'Mật khẩu xác nhận không khớp';
     }
     setPasswordErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    if (Object.keys(errors).length > 0) {
+      setToast({ open: true, message: 'Vui lòng kiểm tra lại thông tin mật khẩu', severity: 'error' });
+      return;
+    }
 
     try {
       setPasswordSaving(true);
       setError('');
-      setSuccess('');
       await TeacherService.changePassword(passwordForm.currentPassword, passwordForm.newPassword);
-      setSuccess('Đổi mật khẩu thành công');
+      setToast({ open: true, message: 'Đổi mật khẩu thành công', severity: 'success' });
       setPasswordDialogOpen(false);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setPasswordErrors({});
     } catch (err) {
-      setError(err.message || 'Đổi mật khẩu thất bại');
+      const message = err.message || 'Đổi mật khẩu thất bại';
+      setToast({ open: true, message, severity: 'error' });
+      setPasswordErrors(prev => ({ ...prev, currentPassword: message }));
     } finally {
       setPasswordSaving(false);
     }
+  };
+
+  const handleCloseToast = (_, reason) => {
+    if (reason === 'clickaway') return;
+    setToast((prev) => ({ ...prev, open: false }));
   };
 
   const closePasswordDialog = () => {
@@ -784,7 +795,7 @@ const TeacherProfile = () => {
             </PasswordSectionCard>
           </Stack>
         </DialogContent>
-        <DialogActions
+      <DialogActions
           sx={{
             px: 3,
             py: 2,
@@ -812,6 +823,16 @@ const TeacherProfile = () => {
           </ArgonButton>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={6000}
+        onClose={handleCloseToast}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseToast} severity={toast.severity} sx={{ width: '100%' }}>
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </DashboardLayout>
   );
 };

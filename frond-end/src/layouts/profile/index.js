@@ -177,11 +177,13 @@ function Profile() {
     }
     try {
       setPwdSaving(true);
-      await api.put("/users/change-password", { currentPassword: pwd.currentPassword, newPassword: pwd.newPassword }, true).catch(() => ({}));
+      await api.put("/users/change-password", { currentPassword: pwd.currentPassword, newPassword: pwd.newPassword }, true);
       setAlert({ open: true, message: "Đổi mật khẩu thành công", severity: "success" });
       return true;
     } catch (e) {
-      setAlert({ open: true, message: "Không thể đổi mật khẩu", severity: "error" });
+      const message = e.message || "Không thể đổi mật khẩu";
+      setAlert({ open: true, message, severity: "error" });
+      setPwdErrors((prev) => ({ ...prev, currentPassword: message }));
       return false;
     } finally {
       setPwdSaving(false);
