@@ -840,6 +840,9 @@ function ManageComplaints() {
                         "& .MuiOutlinedInput-root": {
                           borderRadius: 1,
                         },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                        }
                       }}
                     />
                   )}
