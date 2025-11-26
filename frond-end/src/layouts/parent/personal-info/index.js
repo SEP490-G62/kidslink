@@ -119,6 +119,12 @@ function PersonalInformation() {
   const [activeForm, setActiveForm] = useState(null); // null, "profile", or "password"
   const [avatarPreview, setAvatarPreview] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({
+    full_name: '',
+    email: '',
+    phone_number: ''
+  });
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
     fetchPersonalInfo();
@@ -169,14 +175,88 @@ function PersonalInformation() {
     }
   };
 
+  // Validation functions
+  const validateFullName = (value) => {
+    if (!value) return 'Họ và tên là bắt buộc';
+    if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(value)) {
+      return 'Họ và tên chỉ được nhập chữ cái';
+    }
+    return '';
+  };
+
+  const validateEmail = (value) => {
+    if (!value) return 'Email là bắt buộc';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      return 'Email không hợp lệ';
+    }
+    return '';
+  };
+
+  const validatePhone = (value) => {
+    if (!value) return 'Số điện thoại là bắt buộc';
+    // Loại bỏ khoảng trắng, dấu + và ký tự đặc biệt
+    const cleaned = value.replace(/[\s\+\-\(\)]/g, '');
+    if (!/^\d+$/.test(cleaned)) {
+      return 'Số điện thoại chỉ được nhập số';
+    }
+    // Nếu bắt đầu bằng 84 (mã quốc gia), loại bỏ để kiểm tra số thực tế
+    let phoneNumber = cleaned;
+    if (cleaned.startsWith('84') && cleaned.length > 10) {
+      phoneNumber = cleaned.substring(2);
+    }
+    // Kiểm tra độ dài (10 hoặc 11 số)
+    if (phoneNumber.length === 10 || phoneNumber.length === 11) {
+      return '';
+    }
+    return 'Số điện thoại phải có 10 hoặc 11 số';
+  };
+
   const handleInputChange = (field) => (e) => {
+    const value = e.target.value;
+    
     setFormData({
       ...formData,
-      [field]: e.target.value
+      [field]: value
     });
+
+    // Chỉ validate nếu đã submit trước đó
+    if (hasSubmitted) {
+      let errorMessage = '';
+      if (field === 'full_name') {
+        errorMessage = validateFullName(value);
+      } else if (field === 'email') {
+        errorMessage = validateEmail(value);
+      } else if (field === 'phone_number') {
+        errorMessage = validatePhone(value);
+      }
+
+      setFieldErrors({
+        ...fieldErrors,
+        [field]: errorMessage
+      });
+    }
   };
 
   const handleSave = async () => {
+    setHasSubmitted(true);
+    
+    // Validate all fields
+    const errors = {
+      full_name: validateFullName(formData.full_name),
+      email: validateEmail(formData.email),
+      phone_number: validatePhone(formData.phone_number)
+    };
+
+    setFieldErrors(errors);
+
+    // Check if there are any errors
+    const hasErrors = Object.values(errors).some(error => error !== '');
+    if (hasErrors) {
+      setAlert({ open: true, message: "Vui lòng kiểm tra lại thông tin đã nhập", severity: "error" });
+      return false;
+    }
+
     try {
       setSaving(true);
 
@@ -187,11 +267,15 @@ function PersonalInformation() {
         await fetchPersonalInfo();
         // Clear file after successful upload
         setAvatarFile(null);
+        setHasSubmitted(false);
+        return true;
       } else {
         setAlert({ open: true, message: result.error || "Không thể cập nhật thông tin", severity: "error" });
+        return false;
       }
     } catch (error) {
       setAlert({ open: true, message: "Có lỗi xảy ra khi cập nhật thông tin", severity: "error" });
+      return false;
     } finally {
       setSaving(false);
     }
@@ -284,6 +368,12 @@ function PersonalInformation() {
     setAvatarPreview(profileData.avatar_url || "");
     setAvatarFile(null);
     setActiveForm("profile");
+    setFieldErrors({
+      full_name: '',
+      email: '',
+      phone_number: ''
+    });
+    setHasSubmitted(false);
   };
 
   const openPasswordForm = () => {
@@ -298,11 +388,19 @@ function PersonalInformation() {
     setActiveForm(null);
     setPasswordErrors({});
     setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setFieldErrors({
+      full_name: '',
+      email: '',
+      phone_number: ''
+    });
+    setHasSubmitted(false);
   };
 
   const handleSaveAndClose = async () => {
-    await handleSave();
-    closeForms();
+    const success = await handleSave();
+    if (success) {
+      closeForms();
+    }
   };
 
   const handlePasswordAndClose = async () => {
@@ -524,15 +622,18 @@ function PersonalInformation() {
                     </ArgonBox>
                     <TextField
                       fullWidth
+                      required
                       value={formData.full_name}
                       onChange={handleInputChange("full_name")}
                       variant="outlined"
                       placeholder="Nhập họ và tên"
+                      error={!!fieldErrors.full_name}
+                      // helperText={fieldErrors.full_name || 'Chỉ được nhập chữ cái'}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.full_name ? 'error.main' : 'primary.main',
                           },
                           '& .MuiInputBase-input': {
                             width: '100% !important',
@@ -544,7 +645,7 @@ function PersonalInformation() {
                             boxSizing: 'border-box !important',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.full_name ? 'error.main' : 'primary.main',
                             borderWidth: '2px',
                           },
                         },
@@ -570,9 +671,9 @@ function PersonalInformation() {
                         },
                       }}
                     />
-                    <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: 'block' }}>
+                    {/* <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: 'block' }}>
                       Username không thể thay đổi
-                    </ArgonTypography>
+                    </ArgonTypography> */}
                   </Grid>
 
                   <Grid item xs={12}>
@@ -583,19 +684,22 @@ function PersonalInformation() {
                     </ArgonBox>
                     <TextField
                       fullWidth
+                      required
                       value={formData.email}
                       onChange={handleInputChange("email")}
                       variant="outlined"
                       type="email"
                       placeholder="Nhập email"
+                      error={!!fieldErrors.email}
+                      // helperText={fieldErrors.email || 'Nhập địa chỉ email hợp lệ'}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.email ? 'error.main' : 'primary.main',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.email ? 'error.main' : 'primary.main',
                             borderWidth: '2px',
                           },
                         },
@@ -625,18 +729,21 @@ function PersonalInformation() {
                     </ArgonBox>
                     <TextField
                       fullWidth
+                      required
                       value={formData.phone_number}
                       onChange={handleInputChange("phone_number")}
                       variant="outlined"
-                      placeholder="Nhập số điện thoại"
+                      // placeholder="Nhập số điện thoại (10 hoặc 11 số)"
+                      error={!!fieldErrors.phone_number}
+                      // helperText={fieldErrors.phone_number || 'Nhập 10 hoặc 11 số'}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.phone_number ? 'error.main' : 'primary.main',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.phone_number ? 'error.main' : 'primary.main',
                             borderWidth: '2px',
                           },
                         },
