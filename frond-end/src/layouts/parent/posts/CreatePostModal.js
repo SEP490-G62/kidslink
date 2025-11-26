@@ -242,7 +242,7 @@ function CreatePostModal({ open, onClose, onPostCreated, onSuccess, post = null,
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
           {/* Selected Child Info (only for parent create mode) */}
-          {!isAdmin && !isEditMode && selectedChild && (
+          {/* {!isAdmin && !isEditMode && selectedChild && (
             <ArgonBox mb={2} p={2} sx={{ 
               backgroundColor: 'rgba(94, 114, 228, 0.05)', 
               borderRadius: 2,
@@ -267,7 +267,7 @@ function CreatePostModal({ open, onClose, onPostCreated, onSuccess, post = null,
                 )}
               </ArgonBox>
             </ArgonBox>
-          )}
+          )} */}
 
           {/* Scrollable Content */}
           <ArgonBox 

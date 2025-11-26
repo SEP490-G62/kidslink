@@ -53,9 +53,9 @@ const transformPost = (post) => {
   const createdDate = new Date(createdAt);
 
   return {
-                id: post._id,
-                _id: post._id,
-                _raw: post,
+    id: post._id,
+    _id: post._id,
+    _raw: post,
     title: post.content?.substring(0, 50) + (post.content?.length > 50 ? "..." : ""),
     content: post.content || "",
     author: post.user_id?.full_name || "Không xác định",
@@ -66,7 +66,7 @@ const transformPost = (post) => {
     date: createdDate.toLocaleDateString("vi-VN"),
     time: createdDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
     category: post.class_id?.class_name || "Toàn trường",
-                class_id: post.class_id,
+    class_id: post.class_id,
     likes: post.likes_count ?? post.like_count ?? 0,
     comments: post.comments_count ?? post.comment_count ?? 0,
     isLiked: post.is_liked ?? false,
@@ -115,7 +115,7 @@ function ManagePost() {
         (a, b) => new Date(b.create_at) - new Date(a.create_at)
       );
       setPosts(transformed);
-      } catch (err) {
+    } catch (err) {
       console.error("Error fetching posts:", err);
       setError(err.message || "Đã xảy ra lỗi khi tải bài viết.");
     } finally {
@@ -204,7 +204,7 @@ function ManagePost() {
       parent: dataset.filter((post) => post.authorRole === "parent").length
     };
   }, [filteredPosts]);
-  
+
   const tabs = [
     { label: "Tất cả", value: "all" },
     { label: "Trường", value: "school" },
@@ -218,14 +218,9 @@ function ManagePost() {
       setActiveTab(targetIndex);
     }
   };
-  const teacherTabIndex = tabs.findIndex((tab) => tab.value === "teacher");
-  const parentTabIndex = tabs.findIndex((tab) => tab.value === "parent");
   const isAllCardActive = statusFilter === "all" && activeTab === 0;
   const isPendingCardActive = statusFilter === "pending" && activeTab === 0;
-  const isTeacherCardActive =
-    statusFilter === "pending" && teacherTabIndex !== -1 && activeTab === teacherTabIndex;
-  const isParentCardActive =
-    statusFilter === "pending" && parentTabIndex !== -1 && activeTab === parentTabIndex;
+  const isApprovedCardActive = statusFilter === "approved" && activeTab === 0;
 
   const handleEditPost = (post) => {
     setEditingPost(post);
@@ -277,16 +272,6 @@ function ManagePost() {
     await fetchPosts();
   };
 
-  const schoolPosts = posts.filter((post) => post.authorRole === "school").length;
-  const teacherPosts = posts.filter((post) => post.authorRole === "teacher").length;
-  const parentPosts = posts.filter((post) => post.authorRole === "parent").length;
-  const teacherPendingPosts = posts.filter(
-    (post) => post.authorRole === "teacher" && post.status === "pending"
-  ).length;
-  const parentPendingPosts = posts.filter(
-    (post) => post.authorRole === "parent" && post.status === "pending"
-  ).length;
-  
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -302,8 +287,8 @@ function ManagePost() {
         </ArgonBox>
 
         {/* Statistics Cards */}
-        <Grid container spacing={3} mb={3}>
-          <Grid item xs={12} md={6} lg={3}>
+        <Grid container spacing={3} mb={3} justifyContent="center">
+          <Grid item xs={12} md={4} lg={4}>
             <ArgonBox
               onClick={() => {
                 setStatusFilter("all");
@@ -311,7 +296,7 @@ function ManagePost() {
               }}
               sx={cardWrapperStyles(isAllCardActive)}
             >
-            <DetailedStatisticsCard
+              <DetailedStatisticsCard
                 title="Tổng bài viết"
                 count={posts.length.toString()}
                 icon={{ color: "info", component: <i className="ni ni-collection" /> }}
@@ -319,7 +304,7 @@ function ManagePost() {
               />
             </ArgonBox>
           </Grid>
-          <Grid item xs={12} md={6} lg={3}>
+          <Grid item xs={12} md={4} lg={4}>
             <ArgonBox
               onClick={() => {
                 setStatusFilter("pending");
@@ -327,7 +312,7 @@ function ManagePost() {
               }}
               sx={cardWrapperStyles(isPendingCardActive)}
             >
-            <DetailedStatisticsCard
+              <DetailedStatisticsCard
                 title="Chờ duyệt"
                 count={statusCounts.pending.toString()}
                 icon={{ color: "warning", component: <i className="ni ni-time-alarm" /> }}
@@ -335,42 +320,22 @@ function ManagePost() {
               />
             </ArgonBox>
           </Grid>
-          <Grid item xs={12} md={6} lg={3}>
+          <Grid item xs={12} md={4} lg={4}>
             <ArgonBox
               onClick={() => {
-                setStatusFilter("pending");
-                setTabByValue("teacher");
+                setStatusFilter("approved");
+                setActiveTab(0);
               }}
-              sx={cardWrapperStyles(isTeacherCardActive)}
+              sx={cardWrapperStyles(isApprovedCardActive)}
             >
-            <DetailedStatisticsCard
-                title="Bài viết giáo viên"
-                count={teacherPendingPosts.toString()}
-                icon={{ color: "primary", component: <i className="ni ni-hat-3" /> }}
-                percentage={{
-                  color: "primary",
-                  count: teacherPosts.toString(),
-                  text: "tổng bài giáo viên"
-                }}
-              />
-            </ArgonBox>
-          </Grid>
-          <Grid item xs={12} md={6} lg={3}>
-            <ArgonBox
-              onClick={() => {
-                setStatusFilter("pending");
-                setTabByValue("parent");
-              }}
-              sx={cardWrapperStyles(isParentCardActive)}
-            >
-            <DetailedStatisticsCard
-                title="Bài viết phụ huynh"
-                count={parentPendingPosts.toString()}
-                icon={{ color: "success", component: <i className="ni ni-single-02" /> }}
+              <DetailedStatisticsCard
+                title="Đã duyệt"
+                count={statusCounts.approved.toString()}
+                icon={{ color: "success", component: <i className="ni ni-check-bold" /> }}
                 percentage={{
                   color: "success",
-                  count: parentPosts.toString(),
-                  text: "tổng bài phụ huynh"
+                  count: statusCounts.approved > 0 ? "✓" : "0",
+                  text: "bài viết đã duyệt"
                 }}
               />
             </ArgonBox>
@@ -381,35 +346,35 @@ function ManagePost() {
         <Card
           sx={{
             mb: 3,
-          borderRadius: 3, 
-          boxShadow: 3,
-          p: 3,
+            borderRadius: 3,
+            boxShadow: 3,
+            p: 3,
             background: "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
             border: "1px solid rgba(0,0,0,0.08)"
           }}
         >
-              <Grid container spacing={3} alignItems="stretch">
+          <Grid container spacing={3} alignItems="stretch">
             {/* Search */}
             <Grid item xs={12} md={6} sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
               <ArgonBox display="flex" alignItems="center" gap={1}>
                 <i className="ni ni-zoom-split" style={{ fontSize: "20px", color: "#5e72e4" }} />
-                    <ArgonTypography variant="h6" fontWeight="bold" color="dark">
-                      Tìm kiếm bài viết
-                    </ArgonTypography>
-                  </ArgonBox>
-                  <Paper
-                    component="form"
-                    sx={{
+                <ArgonTypography variant="h6" fontWeight="bold" color="dark">
+                  Tìm kiếm bài viết
+                </ArgonTypography>
+              </ArgonBox>
+              <Paper
+                component="form"
+                sx={{
                   p: "12px 16px",
                   display: "flex",
                   alignItems: "center",
-                      borderRadius: 2,
+                  borderRadius: 2,
                   boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                   border: "2px solid",
                   borderColor: "rgba(94, 114, 228, 0.2)",
                   background: "white",
                   transition: "all 0.3s ease",
-                      flex: 1,
+                  flex: 1,
                   minHeight: "50px",
                   "&:hover": {
                     borderColor: "rgba(94, 114, 228, 0.4)",
@@ -422,43 +387,45 @@ function ManagePost() {
                 }}
               >
                 <i className="ni ni-zoom-split" style={{ fontSize: "18px", color: "#5e72e4", marginRight: "8px" }} />
-                    <InputBase
-                      sx={{ 
-                        flex: 1,
+                <InputBase
+                  sx={{
+                    flex: 1,
                     fontSize: "15px",
                     fontWeight: "500",
                     "& input::placeholder": {
                       color: "rgba(0,0,0,0.5)",
                       fontWeight: "400"
+                    }, '& .MuiInputBase-input': {
+                      width: '100% !important',
                     }
                   }}
                   placeholder="Nhập từ khóa (tác giả, nội dung, lớp)..."
-                      value={searchFilters.search}
+                  value={searchFilters.search}
                   onChange={(e) => handleSearchChange("search", e.target.value)}
                   inputProps={{ "aria-label": "search" }}
-                    />
-                    {searchFilters.search && (
-                      <IconButton
-                        size="small"
+                />
+                {searchFilters.search && (
+                  <IconButton
+                    size="small"
                     onClick={() => handleSearchChange("search", "")}
-                        sx={{ 
+                    sx={{
                       color: "rgba(0,0,0,0.5)",
                       "&:hover": { color: "#5e72e4", backgroundColor: "rgba(94, 114, 228, 0.1)" }
-                        }}
-                      >
-                        <i className="ni ni-fat-remove" />
-                      </IconButton>
-                    )}
-                  </Paper>
-                </Grid>
+                    }}
+                  >
+                    <i className="ni ni-fat-remove" />
+                  </IconButton>
+                )}
+              </Paper>
+            </Grid>
 
             {/* Tabs */}
             <Grid item xs={12} md={6} sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
               <ArgonBox display="flex" alignItems="center" gap={1}>
-                    <ArgonTypography variant="h6" fontWeight="bold" color="dark">
+                <ArgonTypography variant="h6" fontWeight="bold" color="dark">
                   Nguồn bài viết
-                    </ArgonTypography>
-                  </ArgonBox>
+                </ArgonTypography>
+              </ArgonBox>
               <Paper
                 sx={{
                   p: { xs: 0.5, md: 1 },
@@ -470,24 +437,24 @@ function ManagePost() {
                   alignItems: "center"
                 }}
               >
-                  <Tabs
-                    value={activeTab}
-                    onChange={handleTabChange}
-                    variant="scrollable"
-                    scrollButtons="auto"
-                    sx={{
+                <Tabs
+                  value={activeTab}
+                  onChange={handleTabChange}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{
                     width: "100%",
-                      minHeight: 50,
+                    minHeight: 50,
                     "& .MuiTabs-flexContainer": {
                       gap: { xs: 1, md: 1.5 }
                     },
                     "& .MuiTab-root": {
                       textTransform: "none",
-                        fontWeight: 600,
+                      fontWeight: 600,
                       fontSize: "14px",
                       minHeight: 44,
                       borderRadius: 999,
-                        px: 3,
+                      px: 3,
                       color: "#525f7f",
                       backgroundColor: "transparent",
                       border: "1px solid transparent",
@@ -510,11 +477,11 @@ function ManagePost() {
                 >
                   {tabs.map((tab) => (
                     <Tab key={tab.value} label={tab.label} />
-                    ))}
-                  </Tabs>
+                  ))}
+                </Tabs>
               </Paper>
-                </Grid>
-              </Grid>
+            </Grid>
+          </Grid>
         </Card>
 
         {/* Posts Feed */}
@@ -522,9 +489,9 @@ function ManagePost() {
           <Grid item xs={12} sx={{ maxWidth: { xs: "100%", lg: "1100px" }, mx: "auto" }}>
             <Card
               sx={{
-              mb: 2, 
-              borderRadius: 3, 
-              boxShadow: 3,
+                mb: 2,
+                borderRadius: 3,
+                boxShadow: 3,
                 background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                 border: "1px solid rgba(255,255,255,0.2)"
               }}
@@ -555,49 +522,46 @@ function ManagePost() {
 
             <Card
               sx={{
-              borderRadius: 3, 
-              boxShadow: 3, 
+                borderRadius: 3,
+                boxShadow: 3,
                 minHeight: "600px",
                 background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
                 border: "1px solid rgba(255,255,255,0.2)"
               }}
             >
               <ArgonBox p={3}>
-                <ArgonBox
-                  mb={2}
-                  pb={2}
-                  borderBottom="1px solid rgba(0,0,0,0.05)"
-                >
-                <ArgonBox 
-                  display="flex" 
+                <ArgonBox>
+                  <ArgonBox
+                    display="flex"
                     flexDirection={{ xs: "column", sm: "row" }}
                     alignItems={{ xs: "stretch", sm: "flex-end" }}
-                  gap={2}
-                >
-                  <ArgonBox 
-                    sx={{ 
+                    gap={2}
+                    mb={3}
+                  >
+                    <ArgonBox
+                      sx={{
                         flex: { xs: 1, sm: "0 0 auto" },
                         display: "flex",
                         flexDirection: "column",
-                      gap: 0.5,
+                        gap: 0.5,
                         minWidth: { xs: "100%", sm: "200px" }
-                    }}
-                  >
-                    <ArgonBox display="flex" alignItems="center" gap={0.5}>
+                      }}
+                    >
+                      <ArgonBox display="flex" alignItems="center" gap={0.5}>
                         <i className="ni ni-calendar-grid-58" style={{ fontSize: "16px", color: "#5e72e4" }} />
-                      <ArgonTypography variant="caption" fontWeight="bold" color="text">
-                        Từ ngày
-                      </ArgonTypography>
-                    </ArgonBox>
-                    <TextField
-                      type="date"
-                      value={searchFilters.dateFrom}
+                        <ArgonTypography variant="caption" fontWeight="bold" color="text">
+                          Từ ngày
+                        </ArgonTypography>
+                      </ArgonBox>
+                      <TextField
+                        type="date"
+                        value={searchFilters.dateFrom}
                         onChange={(e) => handleSearchChange("dateFrom", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{
+                        size="small"
+                        fullWidth
+                        sx={{
                           "& .MuiOutlinedInput-root": {
-                          borderRadius: 2,
+                            borderRadius: 2,
                             backgroundColor: "white",
                             "&:hover": {
                               backgroundColor: "rgba(255,255,255,1)",
@@ -606,39 +570,39 @@ function ManagePost() {
                             "&.Mui-focused": {
                               backgroundColor: "rgba(255,255,255,1)",
                               borderColor: "#5e72e4"
+                            }
                           }
-                        }
-                      }}
-                      InputLabelProps={{
+                        }}
+                        InputLabelProps={{
                           shrink: true
-                      }}
-                    />
-                  </ArgonBox>
-                  
-                  <ArgonBox 
-                    sx={{ 
+                        }}
+                      />
+                    </ArgonBox>
+
+                    <ArgonBox
+                      sx={{
                         flex: { xs: 1, sm: "0 0 auto" },
                         display: "flex",
                         flexDirection: "column",
-                      gap: 0.5,
+                        gap: 0.5,
                         minWidth: { xs: "100%", sm: "200px" }
-                    }}
-                  >
-                    <ArgonBox display="flex" alignItems="center" gap={0.5}>
+                      }}
+                    >
+                      <ArgonBox display="flex" alignItems="center" gap={0.5}>
                         <i className="ni ni-calendar-grid-58" style={{ fontSize: "16px", color: "#5e72e4" }} />
-                      <ArgonTypography variant="caption" fontWeight="bold" color="text">
-                        Đến ngày
-                      </ArgonTypography>
-                    </ArgonBox>
-                    <TextField
-                      type="date"
-                      value={searchFilters.dateTo}
+                        <ArgonTypography variant="caption" fontWeight="bold" color="text">
+                          Đến ngày
+                        </ArgonTypography>
+                      </ArgonBox>
+                      <TextField
+                        type="date"
+                        value={searchFilters.dateTo}
                         onChange={(e) => handleSearchChange("dateTo", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{
+                        size="small"
+                        fullWidth
+                        sx={{
                           "& .MuiOutlinedInput-root": {
-                          borderRadius: 2,
+                            borderRadius: 2,
                             backgroundColor: "white",
                             "&:hover": {
                               backgroundColor: "rgba(255,255,255,1)",
@@ -647,93 +611,93 @@ function ManagePost() {
                             "&.Mui-focused": {
                               backgroundColor: "rgba(255,255,255,1)",
                               borderColor: "#5e72e4"
+                            }
                           }
-                        }
-                      }}
-                      InputLabelProps={{
+                        }}
+                        InputLabelProps={{
                           shrink: true
-                      }}
-                    />
-                  </ArgonBox>
+                        }}
+                      />
+                    </ArgonBox>
 
-                  {(searchFilters.dateFrom || searchFilters.dateTo || searchFilters.search) && (
-                    <ArgonBox 
-                      display="flex" 
+                    {(searchFilters.dateFrom || searchFilters.dateTo) && (
+                      <ArgonBox
+                        display="flex"
                         alignItems={{ xs: "stretch", sm: "flex-end" }}
                         sx={{ minWidth: { xs: "100%", sm: "auto" } }}
-                    >
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={handleClearSearch}
-                        startIcon={<i className="ni ni-fat-remove" />}
-                        sx={{
-                          borderRadius: 2,
+                      >
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={handleClearSearch}
+                          startIcon={<i className="ni ni-fat-remove" />}
+                          sx={{
+                            borderRadius: 2,
                             textTransform: "none",
                             fontWeight: "bold",
                             borderColor: "rgba(244, 67, 54, 0.5)",
                             color: "#f44336",
-                          px: 3,
-                          py: 0,
-                          minHeight: 31,
+                            px: 3,
+                            py: 0,
+                            minHeight: 31,
                             width: { xs: "100%", sm: "auto" },
                             "&:hover": {
                               borderColor: "#f44336",
                               backgroundColor: "rgba(244, 67, 54, 0.08)"
-                          }
-                        }}
-                      >
-                        Xóa tất cả bộ lọc
-                      </Button>
-                    </ArgonBox>
+                            }
+                          }}
+                        >
+                          Xóa lọc
+                        </Button>
+                      </ArgonBox>
+                    )}
+                  </ArgonBox>
+
+                  {error && (
+                    <Card
+                      sx={{
+                        mb: 3,
+                        borderRadius: 2,
+                        border: "1px solid rgba(244, 67, 54, 0.2)",
+                        backgroundColor: "rgba(244, 67, 54, 0.08)"
+                      }}
+                    >
+                      <ArgonBox p={3}>
+                        <ArgonTypography variant="body1" color="error" fontWeight="bold">
+                          {error}
+                        </ArgonTypography>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          sx={{ mt: 2, textTransform: "none", borderRadius: 2 }}
+                          onClick={fetchPosts}
+                        >
+                          Thử tải lại
+                        </Button>
+                      </ArgonBox>
+                    </Card>
                   )}
+
+                  <PostsFeed
+                    activeTab={activeTab}
+                    tabs={tabs}
+                    posts={filteredPosts}
+                    currentUserId={user?.id}
+                    onEditPost={handleEditPost}
+                    onDeletePost={handleDeletePost}
+                    onApprovePost={handleApprovePost}
+                    onUpdateCommentCount={handleCommentCountUpdate}
+                    isAdmin
+                    loading={loading}
+                    error={error}
+                  />
                 </ArgonBox>
-              </ArgonBox>
-
-                {error && (
-                  <Card
-                sx={{ 
-                      mb: 3,
-                          borderRadius: 2,
-                      border: "1px solid rgba(244, 67, 54, 0.2)",
-                      backgroundColor: "rgba(244, 67, 54, 0.08)"
-                    }}
-                  >
-                    <ArgonBox p={3}>
-                      <ArgonTypography variant="body1" color="error" fontWeight="bold">
-                        {error}
-                      </ArgonTypography>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        sx={{ mt: 2, textTransform: "none", borderRadius: 2 }}
-                        onClick={fetchPosts}
-                      >
-                        Thử tải lại
-                      </Button>
-                    </ArgonBox>
-                  </Card>
-                )}
-
-                <PostsFeed 
-                  activeTab={activeTab}
-                  tabs={tabs}
-                  posts={filteredPosts}
-                  currentUserId={user?.id}
-                  onEditPost={handleEditPost}
-                  onDeletePost={handleDeletePost}
-                  onApprovePost={handleApprovePost}
-                  onUpdateCommentCount={handleCommentCountUpdate}
-                  isAdmin
-                  loading={loading}
-                  error={error}
-                />
               </ArgonBox>
             </Card>
           </Grid>
         </Grid>
       </ArgonBox>
-      
+
       <CreatePostModal
         open={createPostModalOpen}
         onClose={closeModal}
