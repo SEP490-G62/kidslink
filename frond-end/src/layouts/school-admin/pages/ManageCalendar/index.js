@@ -56,6 +56,8 @@ function ManageCalendar() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedSlotForMenu, setSelectedSlotForMenu] = useState(null);
+  const [slotTemplateMenuAnchor, setSlotTemplateMenuAnchor] = useState(null);
+  const [selectedSlotTemplateForMenu, setSelectedSlotTemplateForMenu] = useState(null);
 
   // Tính toán ngày bắt đầu tuần (Thứ 2)
   const getMonday = (date) => {
@@ -283,6 +285,38 @@ function ManageCalendar() {
     }
   };
 
+  const handleSlotTemplateClick = (event, slotTemplate) => {
+    setSlotTemplateMenuAnchor(event.currentTarget);
+    setSelectedSlotTemplateForMenu(slotTemplate);
+  };
+
+  const handleSlotTemplateMenuClose = () => {
+    setSlotTemplateMenuAnchor(null);
+    setSelectedSlotTemplateForMenu(null);
+  };
+
+  const handleEditSlotTemplateFromMenu = () => {
+    if (selectedSlotTemplateForMenu) {
+      setSelectedSlotTemplate({
+        id: selectedSlotTemplateForMenu.id,
+        slotName: selectedSlotTemplateForMenu.slotName,
+        startTime: selectedSlotTemplateForMenu.startTime,
+        endTime: selectedSlotTemplateForMenu.endTime
+      });
+      setSlotTemplateModalOpen(true);
+      handleSlotTemplateMenuClose();
+    }
+  };
+
+  const handleDeleteSlotTemplateFromMenu = () => {
+    if (selectedSlotTemplateForMenu) {
+      if (window.confirm(`Bạn có chắc muốn xóa tiết học "${selectedSlotTemplateForMenu.slotName}"? Tất cả các tiết học này trong tuần sẽ bị xóa.`)) {
+        handleDeleteSlotTemplate(selectedSlotTemplateForMenu);
+      }
+      handleSlotTemplateMenuClose();
+    }
+  };
+
   const handleDeleteSlot = async (calendarId) => {
     if (!window.confirm("Bạn có chắc muốn xóa tiết học này?")) return;
     
@@ -297,7 +331,7 @@ function ManageCalendar() {
 
   const handleDeleteSlotTemplate = async (slotTemplate) => {
     try {
-      // Tìm tất cả các calendar entries có cùng thời gian trong tuần hiện tại và xóa
+      // Tìm tất cả các calendar entries có cùng slot_id (không chỉ trong tuần này)
       const entriesToDelete = [];
       weekDays.forEach(day => {
         const entry = getSlotForDay(day, slotTemplate);
@@ -306,16 +340,21 @@ function ManageCalendar() {
         }
       });
 
-      if (entriesToDelete.length === 0) {
-        alert("Không tìm thấy tiết học nào để xóa");
-        return;
+      // Xóa các calendar entries trước (nếu có)
+      if (entriesToDelete.length > 0) {
+        await Promise.all(entriesToDelete.map(id => schoolAdminService.deleteCalendarEntry(id)));
       }
 
-      // Xóa từng entry
-      await Promise.all(entriesToDelete.map(id => schoolAdminService.deleteCalendarEntry(id)));
+      // Sau đó xóa slot template (khung giờ tiết học)
+      await schoolAdminService.deleteSlot(slotTemplate.id);
       
       fetchCalendar();
-      alert(`Đã xóa ${entriesToDelete.length} tiết học thành công`);
+      
+      if (entriesToDelete.length > 0) {
+        alert(`Đã xóa khung giờ tiết học và ${entriesToDelete.length} nội dung tiết học trong tuần này`);
+      } else {
+        alert('Đã xóa khung giờ tiết học thành công');
+      }
     } catch (error) {
       console.error("Error deleting slot template:", error);
       alert("Lỗi khi xóa tiết học: " + (error.message || "Vui lòng thử lại"));
@@ -369,16 +408,6 @@ function ManageCalendar() {
               </ArgonTypography>
             </ArgonBox>
             <ArgonBox display="flex" gap={1}>
-              <ArgonButton 
-                color="white" 
-                onClick={() => {
-                  setSelectedSlotTemplate(null);
-                  setSlotTemplateModalOpen(true);
-                }}
-                sx={{ color: '#667eea' }}
-              >
-                <i className="fas fa-clock mr-2" /> Thêm Tiết Học
-              </ArgonButton>
               <ArgonButton 
                 color="white" 
                 onClick={() => setActivityModalOpen(true)}
@@ -630,68 +659,46 @@ function ManageCalendar() {
                         <TableRow key={slotIdx}>
                           {/* Slot Name Column (Fixed) */}
                           <TableCell
+                            onClick={(e) => handleSlotTemplateClick(e, slotTemplate)}
                             sx={{
                               p: '12px !important',
                               backgroundColor: '#f8f9fa',
                               width: '150px !important',
-                              minWidth: '150px'
+                              minWidth: '150px',
+                              cursor: 'pointer',
+                              '&:hover': {
+                                backgroundColor: '#e9ecef'
+                              }
                             }}
                           >
-                            <ArgonBox display="flex" justifyContent="space-between" alignItems="center">
-                              <ArgonBox flex={1}>
-                                <ArgonTypography 
-                                  variant="caption" 
-                                  fontWeight="bold" 
-                                  sx={{ 
-                                    color: '#495057',
-                                    display: 'block',
-                                    mb: 0.5
-                                  }}
-                                >
-                                  {slotTemplate.slotName}
-                                </ArgonTypography>
-                                <Chip
-                                  label={`${slotTemplate.startTime}-${slotTemplate.endTime}`}
-                                  size="small"
-                                  sx={{
-                                    height: 20,
-                                    fontSize: '0.7rem',
-                                    backgroundColor: '#4caf50',
-                                    color: '#fff',
-                                    fontWeight: 600
-                                  }}
-                                />
-                              </ArgonBox>
-                              <ArgonBox display="flex" flexDirection="column" gap={0.5}>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => {
-                                    setSelectedSlotTemplate({
-                                      id: slotTemplate.id,
-                                      slotName: slotTemplate.slotName,
-                                      startTime: slotTemplate.startTime,
-                                      endTime: slotTemplate.endTime
-                                    });
-                                    setSlotTemplateModalOpen(true);
-                                  }}
-                                  sx={{ color: '#1976d2', padding: '2px' }}
-                                  title="Sửa tiết học"
-                                >
-                                  <i className="fas fa-edit" style={{ fontSize: 10 }} />
-                                </IconButton>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => {
-                                    if (window.confirm(`Bạn có chắc muốn xóa tiết học "${slotTemplate.slotName}"? Tất cả các tiết học này trong tuần sẽ bị xóa.`)) {
-                                      handleDeleteSlotTemplate(slotTemplate);
-                                    }
-                                  }}
-                                  sx={{ color: '#f44336', padding: '2px' }}
-                                  title="Xóa tiết học"
-                                >
-                                  <i className="fas fa-trash" style={{ fontSize: 10 }} />
-                                </IconButton>
-                              </ArgonBox>
+                            <ArgonBox 
+                              display="flex" 
+                              flexDirection="column"
+                              alignItems="center" 
+                              justifyContent="center"
+                              gap={1}
+                            >
+                              <ArgonTypography 
+                                variant="caption" 
+                                fontWeight="bold" 
+                                sx={{ 
+                                  color: '#495057',
+                                  textAlign: 'center'
+                                }}
+                              >
+                                {slotTemplate.slotName}
+                              </ArgonTypography>
+                              <Chip
+                                label={`${slotTemplate.startTime}-${slotTemplate.endTime}`}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: '0.7rem',
+                                  backgroundColor: '#4caf50',
+                                  color: '#fff',
+                                  fontWeight: 600
+                                }}
+                              />
                             </ArgonBox>
                           </TableCell>
                           
@@ -874,6 +881,30 @@ function ManageCalendar() {
           Sửa nội dung
         </MenuItem>
         <MenuItem onClick={handleDeleteFromMenu} sx={{ color: '#f44336' }}>
+          <i className="fas fa-trash" style={{ fontSize: 14, marginRight: 8 }} />
+          Xóa tiết học
+        </MenuItem>
+      </Menu>
+
+      {/* Context menu for slot template actions */}
+      <Menu
+        anchorEl={slotTemplateMenuAnchor}
+        open={Boolean(slotTemplateMenuAnchor)}
+        onClose={handleSlotTemplateMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+      >
+        <MenuItem onClick={handleEditSlotTemplateFromMenu}>
+          <i className="fas fa-edit" style={{ fontSize: 14, marginRight: 8, color: '#1976d2' }} />
+          Sửa tiết học
+        </MenuItem>
+        <MenuItem onClick={handleDeleteSlotTemplateFromMenu} sx={{ color: '#f44336' }}>
           <i className="fas fa-trash" style={{ fontSize: 14, marginRight: 8 }} />
           Xóa tiết học
         </MenuItem>

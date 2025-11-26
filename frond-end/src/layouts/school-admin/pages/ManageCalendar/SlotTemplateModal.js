@@ -8,6 +8,9 @@ import {
   TextField,
   Grid,
   CircularProgress,
+  FormControl,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import ArgonButton from "components/ArgonButton";
 import ArgonBox from "components/ArgonBox";
@@ -17,24 +20,37 @@ import schoolAdminService from "services/schoolAdminService";
 const SlotTemplateModal = ({ open, onClose, slotData, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    startTime: "",
-    endTime: ""
+    startHour: "07",
+    startMinute: "00",
+    endHour: "08",
+    endMinute: "00"
   });
   const [errors, setErrors] = useState({});
+
+  // Generate hours 0-23
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  // Generate minutes 0-59 with 5 min steps
+  const minutes = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
 
   useEffect(() => {
     if (open) {
       if (slotData) {
-        // Chỉnh sửa slot có sẵn
+        // Parse existing time
+        const [startH, startM] = (slotData.startTime || "07:00").split(':');
+        const [endH, endM] = (slotData.endTime || "08:00").split(':');
         setFormData({
-          startTime: slotData.startTime || "",
-          endTime: slotData.endTime || ""
+          startHour: startH,
+          startMinute: startM,
+          endHour: endH,
+          endMinute: endM
         });
       } else {
-        // Thêm mới
+        // Default values
         setFormData({
-          startTime: "",
-          endTime: ""
+          startHour: "07",
+          startMinute: "00",
+          endHour: "08",
+          endMinute: "00"
         });
       }
       setErrors({});
@@ -51,16 +67,11 @@ const SlotTemplateModal = ({ open, onClose, slotData, onSuccess }) => {
   const validate = () => {
     const newErrors = {};
     
-    if (!formData.startTime) {
-      newErrors.startTime = "Giờ bắt đầu là bắt buộc";
-    }
+    const startTime = `${formData.startHour}:${formData.startMinute}`;
+    const endTime = `${formData.endHour}:${formData.endMinute}`;
     
-    if (!formData.endTime) {
-      newErrors.endTime = "Giờ kết thúc là bắt buộc";
-    }
-    
-    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
-      newErrors.endTime = "Giờ kết thúc phải sau giờ bắt đầu";
+    if (startTime >= endTime) {
+      newErrors.time = "Giờ kết thúc phải sau giờ bắt đầu";
     }
     
     setErrors(newErrors);
@@ -72,12 +83,17 @@ const SlotTemplateModal = ({ open, onClose, slotData, onSuccess }) => {
 
     setLoading(true);
     try {
+      const payload = {
+        startTime: `${formData.startHour}:${formData.startMinute}`,
+        endTime: `${formData.endHour}:${formData.endMinute}`
+      };
+
       if (slotData && slotData.id) {
         // Update existing slot
-        await schoolAdminService.updateSlot(slotData.id, formData);
+        await schoolAdminService.updateSlot(slotData.id, payload);
       } else {
         // Create new slot
-        await schoolAdminService.createSlot(formData);
+        await schoolAdminService.createSlot(payload);
       }
       
       onSuccess();
@@ -100,42 +116,87 @@ const SlotTemplateModal = ({ open, onClose, slotData, onSuccess }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ pb: 1 }}>
-        <ArgonTypography variant="h5" fontWeight="bold">
+        <ArgonTypography variant="h4" fontWeight="bold" color="primary.main">
           {slotData ? "Chỉnh sửa tiết học" : "Thêm tiết học mới"}
-        </ArgonTypography>
-        <ArgonTypography variant="caption" color="text" sx={{ display: 'block', mt: 0.5 }}>
-          Chọn khung giờ tiết học. Tên tiết (Tiết 1, 2, 3...) sẽ tự động sắp xếp theo thời gian.
         </ArgonTypography>
       </DialogTitle>
       <DialogContent sx={{ pt: 3 }}>
         <ArgonBox>
+          <ArgonTypography variant="caption" color="text" sx={{ display: 'block', mb: 2 }}>
+            Chọn khung giờ tiết học. Tên tiết (Tiết 1, 2, 3...) sẽ tự động sắp xếp theo thời gian.
+          </ArgonTypography>
+          
+          {errors.time && (
+            <ArgonTypography variant="caption" color="error" sx={{ display: 'block', mb: 1 }}>
+              {errors.time}
+            </ArgonTypography>
+          )}
+          
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="time"
-                label="Giờ bắt đầu"
-                value={formData.startTime}
-                onChange={(e) => handleChange('startTime', e.target.value)}
-                error={!!errors.startTime}
-                helperText={errors.startTime || "Chọn giờ bắt đầu tiết học"}
-                required
-                InputLabelProps={{ shrink: true }}
-              />
+            {/* Giờ bắt đầu */}
+            <Grid item xs={12}>
+              <ArgonTypography variant="subtitle2" fontWeight="medium" mb={1}>
+                Giờ bắt đầu
+              </ArgonTypography>
+            </Grid>
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <Select
+                  value={formData.startHour}
+                  onChange={(e) => handleChange('startHour', e.target.value)}
+                  displayEmpty
+                >
+                  {hours.map(h => (
+                    <MenuItem key={h} value={h}>{h} giờ</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <Select
+                  value={formData.startMinute}
+                  onChange={(e) => handleChange('startMinute', e.target.value)}
+                  displayEmpty
+                >
+                  {minutes.map(m => (
+                    <MenuItem key={m} value={m}>{m} phút</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="time"
-                label="Giờ kết thúc"
-                value={formData.endTime}
-                onChange={(e) => handleChange('endTime', e.target.value)}
-                error={!!errors.endTime}
-                helperText={errors.endTime || "Chọn giờ kết thúc tiết học"}
-                required
-                InputLabelProps={{ shrink: true }}
-              />
+            {/* Giờ kết thúc */}
+            <Grid item xs={12}>
+              <ArgonTypography variant="subtitle2" fontWeight="medium" mb={1} mt={1}>
+                Giờ kết thúc
+              </ArgonTypography>
+            </Grid>
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <Select
+                  value={formData.endHour}
+                  onChange={(e) => handleChange('endHour', e.target.value)}
+                  displayEmpty
+                >
+                  {hours.map(h => (
+                    <MenuItem key={h} value={h}>{h} giờ</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <Select
+                  value={formData.endMinute}
+                  onChange={(e) => handleChange('endMinute', e.target.value)}
+                  displayEmpty
+                >
+                  {minutes.map(m => (
+                    <MenuItem key={m} value={m}>{m} phút</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
         </ArgonBox>

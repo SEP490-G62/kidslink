@@ -38,9 +38,7 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
       setSelectedDate(date || "");
       fetchSlots();
       fetchActivities();
-      if (classId) {
-        fetchTeachers();
-      }
+      fetchTeachers(); // Luôn lấy tất cả giáo viên
       
       if (calendarEntry) {
         // Chỉnh sửa calendar entry có sẵn - populate form data
@@ -88,26 +86,12 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
 
   const fetchTeachers = async () => {
     try {
-      const response = await api.get(`/classes/${classId}`, true);
-      console.log("Class data response:", response);
-      const classData = response.data || response;
-      console.log("Class data:", classData);
-      // Lấy teachers từ class data (teacher_id và teacher_id2)
-      const teacherList = [];
-      if (classData.teacher_id) {
-        teacherList.push({
-          _id: classData.teacher_id._id,
-          user_id: classData.teacher_id.user_id,
-          role: 'main'
-        });
-      }
-      if (classData.teacher_id2) {
-        teacherList.push({
-          _id: classData.teacher_id2._id,
-          user_id: classData.teacher_id2.user_id,
-          role: 'sub'
-        });
-      }
+      // Lấy tất cả giáo viên trong trường thay vì chỉ 2 giáo viên của lớp
+      const response = await schoolAdminService.getAllTeachers();
+      console.log("All teachers response:", response);
+      
+      const teacherList = response.data || [];
+      
       console.log("Teacher list:", teacherList);
       setTeachers(teacherList);
     } catch (error) {
@@ -348,7 +332,7 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
                     </MenuItem>
                     {teachers.map(teacher => (
                       <MenuItem key={teacher._id} value={teacher._id}>
-                        {teacher.user_id?.full_name || 'N/A'} ({teacher.role === 'main' ? 'Giáo viên chính' : 'Giáo viên phụ'})
+                        {teacher.user_id?.full_name || 'N/A'}
                       </MenuItem>
                     ))}
                   </Select>
@@ -387,9 +371,6 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
                         <ArgonBox>
                           <ArgonTypography variant="body2" fontWeight="bold">
                             {selectedTeacher.user_id?.full_name || 'N/A'}
-                          </ArgonTypography>
-                          <ArgonTypography variant="caption" color="text">
-                            {selectedTeacher.role === 'main' ? '👑 Giáo viên chính' : '👤 Giáo viên phụ'}
                           </ArgonTypography>
                         </ArgonBox>
                       </ArgonBox>
