@@ -41,6 +41,7 @@ import Footer from "examples/Footer";
 
 // Services
 import parentService from "services/parentService";
+import api from "services/api";
 
 const PasswordSectionCard = ({ icon, title, subtitle, children }) => (
   <Paper
@@ -333,25 +334,18 @@ function PersonalInformation() {
 
     try {
       setPasswordSaving(true);
-      const result = await parentService.changePassword(
-        passwordData.currentPassword,
-        passwordData.newPassword
-      );
-      if (result.success) {
-        setAlert({ open: true, message: "Đổi mật khẩu thành công", severity: "success" });
-        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-        setPasswordErrors({});
-        return true;
-      } else {
-        const message = result.error || "Không thể đổi mật khẩu";
-        setPasswordErrors((prev) => ({ ...prev, currentPassword: message || "Mật khẩu hiện tại không chính xác" }));
-        setAlert({ open: true, message, severity: "error" });
-        return false;
-      }
+      await api.put("/users/change-password", {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      }, true);
+      setAlert({ open: true, message: "Đổi mật khẩu thành công", severity: "success" });
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordErrors({});
+      return true;
     } catch (error) {
-      const fallbackMessage = error?.message || "Có lỗi xảy ra khi đổi mật khẩu";
-      setPasswordErrors((prev) => ({ ...prev, currentPassword: fallbackMessage }));
-      setAlert({ open: true, message: fallbackMessage, severity: "error" });
+      const message = error.message || "Không thể đổi mật khẩu";
+      setAlert({ open: true, message, severity: "error" });
+      setPasswordErrors((prev) => ({ ...prev, currentPassword: message }));
       return false;
     } finally {
       setPasswordSaving(false);
@@ -388,12 +382,6 @@ function PersonalInformation() {
     setActiveForm(null);
     setPasswordErrors({});
     setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    setFieldErrors({
-      full_name: '',
-      email: '',
-      phone_number: ''
-    });
-    setHasSubmitted(false);
   };
 
   const handleSaveAndClose = async () => {
@@ -875,7 +863,7 @@ function PersonalInformation() {
               <PasswordSectionCard
                 icon={<SecurityOutlinedIcon />}
                 title="Thông tin bảo mật"
-                subtitle="Nhập mật khẩu mới cho tài khoản của bạn"
+                subtitle="Nhập mật khẩu hiện tại và mật khẩu mới của bạn"
               >
                 <Stack spacing={2.5}>
                   <ArgonBox>
@@ -885,33 +873,12 @@ function PersonalInformation() {
                     <TextField
                       fullWidth
                       name="currentPassword"
-                      sx={{
-                        flex: 1,
-                        width: "100%",
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: "25px",
-                          backgroundColor: "white",
-                          width: "100%",
-                          "&:hover": {
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-                          },
-                          "&.Mui-focused": {
-                            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.2)"
-                          }
-                        },
-                        "& .MuiInputBase-input": {
-                          width: "100% !important",
-                          wordWrap: "break-word",
-                          whiteSpace: "pre-wrap",
-                          overflowWrap: "break-word"
-                        }
-                      }}
                       value={passwordData.currentPassword}
                       onChange={handlePasswordChange}
                       type="password"
                       placeholder="Nhập mật khẩu hiện tại"
                       error={Boolean(passwordErrors.currentPassword)}
-                      helperText={passwordErrors.currentPassword || "Nhập mật khẩu hiện tại để xác nhận"}
+                      helperText={passwordErrors.currentPassword}
                     />
                   </ArgonBox>
                   <ArgonBox>
