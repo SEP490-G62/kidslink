@@ -429,29 +429,6 @@ function PostCard({
                     }}
                   />
                 )}
-                {isApproved && post.authorId === currentUserId && (
-                  <Chip
-                    icon={<i className="ni ni-check-bold" style={{ fontSize: '12px' }} />}
-                    label="Đã duyệt"
-                    size="small"
-                    sx={{
-                      height: 22,
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      backgroundColor: 'rgba(76, 175, 80, 0.15)',
-                      color: '#388e3c',
-                      border: '1px solid rgba(76, 175, 80, 0.4)',
-                      '& .MuiChip-icon': {
-                        color: '#388e3c',
-                        marginLeft: '6px'
-                      },
-                      '& .MuiChip-label': {
-                        paddingLeft: '4px',
-                        paddingRight: '8px'
-                      }
-                    }}
-                  />
-                )}
               </ArgonBox>
               <ArgonBox display="flex" alignItems="center" gap={1} flexWrap="wrap">
                 <ArgonTypography 
