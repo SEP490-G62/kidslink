@@ -2,6 +2,8 @@ const PostComment = require('../models/PostComment');
 const Post = require('../models/Post');
 const User = require('../models/User');
 
+const sanitizeContents = (contents) => contents?.trim();
+
 // GET comments for a post
 const getComments = async (req, res) => {
   try {
@@ -11,7 +13,7 @@ const getComments = async (req, res) => {
     const comments = await PostComment.find({ post_id: postId })
       .populate({
         path: 'user_id',
-        select: 'full_name avatar_url role'
+        select: 'full_name avatar_url role _id'
       })
       .sort({ create_at: -1 })
       .lean();
@@ -102,6 +104,55 @@ const deleteComment = async (req, res) => {
   }
 };
 
+// UPDATE comment (school admin can edit their own comments)
+const updateComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { contents } = req.body;
+
+    const sanitizedContents = sanitizeContents(contents);
+    if (!sanitizedContents) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nội dung bình luận không được để trống'
+      });
+    }
+
+    const comment = await PostComment.findOne({
+      _id: commentId,
+      user_id: req.user.id
+    });
+
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy bình luận hoặc không có quyền chỉnh sửa'
+      });
+    }
+
+    comment.contents = sanitizedContents;
+    await comment.save();
+
+    await comment.populate({
+      path: 'user_id',
+      select: 'full_name avatar_url role _id'
+    });
+
+    return res.json({
+      success: true,
+      message: 'Cập nhật bình luận thành công',
+      data: comment
+    });
+  } catch (error) {
+    console.error('updateComment error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi khi cập nhật bình luận',
+      error: error.message
+    });
+  }
+};
+
 // GET likes for a post
 const getLikes = async (req, res) => {
   try {
@@ -167,7 +218,7 @@ const createComment = async (req, res) => {
     // Populate user info
     await comment.populate({
       path: 'user_id',
-      select: 'full_name avatar_url role'
+      select: 'full_name avatar_url role _id'
     });
 
     return res.status(201).json({
@@ -240,6 +291,7 @@ module.exports = {
   getComments,
   createComment,
   deleteComment,
+  updateComment,
   getLikes,
   toggleLike
 };

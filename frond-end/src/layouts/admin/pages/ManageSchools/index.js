@@ -27,7 +27,6 @@ import {
   DialogContentText,
   Pagination,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
@@ -44,51 +43,6 @@ import Footer from "examples/Footer";
 import adminService from "services/adminService";
 import SchoolModal from "./SchoolModal";
 import SchoolDetailModal from "./SchoolDetailModal";
-
-// Styled Switch component với style đẹp hơn
-const StyledSwitch = styled(Switch)(({ theme }) => ({
-  width: 50,
-  height: 28,
-  padding: 0,
-  '& .MuiSwitch-switchBase': {
-    padding: 0,
-    margin: 1.5,
-    transitionDuration: '300ms',
-    '&.Mui-checked': {
-      transform: 'translateX(22px)',
-      color: '#fff',
-      '& + .MuiSwitch-track': {
-        backgroundColor: theme.palette.mode === 'dark' ? '#2ECA45' : '#22c55e',
-        opacity: 1,
-        border: 0,
-      },
-      '&.Mui-disabled + .MuiSwitch-track': {
-        opacity: 0.5,
-      },
-    },
-    '&.Mui-disabled .MuiSwitch-thumb': {
-      color: theme.palette.mode === 'dark' ? theme.palette.grey[600] : theme.palette.grey[300],
-    },
-    '&.Mui-disabled + .MuiSwitch-track': {
-      opacity: theme.palette.mode === 'dark' ? 0.3 : 0.5,
-    },
-  },
-  '& .MuiSwitch-thumb': {
-    boxSizing: 'border-box',
-    width: 25,
-    height: 25,
-    backgroundColor: '#fff',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-  },
-  '& .MuiSwitch-track': {
-    borderRadius: 28 / 2,
-    backgroundColor: theme.palette.mode === 'dark' ? '#39393D' : '#e5e7eb',
-    opacity: 1,
-    transition: theme.transitions.create(['background-color'], {
-      duration: 500,
-    }),
-  },
-}));
 
 const ManageSchools = () => {
   const navigate = useNavigate();
@@ -483,7 +437,7 @@ const ManageSchools = () => {
                               />
                               <FormControlLabel
                                 control={
-                                  <StyledSwitch
+                                  <Switch
                                     checked={school.status === 1}
                                     onChange={(e) =>
                                       handleStatusChange(school, e.target.checked ? 1 : 0)

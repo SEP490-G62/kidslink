@@ -151,9 +151,9 @@ const schoolAdminRoutes = [
     type: "route",
     name: "Thông tin cá nhân",
     key: "school-admin-profile",
-    route: "",
+    route: "/school-admin/profile",
     icon: <ArgonBox component="i" color="dark" fontSize="14px" className="ni ni-single-02" />,
-    component: <ProtectedRoute><Profile /></ProtectedRoute>,
+    component: <ProtectedRoute requiredRoles={["school_admin"]}><Profile /></ProtectedRoute>,
   },
 
 ];

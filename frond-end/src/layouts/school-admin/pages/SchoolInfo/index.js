@@ -13,7 +13,6 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
-import { styled } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -30,51 +29,6 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import schoolAdminService from "services/schoolAdminService";
-
-// Styled Switch component với style đẹp hơn
-const StyledSwitch = styled(Switch)(({ theme }) => ({
-  width: 58,
-  height: 34,
-  padding: 0,
-  '& .MuiSwitch-switchBase': {
-    padding: 0,
-    margin: 2,
-    transitionDuration: '300ms',
-    '&.Mui-checked': {
-      transform: 'translateX(24px)',
-      color: '#fff',
-      '& + .MuiSwitch-track': {
-        backgroundColor: '#06b6d4', // Cyan/light blue color
-        opacity: 1,
-        border: 0,
-      },
-      '&.Mui-disabled + .MuiSwitch-track': {
-        opacity: 0.5,
-      },
-    },
-    '&.Mui-disabled .MuiSwitch-thumb': {
-      color: theme.palette.mode === 'dark' ? theme.palette.grey[600] : theme.palette.grey[300],
-    },
-    '&.Mui-disabled + .MuiSwitch-track': {
-      opacity: theme.palette.mode === 'dark' ? 0.3 : 0.5,
-    },
-  },
-  '& .MuiSwitch-thumb': {
-    boxSizing: 'border-box',
-    width: 30,
-    height: 30,
-    backgroundColor: '#fff',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-  },
-  '& .MuiSwitch-track': {
-    borderRadius: 34 / 2,
-    backgroundColor: theme.palette.mode === 'dark' ? '#39393D' : '#e5e7eb',
-    opacity: 1,
-    transition: theme.transitions.create(['background-color'], {
-      duration: 500,
-    }),
-  },
-}));
 
 const SchoolInfo = () => {
   const [loading, setLoading] = useState(true);
@@ -591,7 +545,7 @@ const SchoolInfo = () => {
                       />
                     </Box>
                   </Grid>
-
+{/* 
                   <Grid item xs={12}>
                     <Box sx={{ mb: 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -625,8 +579,8 @@ const SchoolInfo = () => {
                         }}
                       />
                     </Box>
-                  </Grid>
-
+                  </Grid> */}
+{/* 
                   <Grid item xs={12}>
                     <Box
                       sx={{
@@ -670,7 +624,7 @@ const SchoolInfo = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <FormControlLabel
                           control={
-                            <StyledSwitch
+                            <Switch
                               checked={formData.status === 1}
                               onChange={handleStatusChange}
                               disabled={!isEditing}
@@ -681,7 +635,7 @@ const SchoolInfo = () => {
                         />
                       </Box>
                     </Box>
-                  </Grid>
+                  </Grid> */}
                 </Grid>
               </CardContent>
             </Card>
@@ -899,7 +853,7 @@ const SchoolInfo = () => {
                       />
                     </Box>
                   </Grid>
-
+{/* 
                   <Grid item xs={12}>
                     <Box sx={{ mb: 2 }}>
                       <ArgonTypography variant="body2" fontWeight="medium" color="text" mb={1}>
@@ -930,7 +884,7 @@ const SchoolInfo = () => {
                         }}
                       />
                     </Box>
-                  </Grid>
+                  </Grid> */}
 
                   <Grid item xs={12}>
                     <Box
@@ -975,7 +929,7 @@ const SchoolInfo = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <FormControlLabel
                           control={
-                            <StyledSwitch
+                            <Switch
                               checked={formData.payos_config.active}
                               onChange={handlePayosActiveChange}
                               disabled={!isEditing}
