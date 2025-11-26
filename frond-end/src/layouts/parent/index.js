@@ -403,7 +403,7 @@ function ParentDashboard() {
         </ArgonBox>
 
         {/* Statistics Cards */}
-        <Grid container spacing={3} mb={3}>
+        {/* <Grid container spacing={3} mb={3}>
           <Grid item xs={12} md={6} lg={3}>
             <DetailedStatisticsCard
               title="Số ngày đi học"
@@ -436,7 +436,7 @@ function ParentDashboard() {
               percentage={{ color: "warning", count: "VND", text: "tháng này" }}
             />
           </Grid>
-        </Grid>
+        </Grid> */}
 
         {/* Toolbar: Search + Filters + Category Tabs */}
         <Card sx={{
