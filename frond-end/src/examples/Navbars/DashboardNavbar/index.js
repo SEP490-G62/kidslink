@@ -27,11 +27,12 @@ import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import Icon from "@mui/material/Icon";
+import Avatar from "@mui/material/Avatar";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
-import ArgonInput from "components/ArgonInput";
+// removed search input for admin navbar
 
 // Argon Dashboard 2 MUI example components
 import Breadcrumbs from "examples/Breadcrumbs";
@@ -52,19 +53,26 @@ import {
   useArgonController,
   setTransparentNavbar,
   setMiniSidenav,
-  setOpenConfigurator,
 } from "context";
+
+// Auth context
+import { useAuth } from "context/AuthContext";
 
 // Images
 import team2 from "assets/images/team-2.jpg";
 import logoSpotify from "assets/images/small-logos/logo-spotify.svg";
 
-function DashboardNavbar({ absolute, light, isMini }) {
+function DashboardNavbar({ absolute, light, isMini, breadcrumbOverride }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useArgonController();
-  const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator } = controller;
+  const { miniSidenav, transparentNavbar, fixedNavbar } = controller;
   const [openMenu, setOpenMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
+  const { user } = useAuth();
+  
+  // Allow overriding breadcrumbs (route and title) from specific pages
+  const effectiveRoute = breadcrumbOverride?.route || route;
+  const effectiveTitle = breadcrumbOverride?.title ?? route[route.length - 1];
 
   useEffect(() => {
     // Setting the navbar type
@@ -93,7 +101,6 @@ function DashboardNavbar({ absolute, light, isMini }) {
   }, [dispatch, fixedNavbar]);
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
-  const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
   const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
   const handleCloseMenu = () => setOpenMenu(false);
 
@@ -150,8 +157,8 @@ function DashboardNavbar({ absolute, light, isMini }) {
         >
           <Breadcrumbs
             icon="home"
-            title={route[route.length - 1]}
-            route={route}
+            title={effectiveTitle}
+            route={effectiveRoute}
             light={transparentNavbar ? light : false}
           />
           <Icon fontSize="medium" sx={navbarDesktopMenu} onClick={handleMiniSidenav}>
@@ -160,35 +167,36 @@ function DashboardNavbar({ absolute, light, isMini }) {
         </ArgonBox>
         {isMini ? null : (
           <ArgonBox sx={(theme) => navbarRow(theme, { isMini })}>
-            <ArgonBox pr={1}>
-              <ArgonInput
-                placeholder="Type here..."
-                startAdornment={
-                  <Icon fontSize="small" style={{ marginRight: "6px" }}>
-                    search
-                  </Icon>
-                }
-              />
-            </ArgonBox>
-            <ArgonBox color={light ? "white" : "inherit"}>
-              <Link to="/authentication/sign-in/basic">
-                <IconButton sx={navbarIconButton} size="small">
-                  <Icon
-                    sx={({ palette: { dark, white } }) => ({
-                      color: light && transparentNavbar ? white.main : dark.main,
-                    })}
-                  >
-                    account_circle
-                  </Icon>
-                  <ArgonTypography
-                    variant="button"
-                    fontWeight="medium"
-                    color={light && transparentNavbar ? "white" : "dark"}
-                  >
-                    Sign in
+            <ArgonBox color={light ? "white" : "inherit"} display="flex" alignItems="center">
+              {user ? (
+                <ArgonBox display="flex" alignItems="center" gap={1} mr={2}>
+                  <Avatar src={user.avatar_url} sx={{ width: 32, height: 32 }}>
+                    {user.full_name?.[0] || 'A'}
+                  </Avatar>
+                  <ArgonTypography variant="button" fontWeight="medium" color={light && transparentNavbar ? "white" : "dark"}>
+                    {user.full_name || user.username || 'Admin'}
                   </ArgonTypography>
-                </IconButton>
-              </Link>
+                </ArgonBox>
+              ) : (
+                <Link to="/authentication/sign-in">
+                  <IconButton sx={navbarIconButton} size="small">
+                    <Icon
+                      sx={({ palette: { dark, white } }) => ({
+                        color: light && transparentNavbar ? white.main : dark.main,
+                      })}
+                    >
+                      account_circle
+                    </Icon>
+                    <ArgonTypography
+                      variant="button"
+                      fontWeight="medium"
+                      color={light && transparentNavbar ? "white" : "dark"}
+                    >
+                      Sign in
+                    </ArgonTypography>
+                  </IconButton>
+                </Link>
+              )}
               <IconButton
                 size="small"
                 color={light && transparentNavbar ? "white" : "dark"}
@@ -197,14 +205,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
               >
                 <Icon>{miniSidenav ? "menu_open" : "menu"}</Icon>
               </IconButton>
-              <IconButton
-                size="small"
-                color={light && transparentNavbar ? "white" : "dark"}
-                sx={navbarIconButton}
-                onClick={handleConfiguratorOpen}
-              >
-                <Icon>settings</Icon>
-              </IconButton>
+              {/* Configurator button removed */}
               <IconButton
                 size="small"
                 color={light && transparentNavbar ? "white" : "dark"}
@@ -237,6 +238,10 @@ DashboardNavbar.propTypes = {
   absolute: PropTypes.bool,
   light: PropTypes.bool,
   isMini: PropTypes.bool,
+  breadcrumbOverride: PropTypes.shape({
+    route: PropTypes.arrayOf(PropTypes.string),
+    title: PropTypes.string,
+  }),
 };
 
 export default DashboardNavbar;

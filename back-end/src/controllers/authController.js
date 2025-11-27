@@ -2,12 +2,16 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const School = require('../models/School');
 
 const allowedRoles = ['school_admin', 'teacher', 'parent', 'health_care_staff', 'nutrition_staff', 'admin'];
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,16}$/;
+const PASSWORD_MESSAGE = 'Mật khẩu phải có từ 8-16 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt';
 
 function signToken(user) {
   const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+  // Thời hạn token: mặc định 24 giờ, có thể cấu hình qua JWT_EXPIRES_IN trong .env
+  const expiresIn = process.env.JWT_EXPIRES_IN || '1h';
   return jwt.sign(
     { id: user._id, role: user.role, username: user.username, full_name: user.full_name },
     secret,
@@ -19,7 +23,13 @@ function signToken(user) {
 const registerValidators = [
   body('full_name').isString().trim().notEmpty().withMessage('full_name là bắt buộc'),
   body('username').isString().trim().notEmpty().withMessage('username là bắt buộc'),
-  body('password').isString().isLength({ min: 6 }).withMessage('password tối thiểu 6 ký tự'),
+  body('password')
+    .isString()
+    .notEmpty()
+    .withMessage('password là bắt buộc')
+    .bail()
+    .matches(PASSWORD_REGEX)
+    .withMessage(PASSWORD_MESSAGE),
   body('role').isIn(allowedRoles).withMessage('role không hợp lệ'),
   body('email').isString().trim().notEmpty().withMessage('email là bắt buộc').bail().isEmail().withMessage('email không hợp lệ'),
   body('phone_number')
@@ -202,6 +212,16 @@ async function login(req, res) {
 
     if (user.status !== 1) {
       return res.status(403).json({ error: 'Tài khoản đang bị khóa' });
+    }
+
+    // Check if user's school is active (if user has school_id)
+    if (user.school_id) {
+      const school = await School.findById(user.school_id);
+      if (!school || school.status !== 1) {
+        return res.status(403).json({ 
+          error: 'Trường học của bạn đang bị vô hiệu hóa. Vui lòng liên hệ quản trị viên hệ thống.' 
+        });
+      }
     }
 
     const token = signToken(user);

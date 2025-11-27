@@ -29,7 +29,18 @@ function authorize(allowedRoles = []) {
       return next();
     }
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Không có quyền truy cập' });
+      // Ghi log để debug quyền truy cập sai vai trò
+      console.warn('AUTHZ REJECT', {
+        path: req.originalUrl,
+        requiredRoles: allowedRoles,
+        currentRole: req.user.role,
+        userId: req.user.id
+      });
+      return res.status(403).json({
+        error: 'Không có quyền truy cập',
+        current_role: req.user.role,
+        required_roles: allowedRoles
+      });
     }
     return next();
   };

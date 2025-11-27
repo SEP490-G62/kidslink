@@ -22,6 +22,8 @@ import ListItemText from "@mui/material/ListItemText";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
+import IconButton from "@mui/material/IconButton";
+import Footer from "examples/Footer";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -30,7 +32,7 @@ import ArgonTypography from "components/ArgonTypography";
 // Argon Dashboard 2 MUI example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/ParentNavBar";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from 'context/AuthContext';
 import parentService from 'services/parentService';
 import Pagination from '@mui/material/Pagination';
@@ -43,6 +45,8 @@ function DailyReport() {
   const [toDate, setToDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 5;
+  const fromDateInputRef = useRef(null);
+  const toDateInputRef = useRef(null);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -124,54 +128,109 @@ function DailyReport() {
         <ArgonBox mb={3}>
           <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
             <CardContent sx={{ p: 2 }}>
-              <ArgonBox display="flex" gap={2} alignItems="center" flexWrap="wrap">
-                <ArgonBox display="flex" gap={1} alignItems="center" flex="0" minWidth="180px">
-                  <i className="ni ni-calendar-grid-58" style={{ fontSize: 18, color: '#344767' }} />
+              <ArgonBox display="flex" gap={3} alignItems="flex-end" flexWrap="wrap">
+                <ArgonBox display="flex" flexDirection="column" gap={1} minWidth="200px">
+                  <ArgonTypography variant="caption" color="text" fontWeight="medium" display="flex" alignItems="center" gap={0.5}>
+                    <i className="ni ni-calendar-grid-58" style={{ fontSize: 16, color: '#344767' }} />
+                    Từ ngày
+                  </ArgonTypography>
                   <TextField
                     type="date"
-                    label="Từ ngày"
-                    InputLabelProps={{ shrink: true }}
                     value={fromDate}
                     onChange={(e) => setFromDate(e.target.value)}
                     size="small"
-                    sx={{ width: 170 }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                        fontSize: 14,
+                        cursor: "pointer",
+                      },
+                      "& .MuiOutlinedInput-input": {
+                        cursor: "pointer",
+                      },
+                    }}
+                    inputRef={fromDateInputRef}
+                    InputProps={{
+                      endAdornment: (
+                        <IconButton
+                          size="small"
+                          edge="end"
+                          tabIndex={-1}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => fromDateInputRef.current?.showPicker?.()}
+                        >
+                          {/* <i className="ni ni-calendar-grid-58" style={{ fontSize: 16 }} /> */}
+                        </IconButton>
+                      ),
+                    }}
+                    InputLabelProps={{ shrink: false }}
                   />
                 </ArgonBox>
                 
-                <ArgonBox display="flex" gap={1} alignItems="center" flex="0" minWidth="180px">
-                  <i className="ni ni-calendar-grid-58" style={{ fontSize: 18, color: '#344767' }} />
+                <ArgonBox display="flex" flexDirection="column" gap={1} minWidth="200px">
+                  <ArgonTypography variant="caption" color="text" fontWeight="medium" display="flex" alignItems="center" gap={0.5}>
+                    <i className="ni ni-calendar-grid-58" style={{ fontSize: 16, color: '#344767' }} />
+                    Đến ngày
+                  </ArgonTypography>
                   <TextField
                     type="date"
-                    label="Đến ngày"
-                    InputLabelProps={{ shrink: true }}
                     value={toDate}
                     onChange={(e) => setToDate(e.target.value)}
                     size="small"
-                    sx={{ width: 170 }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                        fontSize: 14,
+                        cursor: "pointer",
+                      },
+                      "& .MuiOutlinedInput-input": {
+                        cursor: "pointer",
+                      },
+                    }}
+                    inputRef={toDateInputRef}
+                    InputProps={{
+                      endAdornment: (
+                        <IconButton
+                          size="small"
+                          edge="end"
+                          tabIndex={-1}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => toDateInputRef.current?.showPicker?.()}
+                        >
+                          {/* <i className="ni ni-calendar-grid-58" style={{ fontSize: 16 }} /> */}
+                        </IconButton>
+                      ),
+                    }}
+                    InputLabelProps={{ shrink: false }}
                   />
                 </ArgonBox>
-
                 <Button
                   variant="outlined"
-                  color="secondary"
                   onClick={handleClearFilter}
                   disabled={!fromDate && !toDate}
                   startIcon={<i className="ni ni-fat-remove" />}
                   size="small"
-                  sx={{ minWidth: 100 }}
+                  sx={{
+                    minWidth: 110,
+                    fontWeight: "bold",
+                    color: "#111111",
+                    borderColor: "#111111",
+                    borderWidth: 1.5,
+                    backgroundColor: "#ffffff",
+                    textTransform: "none",
+                    "&:hover": {
+                      borderColor: "#000000",
+                      backgroundColor: "#f5f5f5",
+                    },
+                    "&.Mui-disabled": {
+                      color: "rgba(0,0,0,0.3)",
+                      borderColor: "rgba(0,0,0,0.2)",
+                    },
+                  }}
                 >
                   Xóa
                 </Button>
 
-                {(fromDate || toDate) && (
-                  <Chip 
-                    icon={<i className="ni ni-archive-2" />}
-                    label={`${filteredReports.length} kết quả`}
-                    color="info"
-                    size="small"
-                  />
-                )}
-                
               </ArgonBox>
 
             </CardContent>
@@ -376,6 +435,8 @@ function DailyReport() {
           </ArgonBox>
         )}
       </ArgonBox>
+      <Footer />
+
     </DashboardLayout>
   );
 }

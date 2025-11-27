@@ -122,7 +122,7 @@ function Illustration() {
           const userRole = result.user.role;
           switch (userRole) {
             case 'admin':
-              navigate('/admin/dashboard');
+              navigate('/admin');
               break;
             case 'school_admin':
               navigate('/school-admin/dashboard');
@@ -137,10 +137,10 @@ function Illustration() {
               navigate('/health-care');
               break;
             case 'nutrition_staff':
-              navigate('/nutrition/dashboard');
+              navigate('/nutrition');
               break;
             default:
-              navigate('/dashboard');
+              navigate('/');
           }
         }, 1000);
       } else {
@@ -240,20 +240,7 @@ function Illustration() {
               )}
             </ArgonButton>
           </ArgonBox>
-          <ArgonBox mt={3} textAlign="center">
-            <ArgonTypography variant="button" color="text" fontWeight="regular">
-              Chưa có tài khoản?{" "}
-              <ArgonTypography
-                component={Link}
-                to="/authentication/sign-up"
-                variant="button"
-                color="info"
-                fontWeight="medium"
-              >
-                Đăng ký
-              </ArgonTypography>
-            </ArgonTypography>
-          </ArgonBox>
+
           <ArgonBox mt={2} textAlign="center">
             <ArgonTypography
               component={Link}

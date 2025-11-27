@@ -17,7 +17,8 @@ const studentSchema = new mongoose.Schema({
   },
   avatar_url: {
     type: String,
-    required: true
+    required: false,
+    default: ''
   },
   status: {
     type: Number,
@@ -26,8 +27,9 @@ const studentSchema = new mongoose.Schema({
   },
   allergy: {
     type: String,
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: ''
   },
 
 }, {

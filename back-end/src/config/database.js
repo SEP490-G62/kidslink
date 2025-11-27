@@ -7,7 +7,8 @@ const connectDB = async () => {
       useUnifiedTopology: true,
     });
 
-    console.log(`📊 MongoDB kết nối thành công: ${conn.connection.host}`);
+
+    console.log(`📊 MongoDB kết nối thành công: ${conn.connection.host}/${conn.connection.name}`);
   } catch (error) {
     console.error('❌ Lỗi kết nối MongoDB:', error.message);
     process.exit(1);

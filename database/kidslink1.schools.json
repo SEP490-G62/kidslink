@@ -1,0 +1,48 @@
+[{
+  "_id": {
+    "$oid": "692563fd44e3715c720dcf2d"
+  },
+  "school_name": "Sakura Kindergarden",
+  "address": "HN",
+  "phone": "846939729",
+  "email": "ndt@sakura.edu.vn",
+  "logo_url": "https://res.cloudinary.com/dzfwlfyu8/image/upload/v1764058292/school-logos/gqi80vbiukno7107ql4t.png",
+  "status": 1,
+  "payos_config": {
+    "active": false
+  },
+  "createdAt": {
+    "$date": "2025-11-25T08:08:29.796Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-25T08:11:33.990Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "school_name": "ABC Kindergarten",
+  "address": "123 Nguyen Trai, District 1, HCMC",
+  "phone": "0281234567",
+  "email": "contact@kidslink.vn",
+  "logo_url": "https://res.cloudinary.com/dzfwlfyu8/image/upload/v1763817815/school-logos/bnq8rnrjnajtc2htiwn7.png",
+  "status": 1,
+  "payos_config": {
+    "client_id": "5a4f1c4d-9ba5-40fc-b0b6-19dfe4482a9e",
+    "api_key": "140cfb33-8441-4a78-80b2-1f7737ca207f",
+    "checksum_key": "140b9bbae20038774327cc9868f2e1e66a44816effb35eda73aa34a2d37ee28e",
+    "account_number": "9844 8411 0268 68",
+    "account_name": "NGUYEN DUC THANG",
+    "bank_code": "MSCBVNVX",
+    "active": true,
+    "webhook_url": "11111111111111111111111111111 yyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+  },
+  "createdAt": {
+    "$date": "2025-10-29T16:16:08.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-25T08:07:52.442Z"
+  }
+}]

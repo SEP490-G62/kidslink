@@ -14,21 +14,13 @@ const slotSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  calendar_id: {
+  school_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Calendar',
-    required: true
-  },
-  activity_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Activity',
-    required: true
-  },
-  teacher_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Teacher',
+    ref: 'School',
     required: true
   }
+  // Slot giờ chỉ là khung giờ chuẩn, không gắn calendar/activity/teacher
+  // Calendar sẽ reference đến Slot
 }, {
   timestamps: true
 });

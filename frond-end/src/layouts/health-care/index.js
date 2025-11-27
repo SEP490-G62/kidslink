@@ -19,8 +19,14 @@ import Box from "@mui/material/Box";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
@@ -30,6 +36,8 @@ import DashboardNavbar from "examples/Navbars/ParentNavBar";
 import Footer from "examples/Footer";
 
 import healthService from "services/healthService";
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 export default function HealthCareStaffDashboard() {
   const [classes, setClasses] = useState([]);
@@ -49,6 +57,13 @@ export default function HealthCareStaffDashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState("record");
   const [dialogPayload, setDialogPayload] = useState({});
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, type: null });
+  // Bổ sung editDialog state
+  const [editDialog, setEditDialog] = useState({ open: false, type: null, record: null });
+  const [editPayload, setEditPayload] = useState({});
+  const [editConfirmOpen, setEditConfirmOpen] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, type: null, id: null });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // Fetch classes on mount
   useEffect(() => {
@@ -103,8 +118,28 @@ export default function HealthCareStaffDashboard() {
     setDialogOpen(true);
   };
 
+  // Validate trước khi thêm record/notice
+  const validateAddPayload = () => {
+    if (dialogType === 'record') {
+      const { checkup_date, height_cm, weight_kg, note } = dialogPayload;
+      if (!checkup_date || !height_cm || !weight_kg || !note) {
+        setSnackbar({ open: true, message: 'Không được để trống bất kỳ ô nào của sổ sức khỏe!', severity: 'error' });
+        return false;
+      }
+    } else {
+      const { notice_time, symptoms, actions_taken, medications, note } = dialogPayload;
+      if (!notice_time || !symptoms || !actions_taken || !medications || !note) {
+        setSnackbar({ open: true, message: 'Không được để trống bất kỳ ô nào của thông báo y tế!', severity: 'error' });
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Gửi dữ liệu thêm mới
   const handleDialogSubmit = async () => {
+    // Validate required fields trước khi gọi API
+    if (!validateAddPayload()) return;
     if (!selectedStudent) return;
     const { _id } = selectedStudent;
     if (dialogType === "record") {
@@ -123,6 +158,97 @@ export default function HealthCareStaffDashboard() {
       handleStudentClick(selectedStudent); // reload data
     }
     setDialogOpen(false);
+  };
+
+  // --- Mở xác nhận trước khi submit thêm mới health record/notice ---
+  // Thay vì gọi thẳng handleDialogSubmit -> mở dialog confirm trước
+  const handleDialogConfirm = (type) => setConfirmDialog({ open: true, type });
+  const handleDialogConfirmYes = async () => {
+    setConfirmDialog({ open: false, type: null });
+    await handleDialogSubmit();
+  };
+  const handleDialogConfirmNo = () => setConfirmDialog({ open: false, type: null });
+
+  // Đảm bảo chuyển Decimal128 sang string nếu cần
+  const parseDecimal = (val) => (val && typeof val === 'object' && val.$numberDecimal) ? val.$numberDecimal : val ? val.toString() : '';
+
+  // override handleEditClick với robust prefill
+  const handleEditClick = (type, record) => {
+    setEditDialog({ open: true, type, record });
+    if (type === 'record') {
+      setEditPayload({
+        checkup_date: record.checkup_date ? record.checkup_date.slice(0,10) : '',
+        height_cm: parseDecimal(record.height_cm),
+        weight_kg: parseDecimal(record.weight_kg),
+        note: record.note || '',
+      });
+    } else {
+      // notice
+      // Nếu notice_time có định dạng ISO (2024-10-28T10:15:00Z), chuyển thành "2024-10-28T10:15" cho datetime-local
+      const dt = record.notice_time ? record.notice_time.replace('Z','').slice(0,16) : '';
+      setEditPayload({
+        notice_time: dt,
+        symptoms: record.symptoms || '',
+        actions_taken: record.actions_taken || '',
+        medications: record.medications || '',
+        note: record.note || '',
+      });
+    }
+  };
+  // On change field (edit)
+  const handleEditChange = e => setEditPayload(p => ({ ...p, [e.target.name]: e.target.value }));
+  // Khi click Lưu: hiện confirm trước
+  const handleEditDialogSave = () => setEditConfirmOpen(true);
+  // Khi agree tại confirm dialog mới gọi API update
+  const handleEditDialogConfirm = async () => {
+    setEditConfirmOpen(false);
+    if (editDialog.type === 'record') {
+      const res = await healthService.updateHealthRecord(editDialog.record._id, editPayload);
+      if (res.success) {
+        setSnackbar({ open: true, message: 'Cập nhật thành công', severity: 'success' });
+        setEditDialog({ open: false, type: null, record: null });
+        if (selectedStudent) await handleStudentClick(selectedStudent);
+      } else {
+        setSnackbar({ open: true, message: res.error || 'Lỗi update', severity: 'error' });
+      }
+    } else {
+      const res = await healthService.updateHealthNotice(editDialog.record._id, editPayload);
+      if (res.success) {
+        setSnackbar({ open: true, message: 'Cập nhật thông báo thành công', severity: 'success' });
+        setEditDialog({ open: false, type: null, record: null });
+        if (selectedStudent) await handleStudentClick(selectedStudent);
+      } else {
+        setSnackbar({ open: true, message: res.error || 'Lỗi update', severity: 'error' });
+      }
+    }
+  };
+  // Hủy dialog
+  const handleEditDialogClose = () => {
+    setEditDialog({ open: false, type: null, record: null });
+    setEditPayload({});
+    setEditConfirmOpen(false);
+  };
+
+  // --- Xác nhận xóa ---
+  const handleDeleteClick = (type, id) => setDeleteDialog({ open: true, type, id });
+  const handleConfirmDelete = async () => {
+    try {
+      let res;
+      if (deleteDialog.type === 'record') {
+        res = await healthService.deleteHealthRecord(deleteDialog.id);
+      } else {
+        res = await healthService.deleteHealthNotice(deleteDialog.id);
+      }
+      if (res.success) {
+        setSnackbar({ open: true, message: 'Xóa thành công!', severity: 'success' });
+        setDeleteDialog({ open: false, type: null, id: null });
+        if (selectedStudent) await handleStudentClick(selectedStudent);
+      } else {
+        setSnackbar({ open: true, message: res.error || 'Xóa thất bại', severity: 'error' });
+      }
+    } catch {
+      setSnackbar({ open: true, message: 'Lỗi kết nối', severity: 'error' });
+    }
   };
 
   // Helper để lấy số từ Decimal128 hoặc number string
@@ -261,6 +387,18 @@ export default function HealthCareStaffDashboard() {
                                   </>
                                 }
                               />
+                              <Box display="flex" gap={1} mt={1}>
+                                <Tooltip title="Sửa">
+                                  <IconButton size="small" onClick={()=>handleEditClick('record', r)}>
+                                    <EditOutlinedIcon sx={{ color: '#1976d2', fontSize: 22 }} />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Xóa">
+                                  <IconButton size="small" onClick={() => handleDeleteClick('record', r._id)}>
+                                    <DeleteForeverOutlinedIcon sx={{ color: '#e53935', fontSize: 22 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
                             </ListItem>
                           );
                         })}
@@ -278,11 +416,23 @@ export default function HealthCareStaffDashboard() {
                             <ListItemText
                               primary={<ArgonTypography fontWeight="bold">{n.symptoms}</ArgonTypography>}
                               secondary={<>
-                                <ArgonTypography fontSize={14}>Thời gian: {n.notice_time}</ArgonTypography>
+                                <ArgonTypography fontSize={14}>Thời gian: {n.notice_time ? new Date(n.notice_time).toLocaleString('vi-VN') : ''}</ArgonTypography>
                                 <ArgonTypography fontSize={13} color="secondary">Hành động: {n.actions_taken} | Thuốc: {n.medications}</ArgonTypography>
                                 <ArgonTypography fontSize={12}>Ghi chú: {n.note}</ArgonTypography>
                               </>}
                             />
+                            <Box display="flex" gap={1} mt={1}>
+                              <Tooltip title="Sửa">
+                                <IconButton size="small" onClick={()=>handleEditClick('notice',n)}>
+                                  <EditOutlinedIcon sx={{ color: '#1976d2', fontSize: 22 }} />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Xóa">
+                                <IconButton size="small" onClick={() => handleDeleteClick('notice', n._id)}>
+                                  <DeleteForeverOutlinedIcon sx={{ color: '#e53935', fontSize: 22 }} />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
                           </ListItem>
                         ))}
                       </List>
@@ -318,8 +468,80 @@ export default function HealthCareStaffDashboard() {
                 <Button variant="contained" onClick={handleDialogSubmit}>Lưu</Button>
               </DialogActions>
             </Dialog>
+            {/* Edit Dialog */}
+            <Dialog open={editDialog.open} onClose={handleEditDialogClose}>
+              <DialogTitle>
+                {editDialog.type === 'record' ? 'Sửa sổ sức khoẻ' : 'Sửa thông báo y tế'}
+              </DialogTitle>
+              <DialogContent>
+                {editDialog.type === 'record' ? (
+                  <>
+                    <TextField label="Ngày khám" type="date" name="checkup_date" fullWidth sx={{ mb: 2 }} InputLabelProps={{shrink: true}} value={editPayload.checkup_date || ''} onChange={handleEditChange}/>
+                    <TextField label="Chiều cao (cm)" type="number" name="height_cm" fullWidth sx={{ mb: 2 }} value={editPayload.height_cm || ''} onChange={handleEditChange}/>
+                    <TextField label="Cân nặng (kg)" type="number" name="weight_kg" fullWidth sx={{ mb: 2 }} value={editPayload.weight_kg || ''} onChange={handleEditChange}/>
+                    <TextField label="Ghi chú" name="note" fullWidth multiline rows={2} value={editPayload.note || ''} onChange={handleEditChange}/>
+                  </>
+                ) : (
+                  <>
+                    <TextField label="Thời gian thông báo" type="datetime-local" name="notice_time" fullWidth sx={{ mb: 2 }} InputLabelProps={{shrink: true}} value={editPayload.notice_time || ''} onChange={handleEditChange}/>
+                    <TextField label="Triệu chứng" name="symptoms" fullWidth sx={{ mb: 2 }} value={editPayload.symptoms || ''} onChange={handleEditChange}/>
+                    <TextField label="Hành động đã thực hiện" name="actions_taken" fullWidth sx={{ mb: 2 }} value={editPayload.actions_taken || ''} onChange={handleEditChange}/>
+                    <TextField label="Thuốc đã dùng" name="medications" fullWidth sx={{ mb: 2 }} value={editPayload.medications || ''} onChange={handleEditChange}/>
+                    <TextField label="Ghi chú" name="note" fullWidth multiline rows={2} value={editPayload.note || ''} onChange={handleEditChange}/>
+                  </>
+                )}
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleEditDialogClose}>Huỷ</Button>
+                <Button variant="contained" color="info" onClick={handleEditDialogSave}>Lưu</Button>
+              </DialogActions>
+            </Dialog>
+            {/* Dialog confirm lưu */}
+            <Dialog open={editConfirmOpen} onClose={()=>setEditConfirmOpen(false)}>
+              <DialogTitle>Xác nhận cập nhật</DialogTitle>
+              <DialogContent>Bạn có chắc chắn muốn cập nhật thông tin này không?</DialogContent>
+              <DialogActions>
+                <Button onClick={()=>setEditConfirmOpen(false)}>Hủy</Button>
+                <Button variant="contained" color="info" onClick={handleEditDialogConfirm}>Đồng ý</Button>
+              </DialogActions>
+            </Dialog>
+            {/* Delete Dialog */}
+            <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ ...deleteDialog, open: false, type: null, id: null })}>
+              <DialogTitle>Xác nhận xóa</DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  Bạn có chắc chắn muốn xóa bản ghi này không?
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setDeleteDialog({ ...deleteDialog, open: false, type: null, id: null })}>Hủy</Button>
+                <Button variant="contained" color="error" onClick={handleConfirmDelete}>Xóa</Button>
+              </DialogActions>
+            </Dialog>
           </Box>
         </Modal>
+        {/* Dialog xác nhận thao tác submit (gắn ở cuối return) */}
+        <Dialog open={confirmDialog.open} onClose={handleDialogConfirmNo}>
+          <DialogTitle>Xác nhận thao tác</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              {confirmDialog.type === 'record' && 'Bạn có chắc chắn muốn thêm mới sổ sức khỏe này không?'}
+              {confirmDialog.type === 'notice' && 'Bạn có chắc chắn muốn thêm mới thông báo y tế này không?'}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleDialogConfirmNo}>Hủy</Button>
+            <Button onClick={handleDialogConfirmYes} variant="contained" color="info">Đồng ý</Button>
+          </DialogActions>
+        </Dialog>
+        {/* Snackbar báo kết quả */}
+        <ArgonBox sx={{ position: 'fixed', bottom: 20, left: 20, zIndex: 9999 }}>
+          <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
+            <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+              {snackbar.message}
+            </Alert>
+          </Snackbar>
+        </ArgonBox>
       </ArgonBox>
       <Footer />
     </DashboardLayout>

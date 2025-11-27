@@ -231,7 +231,27 @@ function ChildInformation() {
     );
   }
 
-  const { student, pickups = [], healthRecords = [] } = childData;
+  const { student, pickups = [], healthRecords = [], classInfo } = childData;
+  const formatDate = (date) => {
+    if (!date) return 'Đang cập nhật';
+    // Nếu đã là string format sẵn (có chứa / hoặc -), trả về trực tiếp
+    if (typeof date === 'string' && (date.includes('/') || date.includes('-'))) {
+      // Kiểm tra xem có phải là format ISO date không (YYYY-MM-DD)
+      if (date.includes('-') && date.length >= 10) {
+        const d = new Date(date);
+        if (!Number.isNaN(d.getTime())) {
+          return d.toLocaleDateString('vi-VN');
+        }
+      }
+      return date;
+    }
+    // Nếu là Date object hoặc string có thể parse
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return 'Đang cập nhật';
+    return d.toLocaleDateString('vi-VN');
+  };
+
+  const SECTION_HEIGHT = 660;
 
   return (
     <DashboardLayout>
@@ -248,67 +268,208 @@ function ChildInformation() {
         </ArgonBox>
 
         <Grid container spacing={3}>
-          {/* Left Column: Child Info + Pickup Management */}
-          <Grid item xs={12} lg={4}>
-            {/* Child Basic Info */}
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <ArgonBox display="flex" flexDirection="column" alignItems="center" mb={3}>
+          {/* Child Info */}
+          <Grid item xs={12} lg={8} sx={{ display: "flex" }}>
+            <Card
+              sx={{ 
+                mb: 3,
+                borderRadius: 3,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                overflow: 'hidden',
+                width: "100%",
+                height: { xs: 'auto', lg: SECTION_HEIGHT }
+              }}
+            >
+              <CardContent 
+                sx={{ 
+                  p: 3,
+                  height: '100%',
+                  overflowY: { xs: 'visible', lg: 'auto' }
+                }}
+              >
+                {/* Header Section - Avatar & Name */}
+                <ArgonBox 
+                  display="flex" 
+                  flexDirection="column" 
+                  alignItems="center" 
+                  mb={3}
+                >
                   <Avatar
                     src={student.avatar_url}
                     alt={student.full_name}
-                    sx={{ width: 100, height: 100, mb: 2 }}
-                  />
-                  <ArgonTypography variant="h5" fontWeight="bold" color="dark" textAlign="center">
+                    sx={{ 
+                      width: 80, 
+                      height: 80, 
+                      mb: 2
+                    }}
+                  >
+                    {student.full_name?.charAt(0) || 'C'}
+                  </Avatar>
+                  <ArgonTypography 
+                    variant="h5" 
+                    fontWeight="bold" 
+                    color="dark" 
+                    textAlign="center"
+                    mb={0.5}
+                  >
                     {student.full_name}
                   </ArgonTypography>
-                  <ArgonTypography variant="body2" color="text" textAlign="center">
-                    {selectedChild?.class?.class_name || 'Chưa phân lớp'} • {student.age} tuổi
+                  <ArgonTypography 
+                    variant="body2" 
+                    color="text" 
+                    textAlign="center"
+                    sx={{ fontSize: '0.875rem' }}
+                  >
+                    {/* {classInfo?.name || selectedChild?.class?.class_name || 'Chưa phân lớp'} • */}
+                    {student.age} tuổi
                   </ArgonTypography>
                 </ArgonBox>
 
-                <ArgonBox display="flex" justifyContent="space-around" mb={3}>
-                  <ArgonBox textAlign="center">
-                    <ArgonBox display="flex" alignItems="center" justifyContent="center" mb={0.5}>
-                      <i className="ni ni-calendar-grid-58" style={{ fontSize: '16px', color: '#5e72e4', marginRight: '4px' }} />
-                      <ArgonTypography variant="body2" color="text" fontWeight="medium">
+                {/* Basic Information Grid */}
+                <Grid container spacing={2} mb={2.5}>
+                  <Grid item xs={4}>
+                    <ArgonBox
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        backgroundColor: 'rgba(94, 114, 228, 0.05)',
+                        border: '1px solid rgba(94, 114, 228, 0.1)',
+                        textAlign: 'center',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <ArgonBox
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(94, 114, 228, 0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mb: 1
+                        }}
+                      >
+                        <i className="ni ni-calendar-grid-58" style={{ fontSize: '18px', color: '#5e72e4' }} />
+                      </ArgonBox>
+                      <ArgonTypography variant="caption" color="text" fontWeight="medium" mb={0.5}>
                         Ngày sinh
                       </ArgonTypography>
+                      <ArgonTypography variant="body2" color="dark" fontWeight="bold" sx={{ fontSize: '0.75rem' }}>
+                        {student.dob ? student.dob : formatDate(student.dob)}
+                      </ArgonTypography>
                     </ArgonBox>
-                    <ArgonTypography variant="body2" color="dark" fontWeight="bold">
-                      {student.dob}
-                    </ArgonTypography>
-                  </ArgonBox>
-                  <ArgonBox textAlign="center">
-                    <ArgonBox display="flex" alignItems="center" justifyContent="center" mb={0.5}>
-                      <i className="ni ni-single-02" style={{ fontSize: '16px', color: '#5e72e4', marginRight: '4px' }} />
-                      <ArgonTypography variant="body2" color="text" fontWeight="medium">
+                  </Grid>
+                  <Grid item xs={4}>
+                    <ArgonBox
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        backgroundColor: 'rgba(94, 114, 228, 0.05)',
+                        border: '1px solid rgba(94, 114, 228, 0.1)',
+                        textAlign: 'center',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <ArgonBox
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(94, 114, 228, 0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mb: 1
+                        }}
+                      >
+                        <i className="ni ni-single-02" style={{ fontSize: '18px', color: '#5e72e4' }} />
+                      </ArgonBox>
+                      <ArgonTypography variant="caption" color="text" fontWeight="medium" mb={0.5}>
                         Giới tính
                       </ArgonTypography>
-                    </ArgonBox>
-                    <ArgonTypography variant="body2" color="dark" fontWeight="bold">
-                      {student.gender}
-                    </ArgonTypography>
-                  </ArgonBox>
-                  <ArgonBox textAlign="center">
-                    <ArgonBox display="flex" alignItems="center" justifyContent="center" mb={0.5}>
-                      <i className="ni ni-circle-08" style={{ fontSize: '16px', color: '#5e72e4', marginRight: '4px' }} />
-                      <ArgonTypography variant="body2" color="text" fontWeight="medium">
-                        Quan hệ
+                      <ArgonTypography variant="body2" color="dark" fontWeight="bold" sx={{ fontSize: '0.75rem' }}>
+                        {student.gender}
                       </ArgonTypography>
                     </ArgonBox>
-                    <ArgonTypography variant="body2" color="dark" fontWeight="bold">
-                      {student.relationship}
-                    </ArgonTypography>
-                  </ArgonBox>
-                </ArgonBox>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <ArgonBox
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        backgroundColor: 'rgba(94, 114, 228, 0.05)',
+                        border: '1px solid rgba(94, 114, 228, 0.1)',
+                        textAlign: 'center',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <ArgonBox
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(94, 114, 228, 0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mb: 1
+                        }}
+                      >
+                        <i className="ni ni-circle-08" style={{ fontSize: '18px', color: '#5e72e4' }} />
+                      </ArgonBox>
+                      <ArgonTypography variant="caption" color="text" fontWeight="medium" mb={0.5}>
+                        Quan hệ
+                      </ArgonTypography>
+                      <ArgonTypography variant="body2" color="dark" fontWeight="bold" sx={{ fontSize: '0.75rem' }}>
+                        {student.relationship}
+                      </ArgonTypography>
+                    </ArgonBox>
+                  </Grid>
+                </Grid>
 
-                <Divider sx={{ my: 2 }} />
-
-                <ArgonBox display="flex" justifyContent="space-around">
-                  <ArgonBox textAlign="center">
-                    <ArgonBox display="flex" alignItems="center" justifyContent="center" mb={0.5}>
-                      <i className="ni ni-notification-70" style={{ fontSize: '16px', color: '#f44336', marginRight: '4px' }} />
+                {/* Status & Allergy Section */}
+                <ArgonBox 
+                  display="flex" 
+                  gap={2} 
+                  mb={2.5}
+                  sx={{
+                    flexDirection: { xs: 'column', sm: 'row' }
+                  }}
+                >
+                  <ArgonBox
+                    flex={1}
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      backgroundColor: student.allergy && student.allergy !== 'Không có' 
+                        ? 'rgba(255, 152, 0, 0.05)' 
+                        : 'rgba(76, 175, 80, 0.05)',
+                      border: `1px solid ${student.allergy && student.allergy !== 'Không có' 
+                        ? 'rgba(255, 152, 0, 0.2)' 
+                        : 'rgba(76, 175, 80, 0.2)'}`
+                    }}
+                  >
+                    <ArgonBox display="flex" alignItems="center" gap={1} mb={1}>
+                      <i 
+                        className="ni ni-notification-70" 
+                        style={{ 
+                          fontSize: '20px', 
+                          color: student.allergy && student.allergy !== 'Không có' ? '#ff9800' : '#4caf50'
+                        }} 
+                      />
                       <ArgonTypography variant="body2" color="text" fontWeight="medium">
                         Dị ứng
                       </ArgonTypography>
@@ -316,28 +477,137 @@ function ChildInformation() {
                     <Chip 
                       label={student.allergy || 'Không có'} 
                       color={student.allergy && student.allergy !== 'Không có' ? "warning" : "success"} 
-                      size="small" 
+                      size="small"
+                      sx={{ fontWeight: 'bold' }}
                     />
                   </ArgonBox>
-                  <ArgonBox textAlign="center">
-                    <ArgonBox display="flex" alignItems="center" justifyContent="center" mb={0.5}>
-                      <i className="ni ni-chart-bar-32" style={{ fontSize: '16px', color: '#5e72e4', marginRight: '4px' }} />
+                  
+                  <ArgonBox
+                    flex={1}
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      backgroundColor: student.status === 1 
+                        ? 'rgba(76, 175, 80, 0.05)' 
+                        : 'rgba(244, 67, 54, 0.05)',
+                      border: `1px solid ${student.status === 1 
+                        ? 'rgba(76, 175, 80, 0.2)' 
+                        : 'rgba(244, 67, 54, 0.2)'}`
+                    }}
+                  >
+                    <ArgonBox display="flex" alignItems="center" gap={1} mb={1}>
+                      <i 
+                        className="ni ni-chart-bar-32" 
+                        style={{ 
+                          fontSize: '20px', 
+                          color: student.status === 1 ? '#4caf50' : '#f44336'
+                        }} 
+                      />
                       <ArgonTypography variant="body2" color="text" fontWeight="medium">
                         Trạng thái
                       </ArgonTypography>
                     </ArgonBox>
                     <Chip 
                       label={student.status === 1 ? "Đang học" : "Đã nghỉ"} 
-                      color={student.status === 1 ? "success" : "error"} 
+                      color={student.status === 1 ? "success" : "error"}
+                      sx={{ fontWeight: 'bold' }}
                     />
+                  </ArgonBox>
+                </ArgonBox>
+
+                {/* Class Information Section */}
+                <ArgonBox
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                    border: '1px solid rgba(102, 126, 234, 0.15)'
+                  }}
+                >
+                  <ArgonBox display="flex" alignItems="center" gap={1.5} mb={2}>
+                    <ArgonBox
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <i className="ni ni-books" style={{ fontSize: '20px', color: '#667eea' }} />
+                    </ArgonBox>
+                    <ArgonTypography variant="body1" color="dark" fontWeight="bold">
+                      Lớp & năm học hiện tại
+                    </ArgonTypography>
+                  </ArgonBox>
+                  
+                  <ArgonBox display="flex" flexDirection="column" gap={1.5}>
+                    <ArgonBox>
+                      <ArgonTypography variant="body2" color="dark" fontWeight="bold" mb={0.5}>
+                        {classInfo?.name || 'Chưa cập nhật'}
+                        {classInfo?.academicYear && (
+                          <Chip 
+                            label={classInfo.academicYear} 
+                            size="small" 
+                            color="primary"
+                            sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
+                          />
+                        )}
+                      </ArgonTypography>
+                    </ArgonBox>
+                    
+                    {classInfo && (
+                      <>
+                        <ArgonBox display="flex" alignItems="center" gap={1}>
+                          <i className="ni ni-calendar-grid-58" style={{ fontSize: '14px', color: '#667eea' }} />
+                          <ArgonTypography variant="caption" color="text">
+                            <strong>Thời gian:</strong> {formatDate(classInfo.startDate)} - {formatDate(classInfo.endDate)}
+                          </ArgonTypography>
+                        </ArgonBox>
+                        
+                        {classInfo?.teacher && (
+                          <ArgonBox display="flex" alignItems="center" gap={1}>
+                            <i className="ni ni-single-02" style={{ fontSize: '14px', color: '#667eea' }} />
+                            <ArgonTypography variant="caption" color="text">
+                              <strong>Giáo viên chủ nhiệm:</strong> {classInfo.teacher.name || 'Đang cập nhật'}
+                              {classInfo.teacher.phone && ` • ${classInfo.teacher.phone}`}
+                            </ArgonTypography>
+                          </ArgonBox>
+                        )}
+                      </>
+                    )}
+                    
+                    {!classInfo && (
+                      <ArgonTypography variant="caption" color="text.secondary" fontStyle="italic">
+                        Đang cập nhật thông tin lớp học
+                      </ArgonTypography>
+                    )}
                   </ArgonBox>
                 </ArgonBox>
               </CardContent>
             </Card>
+          </Grid>
 
-            {/* Pickup Management */}
-            <Card>
-              <CardContent>
+          {/* Pickup Management */}
+          <Grid item xs={12} lg={4} sx={{ display: "flex" }}>
+            <Card
+              sx={{
+                width: "100%",
+                height: { xs: 'auto', lg: SECTION_HEIGHT },
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              <CardContent
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  overflow: 'hidden'
+                }}
+              >
                 <ArgonBox display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                   <ArgonTypography variant="h6" fontWeight="bold" color="dark">
                     Quản lý người đón
@@ -365,152 +635,90 @@ function ChildInformation() {
                     </ArgonTypography>
                   </ArgonBox>
                 ) : (
-                  <Grid container spacing={2}>
-                    {pickups.map((person, index) => (
-                      <Grid item xs={12} key={person._id || index}>
-                        <Card 
-                          sx={{ 
-                            height: '100%',
-                            border: "1px solid #e0e0e0",
-                            boxShadow: 1,
-                            backgroundColor: "white",
-                            transition: 'all 0.3s ease',
-                            '&:hover': {
-                              boxShadow: 4,
-                              transform: 'translateY(-4px)'
-                            }
-                          }}
-                        >
-                          <CardContent>
-                            <ArgonBox display="flex" alignItems="flex-start" gap={2}>
-                              <Avatar
-                                src={person.avatar_url}
-                                alt={person.full_name}
-                                sx={{ 
-                                  width: 60, 
-                                  height: 60,
-                                  border: '2px solid',
-                                  borderColor: 'primary.main'
-                                }}
-                              >
-                                {person.full_name?.charAt(0) || 'P'}
-                              </Avatar>
-                              <ArgonBox flex={1}>
-                                <ArgonBox display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-                                  <ArgonBox>
-                                    <ArgonTypography variant="body1" fontWeight="bold" color="dark" mb={0.5}>
-                                      {person.full_name}
-                                    </ArgonTypography>
-                                    <Chip 
-                                      label={person.relationship} 
-                                      size="small" 
-                                      color="info"
-                                      sx={{ height: 20, fontSize: '10px' }}
-                                    />
+                  <ArgonBox flex={1} overflow="auto" pr={1}>
+                    <Grid container spacing={2} sx={{ minWidth: '100%' }}>
+                      {pickups.map((person, index) => (
+                        <Grid item xs={12} key={person._id || index}>
+                          <Card 
+                            sx={{ 
+                              height: '100%',
+                              border: "1px solid #e0e0e0",
+                              boxShadow: 1,
+                              backgroundColor: "white",
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                boxShadow: 4,
+                                transform: 'translateY(-4px)'
+                              }
+                            }}
+                          >
+                            <CardContent>
+                              <ArgonBox display="flex" alignItems="flex-start" gap={2}>
+                                <Avatar
+                                  src={person.avatar_url}
+                                  alt={person.full_name}
+                                  sx={{ 
+                                    width: 60, 
+                                    height: 60,
+                                    border: '2px solid',
+                                    borderColor: 'primary.main'
+                                  }}
+                                >
+                                  {person.full_name?.charAt(0) || 'P'}
+                                </Avatar>
+                                <ArgonBox flex={1}>
+                                  <ArgonBox display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                                    <ArgonBox>
+                                      <ArgonTypography variant="body1" fontWeight="bold" color="dark" mb={0.5}>
+                                        {person.full_name}
+                                      </ArgonTypography>
+                                      <Chip 
+                                        label={person.relationship} 
+                                        size="small" 
+                                        color="info"
+                                        sx={{ height: 20, fontSize: '10px' }}
+                                      />
+                                    </ArgonBox>
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => handleMenuOpen(e, person)}
+                                        sx={{ 
+                                          width: 32, 
+                                          height: 32,
+                                          color: 'text.secondary',
+                                          '&:hover': {
+                                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                                            color: 'primary.main'
+                                          }
+                                        }}
+                                      >
+                                        <i className="ni ni-settings-gear-65" style={{ fontSize: '14px' }} />
+                                      </IconButton>
                                   </ArgonBox>
-                                  <IconButton
-                                      size="small"
-                                      onClick={(e) => handleMenuOpen(e, person)}
-                                      sx={{ 
-                                        width: 32, 
-                                        height: 32,
-                                        color: 'text.secondary',
-                                        '&:hover': {
-                                          backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                                          color: 'primary.main'
-                                        }
-                                      }}
-                                    >
-                                      <i className="ni ni-settings-gear-65" style={{ fontSize: '14px' }} />
-                                    </IconButton>
-                                </ArgonBox>
-                                <Divider sx={{ my: 1 }} />
-                                <ArgonBox display="flex" flexDirection="column" gap={0.5}>
-                                  <ArgonTypography variant="body2" color="text">
-                                    📞 {person.phone}
-                                  </ArgonTypography>
-                                  <ArgonTypography variant="body2" color="text">
-                                    CCCD: {person.id_card_number}
-                                  </ArgonTypography>
+                                  <Divider sx={{ my: 1 }} />
+                                  <ArgonBox display="flex" flexDirection="column" gap={0.5}>
+                                    <ArgonTypography variant="body2" color="text">
+                                      📞 {person.phone}
+                                    </ArgonTypography>
+                                    <ArgonTypography variant="body2" color="text">
+                                      CCCD: {person.id_card_number}
+                                    </ArgonTypography>
+                                  </ArgonBox>
                                 </ArgonBox>
                               </ArgonBox>
-                            </ArgonBox>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    ))}
-                  </Grid>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </ArgonBox>
                 )}
               </CardContent>
             </Card>
-
-            {/* Menu for pickup options */}
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              PaperProps={{
-                sx: {
-                  minWidth: 180,
-                  mt: 1,
-                  borderRadius: 2,
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                  border: '1px solid rgba(0,0,0,0.05)'
-                }
-              }}
-              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-            >
-              <MenuItem 
-                onClick={handleEditFromMenu}
-                sx={{
-                  py: 1,
-                  px: 2,
-                  '&:hover': {
-                    backgroundColor: 'rgba(94, 114, 228, 0.08)'
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 32 }}>
-                  <i className="ni ni-settings-gear-65" style={{ fontSize: '16px', color: '#5e72e4' }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Chỉnh sửa"
-                  primaryTypographyProps={{
-                    fontSize: '13px',
-                    fontWeight: 500
-                  }}
-                />
-              </MenuItem>
-              
-              <Divider sx={{ my: 0.5 }} />
-              <MenuItem 
-                onClick={handleDeleteFromMenu}
-                sx={{
-                  py: 1,
-                  px: 2,
-                  '&:hover': {
-                    backgroundColor: 'rgba(244, 67, 54, 0.08)'
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 32 }}>
-                  <i className="ni ni-fat-remove" style={{ fontSize: '16px', color: '#f44336' }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Xóa"
-                  primaryTypographyProps={{
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    color: '#f44336'
-                  }}
-                />
-              </MenuItem>
-            </Menu>
           </Grid>
 
-          {/* Right Column: Health Records */}
-          <Grid item xs={12} lg={8}>
+          {/* Health Records */}
+          <Grid item xs={12}>
             <Card>
               <CardContent>
                 <ArgonTypography variant="h6" fontWeight="bold" color="dark" mb={3}>
@@ -599,6 +807,70 @@ function ChildInformation() {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Menu for pickup options */}
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+          PaperProps={{
+            sx: {
+              minWidth: 180,
+              mt: 1,
+              borderRadius: 2,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+              border: '1px solid rgba(0,0,0,0.05)'
+            }
+          }}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        >
+          <MenuItem 
+            onClick={handleEditFromMenu}
+            sx={{
+              py: 1,
+              px: 2,
+              '&:hover': {
+                backgroundColor: 'rgba(94, 114, 228, 0.08)'
+              }
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 32 }}>
+              <i className="ni ni-settings-gear-65" style={{ fontSize: '16px', color: '#5e72e4' }} />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Chỉnh sửa"
+              primaryTypographyProps={{
+                fontSize: '13px',
+                fontWeight: 500
+              }}
+            />
+          </MenuItem>
+          
+          <Divider sx={{ my: 0.5 }} />
+          <MenuItem 
+            onClick={handleDeleteFromMenu}
+            sx={{
+              py: 1,
+              px: 2,
+              '&:hover': {
+                backgroundColor: 'rgba(244, 67, 54, 0.08)'
+              }
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 32 }}>
+              <i className="ni ni-fat-remove" style={{ fontSize: '16px', color: '#f44336' }} />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Xóa"
+              primaryTypographyProps={{
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#f44336'
+              }}
+            />
+          </MenuItem>
+        </Menu>
       </ArgonBox>
 
       {/* Pickup Modal */}
@@ -709,6 +981,8 @@ function ChildInformation() {
           </Button>
         </DialogActions>
       </Dialog>
+            <Footer />
+
     </DashboardLayout>
   );
 }

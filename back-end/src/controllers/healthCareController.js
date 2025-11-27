@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const { Class, Student, StudentClass, HealthRecord, HealthNotice, HealthCareStaff } = require('../models');
 const User = require('../models/User');
 
@@ -132,6 +133,24 @@ exports.updateHealthRecord = async (req, res) => {
 };
 
 /**
+ * DELETE /health-staff/health/records/:record_id
+ * Xóa sổ sức khỏe học sinh
+ */
+exports.deleteHealthRecord = async (req, res) => {
+  try {
+    const { record_id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(record_id)) {
+      return res.status(400).json({ error: 'record_id không hợp lệ' });
+    }
+    const deleted = await HealthRecord.findByIdAndDelete(record_id);
+    if (!deleted) return res.status(404).json({ error: 'Không tìm thấy record để xóa' });
+    return res.json({ message: 'Đã xóa sổ sức khoẻ thành công' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+/**
  * GET /health-staff/health/notices?student_id=...
  * Lấy danh sách thông báo y tế của một học sinh
  */
@@ -183,6 +202,49 @@ exports.createHealthNotice = async (req, res) => {
 };
 
 /**
+ * PUT /health-staff/health/notices/:notice_id
+ * Cập nhật thông báo y tế
+ */
+exports.updateHealthNotice = async (req, res) => {
+  try {
+    const { notice_id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(notice_id)) {
+      return res.status(400).json({ error: 'notice_id không hợp lệ' });
+    }
+    const { symptoms, actions_taken, medications, notice_time, note } = req.body;
+    const notice = await HealthNotice.findById(notice_id);
+    if (!notice) return res.status(404).json({ error: 'Không tìm thấy notice' });
+    if (symptoms) notice.symptoms = symptoms;
+    if (actions_taken) notice.actions_taken = actions_taken;
+    if (medications) notice.medications = medications;
+    if (notice_time) notice.notice_time = notice_time;
+    if (note) notice.note = note;
+    await notice.save();
+    return res.json({ message: 'Đã cập nhật thông báo y tế thành công', notice });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+/**
+ * DELETE /health-staff/health/notices/:notice_id
+ * Xóa thông báo y tế
+ */
+exports.deleteHealthNotice = async (req, res) => {
+  try {
+    const { notice_id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(notice_id)) {
+      return res.status(400).json({ error: 'notice_id không hợp lệ' });
+    }
+    const deleted = await HealthNotice.findByIdAndDelete(notice_id);
+    if (!deleted) return res.status(404).json({ error: 'Không tìm thấy notice để xóa' });
+    return res.json({ message: 'Đã xóa thông báo y tế thành công' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+/**
  * GET /health-staff/profile
  * Lấy thông tin profile của staff
  */
@@ -211,12 +273,11 @@ exports.updateStaffProfile = async (req, res) => {
     if (!user || user.role !== 'health_care_staff') return res.status(403).json({ error: 'Không đúng vai trò health care staff' });
 
     // update user fields if present
-    const { full_name, avatar_url, email, phone_number, password } = req.body;
+    const { full_name, avatar_url, email, phone_number } = req.body;
     if (full_name) user.full_name = full_name;
     if (avatar_url) user.avatar_url = avatar_url;
     if (email) user.email = email;
     if (phone_number) user.phone_number = phone_number;
-    if (password) user.password_hash = await require('bcryptjs').hash(password, 12);
     await user.save();
 
     // update health care staff
@@ -230,6 +291,55 @@ exports.updateStaffProfile = async (req, res) => {
     await staff.save();
 
     return res.json({ message: 'Cập nhật profile thành công', user, staff });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+exports.changeStaffPassword = async (req, res) => {
+  try {
+    const userId = req?.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Chưa đăng nhập' });
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'health_care_staff') {
+      return res.status(403).json({ error: 'Không đúng vai trò health care staff' });
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = req.body || {};
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: 'Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới' });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'Xác nhận mật khẩu mới không khớp' });
+    }
+    if (newPassword === currentPassword) {
+      return res.status(400).json({ error: 'Mật khẩu mới phải khác mật khẩu hiện tại' });
+    }
+    if (newPassword.length < 8 || newPassword.length > 16) {
+      return res.status(400).json({ error: 'Mật khẩu phải có từ 8-16 ký tự' });
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 1 chữ hoa' });
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 1 chữ thường' });
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 1 số' });
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+      return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash || '');
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Mật khẩu hiện tại không đúng' });
+    }
+
+    user.password_hash = await bcrypt.hash(newPassword, 12);
+    await user.save();
+
+    return res.json({ message: 'Đổi mật khẩu thành công' });
   } catch (err) {
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }

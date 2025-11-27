@@ -32,7 +32,40 @@ const schoolSchema = new mongoose.Schema({
   },
   qr_data: {
     type: String,
-    unique: true
+  },
+  payos_config: {
+    client_id: {
+      type: String,
+      trim: true
+    },
+    api_key: {
+      type: String,
+      trim: true
+    },
+    checksum_key: {
+      type: String,
+      trim: true
+    },
+    account_number: {
+      type: String,
+      trim: true
+    },
+    account_name: {
+      type: String,
+      trim: true
+    },
+    bank_code: {
+      type: String,
+      trim: true
+    },
+    active: {
+      type: Boolean,
+      default: false
+    },
+    webhook_url: {
+      type: String,
+      trim: true
+    }
   }
 }, {
   timestamps: true

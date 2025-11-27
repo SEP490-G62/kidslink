@@ -56,8 +56,8 @@ class ApiService {
         // Clear invalid token
         localStorage.removeItem('token');
         // Redirect to login if not already there
-        if (window.location.pathname !== '/auth/login') {
-          window.location.href = '/auth/login';
+        if (window.location.pathname !== '/authentication/sign-in') {
+          window.location.href = '/authentication/sign-in';
         }
         throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       }
@@ -68,7 +68,15 @@ class ApiService {
         data: data
       });
       
-      throw new Error((data && (data.error || data.details)) || `HTTP error! status: ${response.status}`);
+      // Extract error message from various possible formats
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      if (data) {
+        if (data.message) errorMessage = data.message;
+        else if (data.error) errorMessage = data.error;
+        else if (data.details) errorMessage = data.details;
+      }
+      
+      throw new Error(errorMessage);
     }
     
     return data;
@@ -120,6 +128,22 @@ class ApiService {
       return await this.handleResponse(response);
     } catch (error) {
       console.error(`API PUT Error (${endpoint}):`, error);
+      throw error;
+    }
+  }
+
+  // PATCH request
+  async patch(endpoint, data, includeAuth = true) {
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'PATCH',
+        headers: this.getHeaders(includeAuth),
+        body: JSON.stringify(data),
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error(`API PATCH Error (${endpoint}):`, error);
       throw error;
     }
   }

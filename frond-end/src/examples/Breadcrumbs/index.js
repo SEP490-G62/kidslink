@@ -54,7 +54,26 @@ function Breadcrumbs({ icon, title, route, light }) {
       'settings': 'Cài đặt',
       'notifications': 'Thông báo',
       'help': 'Trợ giúp',
-      'logout': 'Đăng xuất'
+      'logout': 'Đăng xuất',
+      'school-admin': 'Quản trị viên trường',
+      'classes': 'Lớp học',
+      'children': 'Học sinh',
+      'calendar': 'Lịch học',
+      'posts': 'Bài viết',
+      'fees': 'Học phí',
+      'accounts': 'Tài khoản',
+      'complaints': 'Khiếu nại & Góp ý',
+      'school-info': 'Thông tin trường',
+      'profile': 'Hồ sơ',
+      'settings': 'Cài đặt',
+      'notifications': 'Thông báo',
+      'help': 'Trợ giúp',
+      'logout': 'Đăng xuất',
+      'school-admin': 'Quản trị viên trường',
+      'attendance': 'Điểm danh',
+      'fees': 'Phí',
+      'school-info': 'Thông tin trường',
+      'complaints': 'Đơn',
     };
     
     return translations[routeName] || routeName;
@@ -86,6 +105,15 @@ function Breadcrumbs({ icon, title, route, light }) {
       'logout': 'Đăng xuất',
       'attendance': 'Điểm danh',
       'classes': 'Lớp học',
+      'schedule': 'Lịch học',
+      'school-admin': 'Quản trị viên trường',
+      'fees': 'Phí',
+      'school-info': 'Thông tin trường',
+      'complaints': 'Đơn',
+      'accounts': 'Tài khoản',
+      'children': 'Học sinh',
+      'students': 'Học sinh',
+      'schools': 'Trường học',
     };
     
     return titleTranslations[titleName] || titleName.replace("-", " ");

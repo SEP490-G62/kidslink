@@ -28,14 +28,16 @@
     "chroma-js": "2.4.2",
     "date-fns": "^4.1.0",
     "prop-types": "15.8.1",
-    "react": ">=16.8.0",
+    "react": "18.2.0",
     "react-chartjs-2": "3.0.4",
     "react-countup": "6.4.2",
-    "react-dom": ">=16.8.0",
+    "react-dom": "18.2.0",
     "react-github-btn": "1.4.0",
     "react-perfect-scrollbar": "1.5.8",
+    "react-qr-code": "^2.0.18",
     "react-router-dom": "6.11.1",
     "react-scripts": "5.0.1",
+    "socket.io-client": "^4.8.1",
     "stylis": "4.2.0",
     "stylis-plugin-rtl": "2.1.1",
     "swiper": "9.3.2",
@@ -67,8 +69,8 @@
     ]
   },
   "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "eslint": "8.40.0",

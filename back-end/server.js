@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -6,17 +8,48 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 const router = require("./src/routes/index.js");
 const connectDB = require('./src/config/database');
+const { initializeSocket } = require('./src/utils/socket');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Khởi tạo Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true
+  },
+  // Tăng giới hạn kích thước gói để nhận ảnh lớn hơn (mặc định ~1MB)
+  maxHttpBufferSize: 20 * 1024 * 1024 // 20MB
+});
+
+// Khởi tạo socket handlers
+initializeSocket(io);
 
 // Middleware bảo mật
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration with whitelist (supports multiple dev origins)
+const defaultOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+const envOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const allowedOrigins = envOrigins.length ? envOrigins : defaultOrigins;
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow non-browser requests or same-origin without Origin header
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`CORS blocked: origin ${origin} not in whitelist: ${allowedOrigins.join(', ')}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
 }));
 
 // Rate limiting
@@ -80,10 +113,13 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server đang chạy trên port ${PORT}`);
   console.log(`📱 Health check: http://localhost:${PORT}/health`);
+  console.log(`🌐 API Base URL: http://localhost:${PORT}`);
+  console.log(`🔐 CORS allowed origins: ${allowedOrigins.join(', ') || 'none'}`);
   console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
+  console.log(`🔌 Socket.IO đã sẵn sàng`);
 });
 
-module.exports = app;
+module.exports = { app, server, io };
