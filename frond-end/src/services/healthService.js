@@ -130,6 +130,15 @@ class HealthService {
     }
   }
 
+  async changePassword(payload) {
+    try {
+      const data = await apiService.put('/health-staff/change-password', payload);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message || 'Lỗi đổi mật khẩu' };
+    }
+  }
+
   /**
    * Xoá sổ sức khoẻ
    */
