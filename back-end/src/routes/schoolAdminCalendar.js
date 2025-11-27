@@ -4,6 +4,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 const {
   getClassCalendars,
   createOrUpdateCalendarEntry,
+  bulkUpsertCalendars,
   deleteCalendarEntry,
   getAllActivities,
   createActivity,
@@ -26,6 +27,8 @@ router.use(authorize(['school_admin', 'admin']));
 
 // Calendar Entry Routes
 router.get('/class/:classId', getClassCalendars);
+// Đặt route bulk TRƯỚC route có param để tránh bị bắt nhầm :calendarId = 'bulk'
+router.post('/calendar/bulk', bulkUpsertCalendars);
 router.post('/calendar/:calendarId', createOrUpdateCalendarEntry);
 router.delete('/calendar/:calendarId', deleteCalendarEntry);
 

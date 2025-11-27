@@ -5,6 +5,9 @@
   "activity_name": "Reading Time",
   "description": "Story reading",
   "require_outdoor": 0,
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -19,6 +22,9 @@
   "activity_name": "Outdoor Play",
   "description": "Play at playground",
   "require_outdoor": 1,
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
@@ -33,10 +39,67 @@
   "activity_name": "Nap Time",
   "description": "Afternoon nap",
   "require_outdoor": 0,
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
   "createdAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   },
   "updatedAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   }
+},
+{
+  "_id": {
+    "$oid": "6922e6c274c776358977a30c"
+  },
+  "activity_name": "sfngladng",
+  "description": "sdfvashnv",
+  "require_outdoor": 0,
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "createdAt": {
+    "$date": "2025-11-23T10:49:38.273Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-23T10:49:38.273Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6922e6d274c776358977a310"
+  },
+  "activity_name": "fvv",
+  "description": "bfsdfbves",
+  "require_outdoor": 0,
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "createdAt": {
+    "$date": "2025-11-23T10:49:54.352Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-23T10:49:54.352Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6922eddda48de2bf38c944ea"
+  },
+  "activity_name": "zxcvbnm",
+  "description": "SDFGHJKL;",
+  "require_outdoor": 1,
+  "school_id": {
+    "$oid": "671000000000000000000001"
+  },
+  "createdAt": {
+    "$date": "2025-11-23T11:19:57.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-23T11:19:57.824Z"
+  },
+  "__v": 0
 }]

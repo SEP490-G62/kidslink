@@ -14,6 +14,11 @@ const activitySchema = new mongoose.Schema({
   require_outdoor: {
     type: Number,
     default: 0 // 0: indoor, 1: outdoor
+  },
+  school_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true
   }
 }, {
   timestamps: true

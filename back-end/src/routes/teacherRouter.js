@@ -13,6 +13,7 @@ const {
   getClassStudents,
   getStudentsAttendanceByDate,
   getTeacherLatestClassCalendar,
+  getTeacherTeachingCalendar,
   getMyProfile,
   updateMyProfile,
   uploadMyAvatar
@@ -69,6 +70,7 @@ router.get('/class', authorize(['teacher']), getTeacherClasses);
 router.get('/class/students', authorize(['teacher']), getClassStudents);
 router.get('/class/students/attendance/:date', authorize(['teacher']), getStudentsAttendanceByDate);
 router.get('/class-calendar', authorize(['teacher']), getTeacherLatestClassCalendar);
+router.get('/teaching-calendar', authorize(['teacher']), getTeacherTeachingCalendar);
 router.get('/class-calendar/slots', authorize(['teacher']), getClassTimeSlots);
 
 // Xem thông tin chi tiết học sinh

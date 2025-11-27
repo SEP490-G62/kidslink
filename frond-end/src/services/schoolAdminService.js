@@ -115,6 +115,10 @@ const schoolAdminService = {
     return await api.post(`/school-admin/calendar/calendar/${calendarId}`, entryData, true);
   },
 
+  bulkUpsertCalendars: async (entries) => {
+    return await api.post('/school-admin/calendar/calendar/bulk', { entries }, true);
+  },
+
   deleteCalendarEntry: async (calendarId) => {
     return await api.delete(`/school-admin/calendar/calendar/${calendarId}`, true);
   },
