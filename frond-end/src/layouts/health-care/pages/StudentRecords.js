@@ -173,9 +173,11 @@ export default function StudentRecords() {
     if (payload.weight_kg === "" || Number.isNaN(weight) || weight <= 0) {
       errors.weight_kg = "Cân nặng phải lớn hơn 0";
     }
+    if (!payload.note?.trim()) {
+      errors.note = "Ghi chú là bắt buộc";
+    }
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
-      alert("Vui lòng nhập đầy đủ các trường bắt buộc.");
       return false;
     }
     return true;
@@ -603,6 +605,8 @@ export default function StudentRecords() {
                     onChange={onChange}
                     multiline
                     rows={4}
+                    error={!!formErrors.note}
+                    helperText={formErrors.note}
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         "&:hover fieldset": {

@@ -170,9 +170,17 @@ export default function StudentNotices() {
     if (!payload.symptoms?.trim()) {
       errors.symptoms = "Triệu chứng là bắt buộc";
     }
+    if (!payload.actions_taken?.trim()) {
+      errors.actions_taken = "Hành động là bắt buộc";
+    }
+    if (!payload.medications?.trim()) {
+      errors.medications = "Thuốc đã dùng là bắt buộc";
+    }
+    if (!payload.note?.trim()) {
+      errors.note = "Ghi chú là bắt buộc";
+    }
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
-      alert("Vui lòng nhập đầy đủ các trường bắt buộc.");
       return false;
     }
     return true;
@@ -553,6 +561,8 @@ export default function StudentNotices() {
                     onChange={onChange}
                     multiline
                     rows={2}
+                    error={!!formErrors.actions_taken}
+                    helperText={formErrors.actions_taken}
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         "&:hover fieldset": {
@@ -584,6 +594,8 @@ export default function StudentNotices() {
                     placeholder="Ví dụ: Paracetamol 500mg, 1 viên..."
                     value={payload.medications}
                     onChange={onChange}
+                    error={!!formErrors.medications}
+                    helperText={formErrors.medications}
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         "&:hover fieldset": {
@@ -608,6 +620,8 @@ export default function StudentNotices() {
                     onChange={onChange}
                     multiline
                     rows={3}
+                    error={!!formErrors.note}
+                    helperText={formErrors.note}
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         "&:hover fieldset": {
