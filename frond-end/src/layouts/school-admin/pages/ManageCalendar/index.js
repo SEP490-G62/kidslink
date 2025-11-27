@@ -17,13 +17,16 @@ import MenuItem from "@mui/material/MenuItem";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
 import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuList from "@mui/material/MenuList";
+import Box from "@mui/material/Box";
 import { useEffect, useMemo, useState } from "react";
 
 // Argon Dashboard 2 MUI components
@@ -33,11 +36,15 @@ import ArgonButton from "components/ArgonButton";
 
 // Argon Dashboard 2 MUI example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+import Footer from "examples/Footer";
 import schoolAdminService from "services/schoolAdminService";
 import api from "services/api";
 import SlotModal from "./SlotModal";
 import SlotTemplateModal from "./SlotTemplateModal";
+import SlotManagementModal from "./SlotManagementModal";
 import ActivityModal from "./ActivityModal";
+import ApplyDefaultScheduleModal from "./ApplyDefaultScheduleModal";
 
 function ManageCalendar() {
   const [loading, setLoading] = useState(true);
@@ -49,6 +56,7 @@ function ManageCalendar() {
   const [selectedWeek, setSelectedWeek] = useState(0);
   const [slotModalOpen, setSlotModalOpen] = useState(false);
   const [slotTemplateModalOpen, setSlotTemplateModalOpen] = useState(false);
+  const [slotManagementModalOpen, setSlotManagementModalOpen] = useState(false);
   const [activityModalOpen, setActivityModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [preSelectedSlot, setPreSelectedSlot] = useState(null);
@@ -56,6 +64,12 @@ function ManageCalendar() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedSlotForMenu, setSelectedSlotForMenu] = useState(null);
+  const [applyDefaultModalOpen, setApplyDefaultModalOpen] = useState(false);
+
+  // Đặt tiêu đề trang
+  useEffect(() => {
+    document.title = "Quản lý lịch học - KidsLink";
+  }, []);
 
   // Tính toán ngày bắt đầu tuần (Thứ 2)
   const getMonday = (date) => {
@@ -119,15 +133,25 @@ function ManageCalendar() {
 
   const fetchClasses = async () => {
     try {
+      setLoading(true);
       const res = await api.get("/classes", true);
       const classesData = res.data?.data || res.data || [];
       setClasses(classesData);
+      
+      // Tự động chọn class đầu tiên có cùng school_id (backend đã filter)
       if (classesData.length > 0) {
-        setSelectedClass(classesData[0]._id);
+        const firstClassId = classesData[0]._id;
+        setSelectedClass(firstClassId);
+        // fetchCalendar sẽ được gọi tự động bởi useEffect khi selectedClass thay đổi
+        // Không set loading = false ở đây vì fetchCalendar sẽ quản lý loading state
+      } else {
+        setError("Không có lớp học nào. Vui lòng tạo lớp học trước.");
+        setLoading(false);
       }
     } catch (e) {
       console.error("Error fetching classes:", e);
       setError("Không thể tải danh sách lớp học");
+      setLoading(false);
     }
   };
 
@@ -191,13 +215,52 @@ function ManageCalendar() {
   }, [predefinedSlots]);
 
   const years = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const yearsList = [];
-    for (let i = currentYear - 2; i <= currentYear + 2; i++) {
-      yearsList.push(i);
+    if (!selectedClass) {
+      // Nếu chưa chọn lớp, dùng năm hiện tại +/- 1
+      const currentYear = new Date().getFullYear();
+      return [currentYear - 1, currentYear, currentYear + 1];
     }
-    return yearsList;
-  }, []);
+    
+    // Lấy thông tin lớp được chọn
+    const selectedClassData = classes.find(c => c._id === selectedClass);
+    
+    if (!selectedClassData) {
+      const currentYear = new Date().getFullYear();
+      return [currentYear - 1, currentYear, currentYear + 1];
+    }
+    
+    // Ưu tiên dùng academic_year, nếu không có thì dùng start_date và end_date
+    let startYear, endYear;
+    
+    if (selectedClassData.academic_year) {
+      // Parse academic_year (có thể là "2024-2025" hoặc chỉ "2024")
+      const academicYear = selectedClassData.academic_year;
+      if (academicYear.includes('-')) {
+        const parts = academicYear.split('-');
+        startYear = parseInt(parts[0], 10);
+        endYear = parseInt(parts[1], 10);
+      } else {
+        startYear = parseInt(academicYear, 10);
+        endYear = startYear;
+      }
+    } else if (selectedClassData.start_date && selectedClassData.end_date) {
+      // Dùng start_date và end_date
+      startYear = new Date(selectedClassData.start_date).getFullYear();
+      endYear = new Date(selectedClassData.end_date).getFullYear();
+    } else {
+      // Fallback
+      const currentYear = new Date().getFullYear();
+      return [currentYear - 1, currentYear, currentYear + 1];
+    }
+    
+    // Tạo danh sách năm từ năm bắt đầu đến năm kết thúc
+    const yearsList = [];
+    for (let y = startYear; y <= endYear; y++) {
+      yearsList.push(y);
+    }
+    
+    return yearsList.length > 0 ? yearsList : [new Date().getFullYear()];
+  }, [selectedClass, classes]);
 
   const formatWeekRange = () => {
     const monday = getSelectedWeekMonday();
@@ -341,6 +404,7 @@ function ManageCalendar() {
 
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <ArgonBox py={3}>
         {/* Header với gradient background */}
         <ArgonBox 
@@ -368,16 +432,15 @@ function ManageCalendar() {
                 )}
               </ArgonTypography>
             </ArgonBox>
-            <ArgonBox display="flex" gap={1}>
+            <ArgonBox display="flex" gap={1} flexWrap="wrap">
               <ArgonButton 
                 color="white" 
                 onClick={() => {
-                  setSelectedSlotTemplate(null);
-                  setSlotTemplateModalOpen(true);
+                  setSlotManagementModalOpen(true);
                 }}
                 sx={{ color: '#667eea' }}
               >
-                <i className="fas fa-clock mr-2" /> Thêm Tiết Học
+                <i className="fas fa-clock mr-2" /> Quản lý tiết học
               </ArgonButton>
               <ArgonButton 
                 color="white" 
@@ -385,6 +448,19 @@ function ManageCalendar() {
                 sx={{ color: '#667eea' }}
               >
                 <i className="fas fa-book mr-2" /> Quản lý Môn Học
+              </ArgonButton>
+              <ArgonButton 
+                color="success" 
+                onClick={() => {
+                  if (!calendarData || !calendarData.calendars || calendarData.calendars.length === 0) {
+                    alert("Tuần hiện tại chưa có lịch học nào để đặt mặc định. Vui lòng tạo lịch trước.");
+                    return;
+                  }
+                  setApplyDefaultModalOpen(true);
+                }}
+                disabled={!selectedClass}
+              >
+                <i className="fas fa-magic mr-2" /> Đặt Lịch Mặc Định
               </ArgonButton>
             </ArgonBox>
           </ArgonBox>
@@ -519,42 +595,49 @@ function ManageCalendar() {
               </ArgonBox>
             ) : (
               <>
-                {/* Weekly Schedule Grid with Fixed Slot Column */}
-                <Table 
+                {/* Weekly Schedule Grid */}
+                <TableContainer 
+                  component={Paper} 
                   sx={{ 
-                    minWidth: 800,
-                    width: '100%',
-                    borderCollapse: 'separate',
-                    borderSpacing: 0,
-                    border: '1px solid #e9ecef',
+                    overflowX: 'auto',
                     borderRadius: 2,
-                    overflow: 'hidden',
-                    '& .MuiTableCell-root': {
-                      padding: '0 !important',
-                      border: '1px solid #e9ecef',
-                      boxSizing: 'border-box !important',
-                      verticalAlign: 'top'
-                    }
+                    border: '1px solid #e9ecef'
                   }}
                 >
-                  <TableBody>
-                    {/* Day Headers Row */}
-                    <TableRow>
-                      {/* Empty cell for slot column header */}
-                      <TableCell 
-                        align="center"
-                        sx={{ 
-                          p: '16px 12px !important',
-                          backgroundColor: '#f8f9fa',
-                          borderBottom: '2px solid #dee2e6',
-                          width: '150px !important',
-                          minWidth: '150px'
-                        }}
-                      >
-                        <Typography variant="subtitle1" fontWeight="bold" sx={{ color: '#495057' }}>
-                          Tiết học
-                        </Typography>
-                      </TableCell>
+                  <Table 
+                    sx={{ 
+                      minWidth: 800,
+                      width: '100%',
+                      tableLayout: 'fixed',
+                      borderCollapse: 'separate',
+                      borderSpacing: 0,
+                      '& .MuiTableCell-root': {
+                        padding: '0 !important',
+                        border: '1px solid #e9ecef',
+                        boxSizing: 'border-box !important',
+                        verticalAlign: 'top',
+                        width: `${100 / (weekDays.length + 1)}% !important`
+                      }
+                    }}
+                  >
+                    <TableBody>
+                      {/* Day Headers Row */}
+                      <TableRow>
+                        {/* Time column header */}
+                        <TableCell 
+                          align="center"
+                          sx={{ 
+                            p: '16px 12px !important',
+                            backgroundColor: '#f1f3f5',
+                            borderBottom: '2px solid #dee2e6',
+                            width: '120px !important',
+                            maxWidth: '140px !important'
+                          }}
+                        >
+                          <ArgonTypography variant="subtitle2" fontWeight="bold" color="text">
+                            Thời gian
+                          </ArgonTypography>
+                        </TableCell>
                       {/* Day headers */}
                       {weekDays.map(day => (
                         <TableCell 
@@ -607,89 +690,54 @@ function ManageCalendar() {
                     {/* Slot Rows */}
                     {uniqueSlots.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={weekDays.length + 1} sx={{ p: '24px !important' }}>
-                          <ArgonBox textAlign="center">
-                            <Typography variant="body2" color="text.secondary" mb={2}>
-                              Chưa có tiết học nào. Hãy thêm tiết học mới.
-                            </Typography>
-                            <ArgonButton 
-                              color="info" 
-                              size="small"
-                              onClick={() => {
-                                setSelectedSlotTemplate(null);
-                                setSlotTemplateModalOpen(true);
-                              }}
-                            >
-                              + Thêm tiết học đầu tiên
-                            </ArgonButton>
-                          </ArgonBox>
+                        <TableCell colSpan={weekDays.length + 1} align="center" sx={{ p: '24px !important' }}>
+                          <Typography variant="body2" color="text.secondary">Không có hoạt động</Typography>
                         </TableCell>
                       </TableRow>
                     ) : (
                       uniqueSlots.map((slotTemplate, slotIdx) => (
                         <TableRow key={slotIdx}>
-                          {/* Slot Name Column (Fixed) */}
-                          <TableCell
+                          {/* Time Column */}
+                          <TableCell 
+                            align="center"
                             sx={{
                               p: '12px !important',
-                              backgroundColor: '#f8f9fa',
-                              width: '150px !important',
-                              minWidth: '150px'
+                              backgroundColor: '#fff',
+                              color: '#495057',
+                              borderRight: '2px solid #e9ecef'
                             }}
                           >
-                            <ArgonBox display="flex" justifyContent="space-between" alignItems="center">
-                              <ArgonBox flex={1}>
-                                <ArgonTypography 
-                                  variant="caption" 
-                                  fontWeight="bold" 
-                                  sx={{ 
-                                    color: '#495057',
-                                    display: 'block',
-                                    mb: 0.5
-                                  }}
-                                >
-                                  {slotTemplate.slotName}
-                                </ArgonTypography>
-                                <Chip
-                                  label={`${slotTemplate.startTime}-${slotTemplate.endTime}`}
-                                  size="small"
-                                  sx={{
-                                    height: 20,
-                                    fontSize: '0.7rem',
-                                    backgroundColor: '#4caf50',
-                                    color: '#fff',
-                                    fontWeight: 600
-                                  }}
-                                />
-                              </ArgonBox>
-                              <ArgonBox display="flex" flexDirection="column" gap={0.5}>
+                            <ArgonBox>
+                              <ArgonTypography variant="button" fontWeight="bold" sx={{ color: '#343a40', display: 'block', mb: 0.5 }}>
+                                {slotTemplate.slotName || 'Khung giờ'}
+                              </ArgonTypography>
+                              <Chip
+                                label={`${slotTemplate.startTime || '00:00'} - ${slotTemplate.endTime || '00:00'}`}
+                                size="small"
+                                sx={{
+                                  height: 22,
+                                  fontSize: '0.72rem',
+                                  backgroundColor: '#e9f7ef',
+                                  color: '#2e7d32',
+                                  fontWeight: 600
+                                }}
+                              />
+                              <ArgonBox display="flex" justifyContent="center" gap={0.5} mt={1}>
                                 <IconButton
                                   size="small"
                                   onClick={() => {
-                                    setSelectedSlotTemplate({
+                                    setSelectedSlotForDefault({
                                       id: slotTemplate.id,
                                       slotName: slotTemplate.slotName,
                                       startTime: slotTemplate.startTime,
                                       endTime: slotTemplate.endTime
                                     });
-                                    setSlotTemplateModalOpen(true);
+                                    setApplyDefaultModalOpen(true);
                                   }}
-                                  sx={{ color: '#1976d2', padding: '2px' }}
-                                  title="Sửa tiết học"
+                                  sx={{ color: '#4caf50', padding: '4px' }}
+                                  title="Đặt lịch mặc định cho tiết này"
                                 >
-                                  <i className="fas fa-edit" style={{ fontSize: 10 }} />
-                                </IconButton>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => {
-                                    if (window.confirm(`Bạn có chắc muốn xóa tiết học "${slotTemplate.slotName}"? Tất cả các tiết học này trong tuần sẽ bị xóa.`)) {
-                                      handleDeleteSlotTemplate(slotTemplate);
-                                    }
-                                  }}
-                                  sx={{ color: '#f44336', padding: '2px' }}
-                                  title="Xóa tiết học"
-                                >
-                                  <i className="fas fa-trash" style={{ fontSize: 10 }} />
+                                  <i className="fas fa-magic" style={{ fontSize: 12 }} />
                                 </IconButton>
                               </ArgonBox>
                             </ArgonBox>
@@ -701,12 +749,12 @@ function ManageCalendar() {
                             
                             return (
                               <TableCell 
-                                key={`${slotIdx}-${day.isoDate}`}
+                                key={`cell-${day.isoDate}-${slotTemplate.id || slotIdx}`}
                                 sx={{
                                   p: '8px !important',
                                   backgroundColor: day.isToday ? '#f8fbff' : '#fff',
-                                  minHeight: 120,
-                                  height: 120
+                                  verticalAlign: 'top',
+                                  height: 110
                                 }}
                               >
                                 {slot ? (
@@ -714,45 +762,58 @@ function ManageCalendar() {
                                     onClick={(e) => handleSlotClick(e, slot, day)}
                                     sx={{
                                       borderRadius: 2,
-                                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                      boxShadow: '0 4px 12px rgba(25, 118, 210, 0.08)',
                                       backgroundColor: '#fff',
-                                      height: '100%',
+                                      border: '1px solid #e9ecef',
+                                      overflow: 'hidden',
                                       cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
                                       transition: 'all 0.2s',
+                                      minHeight: 100,
+                                      height: '100%',
+                                      display: 'flex',
+                                      flexDirection: 'column',
                                       '&:hover': {
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                        boxShadow: '0 6px 16px rgba(25, 118, 210, 0.12)',
                                         transform: 'translateY(-2px)'
                                       }
                                     }}
                                   >
-                                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, textAlign: 'center' }}>
-                                      <ArgonTypography 
-                                        variant="body2" 
-                                        fontWeight="bold" 
-                                        sx={{ 
-                                          color: '#1976d2',
-                                          fontSize: '0.875rem',
-                                          lineHeight: 1.4,
-                                          mb: 0.5
-                                        }}
-                                      >
-                                        {slot.activity?.name || 'Hoạt động'}
-                                      </ArgonTypography>
-                                      {slot.activity?.require_outdoor === 1 && (
-                                        <Chip
-                                          label="Ngoài trời"
-                                          size="small"
-                                          sx={{
-                                            height: 16,
-                                            fontSize: '0.6rem',
-                                            backgroundColor: '#81c784',
-                                            color: '#fff'
+                                    <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 }, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                      <ArgonBox sx={{ flex: 1, minWidth: 0 }}>
+                                        <ArgonTypography 
+                                          variant="body1" 
+                                          fontWeight="bold" 
+                                          sx={{ 
+                                            mb: 1.5,
+                                            color: '#1976d2',
+                                            fontSize: '1.05rem',
+                                            lineHeight: 1.5,
+                                            minHeight: 48,
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            letterSpacing: '0.01em'
                                           }}
-                                        />
-                                      )}
+                                        >
+                                          {slot.activity?.name || slot.slotName || 'Hoạt động'}
+                                        </ArgonTypography>
+                                        <ArgonBox display="flex" alignItems="center" mt="auto">
+                                          <Typography 
+                                            variant="body2" 
+                                            sx={{ 
+                                              fontSize: '0.875rem',
+                                              color: '#495057',
+                                              fontWeight: 500,
+                                              whiteSpace: 'nowrap',
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis'
+                                            }}
+                                          >
+                                            {slot.teacher?.fullName || calendarData?.class?.teacher?.fullName || 'Chưa xác định'}
+                                          </Typography>
+                                        </ArgonBox>
+                                      </ArgonBox>
                                     </CardContent>
                                   </Card>
                                 ) : (
@@ -799,20 +860,8 @@ function ManageCalendar() {
                     )}
                   </TableBody>
                 </Table>
+                </TableContainer>
                 
-                {/* Add New Slot Button */}
-                <ArgonBox mt={3} textAlign="center">
-                  <ArgonButton 
-                    color="info" 
-                    variant="outlined"
-                    onClick={() => {
-                      setSelectedSlotTemplate(null);
-                      setSlotTemplateModalOpen(true);
-                    }}
-                  >
-                    + Thêm tiết học mới
-                  </ArgonButton>
-                </ArgonBox>
               </>
             )}
           </CardContent>
@@ -820,6 +869,16 @@ function ManageCalendar() {
       </ArgonBox>
 
       {/* Modals */}
+      <SlotManagementModal
+        open={slotManagementModalOpen}
+        onClose={() => {
+          setSlotManagementModalOpen(false);
+        }}
+        onSuccess={() => {
+          fetchCalendar();
+        }}
+      />
+
       <SlotTemplateModal
         open={slotTemplateModalOpen}
         onClose={() => {
@@ -855,6 +914,21 @@ function ManageCalendar() {
         onClose={() => setActivityModalOpen(false)}
       />
 
+      <ApplyDefaultScheduleModal
+        open={applyDefaultModalOpen}
+        onClose={() => {
+          setApplyDefaultModalOpen(false);
+        }}
+        classId={selectedClass}
+        classEndDate={classes.find(c => c._id === selectedClass)?.end_date}
+        weeklyCalendars={calendarData?.calendars || []}
+        timeSlots={calendarData?.timeSlots || []}
+        onSuccess={() => {
+          setApplyDefaultModalOpen(false);
+          fetchCalendar();
+        }}
+      />
+
       {/* Context menu for slot actions */}
       <Menu
         anchorEl={menuAnchor}
@@ -878,6 +952,7 @@ function ManageCalendar() {
           Xóa tiết học
         </MenuItem>
       </Menu>
+      <Footer />
     </DashboardLayout>
   );
 }
