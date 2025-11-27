@@ -17,6 +17,9 @@ router.get('/:id', authenticate, studentController.getStudentDetail);
 router.post('/', authenticate, authorize(['school_admin', 'admin']), studentController.createStudent);
 router.put('/:id', authenticate, authorize(['school_admin', 'admin']), studentController.updateStudent);
 router.post('/:id/transfer', authenticate, authorize(['school_admin', 'admin']), studentController.transferStudent);
+router.patch('/:id/status', authenticate, authorize(['school_admin', 'admin']), studentController.toggleStudentStatus);
+router.post('/:id/parents', authenticate, authorize(['school_admin', 'admin']), studentController.addParentForStudent);
+router.delete('/:id/parents/:parentId', authenticate, authorize(['school_admin', 'admin']), studentController.removeParentFromStudent);
 router.delete('/:id', authenticate, authorize(['school_admin', 'admin']), studentController.deleteStudent);
 
 module.exports = router;

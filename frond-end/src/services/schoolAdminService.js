@@ -5,6 +5,37 @@ const schoolAdminService = {
   getAllPosts: async () => {
     return await api.get('/school-admin/posts', true);
   },
+  // Students
+  getStudents: async () => {
+    return await api.get('/student/all', true);
+  },
+  getStudentDetail: async (studentId) => {
+    return await api.get(`/student/${studentId}`, true);
+  },
+  createStudent: async (studentData) => {
+    return await api.post('/student', studentData, true);
+  },
+  updateStudent: async (studentId, studentData) => {
+    return await api.put(`/student/${studentId}`, studentData, true);
+  },
+  updateStudentStatus: async (studentId, status) => {
+    return await api.patch(`/student/${studentId}/status`, { status }, true);
+  },
+  addParentForStudent: async (studentId, parentData) => {
+    return await api.post(`/student/${studentId}/parents`, parentData, true);
+  },
+  removeParentFromStudent: async (studentId, parentId) => {
+    return await api.delete(`/student/${studentId}/parents/${parentId}`, true);
+  },
+  getAllParents: async () => {
+    return await api.get('/parentcrud', true);
+  },
+  linkExistingParent: async (parentId, studentId, relationship) => {
+    return await api.post('/parentcrud/link', { parent_id: parentId, student_id: studentId, relationship }, true);
+  },
+  getClasses: async () => {
+    return await api.get('/classes', true);
+  },
 
   getPostById: async (postId) => {
     return await api.get(`/school-admin/posts/${postId}`, true);
@@ -198,6 +229,31 @@ const schoolAdminService = {
     deleteComplaintType: async (typeId) => {
       return await api.delete(`/school-admin/complaints/types/${typeId}`, true);
     },
+  // Users
+  getUsers: async ({ page = 1, limit = 50, role, status } = {}) => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page);
+    if (limit) params.append('limit', limit);
+    if (role) params.append('role', role);
+    if (status !== undefined && status !== '') params.append('status', status);
+    const query = params.toString();
+    return await api.get(`/users${query ? `?${query}` : ''}`, true);
+  },
+  getUserById: async (userId) => {
+    return await api.get(`/users/${userId}`, true);
+  },
+  createUser: async (payload) => {
+    return await api.post('/users', payload, true);
+  },
+  updateUser: async (userId, payload) => {
+    return await api.put(`/users/${userId}`, payload, true);
+  },
+  softDeleteUser: async (userId) => {
+    return await api.delete(`/users/${userId}`, true);
+  },
+  restoreUser: async (userId) => {
+    return await api.put(`/users/${userId}/restore`, {}, true);
+  },
 };
 
 export default schoolAdminService;

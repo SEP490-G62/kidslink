@@ -132,6 +132,22 @@ class ApiService {
     }
   }
 
+  // PATCH request
+  async patch(endpoint, data, includeAuth = true) {
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'PATCH',
+        headers: this.getHeaders(includeAuth),
+        body: JSON.stringify(data),
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error(`API PATCH Error (${endpoint}):`, error);
+      throw error;
+    }
+  }
+
   // DELETE request
   async delete(endpoint, includeAuth = true) {
     try {
