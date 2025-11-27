@@ -14,6 +14,7 @@ const {
   getComments,
   createComment,
   deleteComment, 
+  updateComment,
   getLikes,
   toggleLike
 } = require('../controllers/schoolAdminCommentController');
@@ -22,21 +23,22 @@ const {
 router.use(authenticate);
 router.use(authorize(['school_admin', 'admin']));
 
-// Post Routes
-router.get('/', getAllPosts);
-router.get('/:postId', getPostById);
-router.post('/', createPost);
-router.put('/:postId', updatePost);
-router.put('/:postId/status', updatePostStatus);
-router.delete('/:postId', deletePost);
-
 // Comment Routes
 router.get('/:postId/comments', getComments);
 router.post('/:postId/comments', createComment);
+router.put('/comments/:commentId', updateComment);
 router.delete('/comments/:commentId', deleteComment);
 
 // Like Routes
 router.get('/:postId/likes', getLikes);
 router.post('/:postId/like', toggleLike);
+
+// Post Routes
+router.get('/', getAllPosts);
+router.get('/:postId', getPostById);
+router.post('/', createPost);
+router.put('/:postId/status', updatePostStatus);
+router.put('/:postId', updatePost);
+router.delete('/:postId', deletePost);
 
 module.exports = router;

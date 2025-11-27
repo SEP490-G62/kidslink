@@ -26,6 +26,13 @@ function PickupModal({ open, onClose, pickup, studentId, onSubmit, onDelete }) {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({
+    full_name: '',
+    relationship: '',
+    id_card_number: '',
+    phone: ''
+  });
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const isEditMode = !!pickup;
 
@@ -50,13 +57,93 @@ function PickupModal({ open, onClose, pickup, studentId, onSubmit, onDelete }) {
       setAvatarPreview(null);
     }
     setError('');
+    setFieldErrors({
+      full_name: '',
+      relationship: '',
+      id_card_number: '',
+      phone: ''
+    });
+    setHasSubmitted(false);
   }, [pickup, open]);
 
+  // Validation functions
+  const validateFullName = (value) => {
+    if (!value) return 'Họ và tên là bắt buộc';
+    if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(value)) {
+      return 'Họ và tên chỉ được nhập chữ cái';
+    }
+    return '';
+  };
+
+  const validateRelationship = (value) => {
+    if (!value) return 'Quan hệ là bắt buộc';
+    if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(value)) {
+      return 'Quan hệ chỉ được nhập chữ cái';
+    }
+    return '';
+  };
+
+  const validateIdCard = (value) => {
+    if (!value) return 'Số CMND/CCCD là bắt buộc';
+    // Loại bỏ khoảng trắng và ký tự đặc biệt
+    const cleaned = value.replace(/\s+/g, '');
+    if (!/^\d+$/.test(cleaned)) {
+      return 'Số CMND/CCCD chỉ được nhập số';
+    }
+    if (cleaned.length !== 12) {
+      return 'Số CMND/CCCD phải có đúng 12 số';
+    }
+    return '';
+  };
+
+  const validatePhone = (value) => {
+    if (!value) return 'Số điện thoại là bắt buộc';
+    // Loại bỏ khoảng trắng, dấu + và ký tự đặc biệt
+    const cleaned = value.replace(/[\s\+\-\(\)]/g, '');
+    if (!/^\d+$/.test(cleaned)) {
+      return 'Số điện thoại chỉ được nhập số';
+    }
+    // Nếu bắt đầu bằng 84 (mã quốc gia), loại bỏ để kiểm tra số thực tế
+    let phoneNumber = cleaned;
+    if (cleaned.startsWith('84') && cleaned.length > 10) {
+      phoneNumber = cleaned.substring(2);
+    }
+    // Kiểm tra độ dài (10 hoặc 11 số)
+    if (phoneNumber.length === 10 || phoneNumber.length === 11) {
+      return '';
+    }
+    return 'Số điện thoại phải có 10 hoặc 11 số';
+  };
+
   const handleChange = (field) => (e) => {
+    const value = e.target.value;
+    
+    // Cho phép nhập tự do cho tất cả các trường
+    // Chỉ validate khi submit
+
     setFormData({
       ...formData,
-      [field]: e.target.value
+      [field]: value
     });
+
+    // Chỉ validate nếu đã submit trước đó
+    if (hasSubmitted) {
+      let errorMessage = '';
+      if (field === 'full_name') {
+        errorMessage = validateFullName(value);
+      } else if (field === 'relationship') {
+        errorMessage = validateRelationship(value);
+      } else if (field === 'id_card_number') {
+        errorMessage = validateIdCard(value);
+      } else if (field === 'phone') {
+        errorMessage = validatePhone(value);
+      }
+
+      setFieldErrors({
+        ...fieldErrors,
+        [field]: errorMessage
+      });
+    }
   };
 
   const handleImageUpload = (event) => {
@@ -85,10 +172,22 @@ function PickupModal({ open, onClose, pickup, studentId, onSubmit, onDelete }) {
 
   const handleSubmit = async () => {
     setError('');
+    setHasSubmitted(true);
     
-    // Validation
-    if (!formData.full_name || !formData.relationship || !formData.id_card_number || !formData.phone) {
-      setError('Vui lòng điền đầy đủ thông tin bắt buộc');
+    // Validate all fields
+    const errors = {
+      full_name: validateFullName(formData.full_name),
+      relationship: validateRelationship(formData.relationship),
+      id_card_number: validateIdCard(formData.id_card_number),
+      phone: validatePhone(formData.phone)
+    };
+
+    setFieldErrors(errors);
+
+    // Check if there are any errors
+    const hasErrors = Object.values(errors).some(error => error !== '');
+    if (hasErrors) {
+      setError('Vui lòng kiểm tra lại thông tin đã nhập');
       return;
     }
 
@@ -113,6 +212,13 @@ function PickupModal({ open, onClose, pickup, studentId, onSubmit, onDelete }) {
       avatar_url: ''
     });
     setAvatarPreview(null);
+    setFieldErrors({
+      full_name: '',
+      relationship: '',
+      id_card_number: '',
+      phone: ''
+    });
+    setHasSubmitted(false);
     onClose();
   };
 
@@ -207,14 +313,22 @@ function PickupModal({ open, onClose, pickup, studentId, onSubmit, onDelete }) {
               {avatarPreview && (
                 <Button
                   variant="outlined"
-                  color="error"
                   onClick={handleRemoveAvatar}
                   startIcon={<i className="ni ni-fat-remove" />}
                   size="small"
                   sx={{
                     borderRadius: 2,
                     textTransform: 'none',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    border: '2px solid',
+                    borderColor: '#f44336',
+                    color: '#f44336',
+                    '&:hover': {
+                      borderColor: '#d32f2f',
+                      color: '#d32f2f',
+                      backgroundColor: 'rgba(244, 67, 54, 0.08)',
+                      borderWidth: '2px'
+                    }
                   }}
                 >
                   Xóa ảnh
@@ -234,14 +348,16 @@ function PickupModal({ open, onClose, pickup, studentId, onSubmit, onDelete }) {
               onChange={handleChange('full_name')}
               variant="outlined"
               placeholder="Nhập họ và tên"
+              error={!!fieldErrors.full_name}
+              helperText={fieldErrors.full_name}
               sx={{ 
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: '#f8f9fa',
                   '&:hover fieldset': {
-                    borderColor: 'primary.main',
+                    borderColor: fieldErrors.full_name ? 'error.main' : 'primary.main',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
+                    borderColor: fieldErrors.full_name ? 'error.main' : 'primary.main',
                     borderWidth: '2px',
                   },
                 },
@@ -274,15 +390,16 @@ function PickupModal({ open, onClose, pickup, studentId, onSubmit, onDelete }) {
               onChange={handleChange('relationship')}
               variant="outlined"
               placeholder="VD: Bố, Mẹ, Ông, Bà, Cô, Chú, Anh, Chị..."
-              helperText="Ví dụ: Bố, Mẹ, Ông Nội, Bà Nội, Cô, Chú"
+              error={!!fieldErrors.relationship}
+              helperText={fieldErrors.relationship || 'Ví dụ: Bố, Mẹ, Ông Nội, Bà Nội, Cô, Chú'}
               sx={{ 
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: '#f8f9fa',
                   '&:hover fieldset': {
-                    borderColor: 'primary.main',
+                    borderColor: fieldErrors.relationship ? 'error.main' : 'primary.main',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
+                    borderColor: fieldErrors.relationship ? 'error.main' : 'primary.main',
                     borderWidth: '2px',
                   },
                 },
@@ -315,14 +432,16 @@ function PickupModal({ open, onClose, pickup, studentId, onSubmit, onDelete }) {
               onChange={handleChange('id_card_number')}
               variant="outlined"
               placeholder="Nhập số CMND/CCCD"
+              error={!!fieldErrors.id_card_number}
+              helperText={fieldErrors.id_card_number || 'Nhập đúng 12 số'}
               sx={{ 
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: '#f8f9fa',
                   '&:hover fieldset': {
-                    borderColor: 'primary.main',
+                    borderColor: fieldErrors.id_card_number ? 'error.main' : 'primary.main',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
+                    borderColor: fieldErrors.id_card_number ? 'error.main' : 'primary.main',
                     borderWidth: '2px',
                   },
                 },
@@ -354,16 +473,17 @@ function PickupModal({ open, onClose, pickup, studentId, onSubmit, onDelete }) {
               value={formData.phone}
               onChange={handleChange('phone')}
               variant="outlined"
-              placeholder="VD: +84 900 123 456 hoặc 0900 123 456"
-              helperText="Ví dụ: +84 900 123 456 hoặc 0900 123 456"
+              placeholder="VD: 0900123456 hoặc 0912345678"
+              error={!!fieldErrors.phone}
+              helperText={fieldErrors.phone || 'Nhập 10 hoặc 11 số (VD: 0900123456)'}
               sx={{ 
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: '#f8f9fa',
                   '&:hover fieldset': {
-                    borderColor: 'primary.main',
+                    borderColor: fieldErrors.phone ? 'error.main' : 'primary.main',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
+                    borderColor: fieldErrors.phone ? 'error.main' : 'primary.main',
                     borderWidth: '2px',
                   },
                 },
