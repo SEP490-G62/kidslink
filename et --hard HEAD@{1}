@@ -1,0 +1,64 @@
+[33m5db9bc0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mThangND[m[33m, [m[1;31morigin/ThangND[m[33m)[m HEAD@{0}: checkout: moving from develop to ThangND
+[33m0dbcb6a[m[33m ([m[1;32mdevelop[m[33m)[m HEAD@{1}: checkout: moving from ThangND to develop
+[33m5db9bc0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mThangND[m[33m, [m[1;31morigin/ThangND[m[33m)[m HEAD@{2}: commit (merge): Merge branch 'ThangND' of https://github.com/SEP490-G62/kidslink into ThangND
+[33ma32841d[m HEAD@{3}: commit: calendar, fix
+[33mb926968[m HEAD@{4}: commit: fix account, student
+[33m39e67bb[m HEAD@{5}: commit: change password, add new school
+[33mcfbb1e2[m HEAD@{6}: commit: manage ClassAge, classDetail
+[33m96311c8[m HEAD@{7}: commit: teacher complaint
+[33m8ca22ea[m HEAD@{8}: commit: lên lop
+[33mc06b010[m HEAD@{9}: pull origin ThangND: Fast-forward
+[33m1469fd3[m HEAD@{10}: rebase (finish): returning to refs/heads/ThangND
+[33m1469fd3[m HEAD@{11}: commit: fix
+[33m4a2486e[m HEAD@{12}: pull --rebase origin ThangND (start): checkout 4a2486ed40c6cdf74c1a71946a91cb5bf7049a15
+[33m7630b60[m HEAD@{13}: commit: system admin
+[33m0d0b2fa[m HEAD@{14}: commit: manage fee, payment, invoice
+[33mfac5a75[m HEAD@{15}: pull origin ThangND: Merge made by the 'ort' strategy.
+[33mdf948fa[m HEAD@{16}: commit: khoan thu, thanh toán
+[33mf77412a[m HEAD@{17}: commit: user
+[33m814f7d0[m HEAD@{18}: pull origin ThangND: Merge made by the 'ort' strategy.
+[33mc02510f[m HEAD@{19}: commit: fix User
+[33m48af603[m HEAD@{20}: commit: fix chat
+[33m6fc45bb[m HEAD@{21}: pull origin ThangND: Merge made by the 'ort' strategy.
+[33m8e7912f[m HEAD@{22}: commit: fix chat
+[33m1d04619[m HEAD@{23}: commit: fix frond-end, model complain
+[33m855651a[m HEAD@{24}: commit: fix create conversation with teacher
+[33mcc46f45[m HEAD@{25}: commit: daily report detail
+[33mbc9d9fd[m HEAD@{26}: commit: teacher schedule
+[33mb91e9aa[m HEAD@{27}: commit: emoji:))
+[33mc01a267[m HEAD@{28}: commit: fix chat
+[33m8e10901[m HEAD@{29}: commit: fix calendar
+[33m1b6fcde[m HEAD@{30}: commit: gui anh, parent chat, chat with teacher, tao class group chat
+[33mcb604b9[m HEAD@{31}: commit: nhan tin
+[33m48373f5[m HEAD@{32}: reset: moving to 48373f5ae342ed771736809dbb9a03bd07e6669b
+[33m449b663[m HEAD@{33}: pull origin ThangND --rebase (finish): returning to refs/heads/ThangND
+[33m449b663[m HEAD@{34}: pull origin ThangND --rebase (pick): nhan tin
+[33m48373f5[m HEAD@{35}: pull origin ThangND --rebase (start): checkout 48373f5ae342ed771736809dbb9a03bd07e6669b
+[33m44eaba2[m HEAD@{36}: commit: nhan tin
+[33ma5323ae[m HEAD@{37}: reset: moving to origin/ThangND
+[33ma5323ae[m HEAD@{38}: commit: daily report
+[33m678f7f0[m HEAD@{39}: commit: mongouri
+[33m9210034[m HEAD@{40}: commit: fix frond end Student Detaiil
+[33m66f3b5d[m HEAD@{41}: commit: mongouri
+[33mf780462[m HEAD@{42}: commit: Students Detail
+[33m695090e[m HEAD@{43}: commit: fix frond-end Classes Attendance
+[33maa0ab9f[m HEAD@{44}: commit: xem các class cũ cua teacher
+[33me84daab[m HEAD@{45}: reset: moving to HEAD
+[33me84daab[m HEAD@{46}: reset: moving to origin/ThangND
+[33me84daab[m HEAD@{47}: checkout: moving from develop to ThangND
+[33mf7d5f62[m HEAD@{48}: checkout: moving from ThangND to develop
+[33me84daab[m HEAD@{49}: reset: moving to HEAD
+[33me84daab[m HEAD@{50}: commit: fix frond end
+[33mdfe0907[m HEAD@{51}: pull origin ThangND: Merge made by the 'ort' strategy.
+[33mc5c301b[m HEAD@{52}: commit: frondend checkin, checkout
+[33mdaa0e73[m HEAD@{53}: commit: checkin, checkout
+[33mfccf797[m HEAD@{54}: commit (merge): Merge remote-tracking branch 'origin/ThangND'
+[33m3abfab0[m HEAD@{55}: commit: frontend sign in, forgot pass
+[33m89533e9[m HEAD@{56}: commit: intro page
+[33m6dceff4[m HEAD@{57}: pull origin ThangND: Merge made by the 'ort' strategy.
+[33m75ee007[m HEAD@{58}: commit: check
+[33m9c10d3e[m HEAD@{59}: commit: register, login, forgot password
+[33m290b178[m HEAD@{60}: checkout: moving from main to ThangND
+[33m290b178[m HEAD@{61}: commit: fix model + auth
+[33ma4c3a5d[m HEAD@{62}: Branch: renamed refs/heads/master to refs/heads/main
+[33ma4c3a5d[m HEAD@{64}: commit (initial): first commit
