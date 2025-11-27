@@ -72,7 +72,8 @@ async function getClassById(req, res) {
     if (req.user?.role === 'school_admin') {
       try {
         const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
-        if (String(cls.school_id) !== String(adminSchoolId)) {
+        const classSchoolId = cls?.school_id?._id || cls?.school_id;
+        if (!classSchoolId || String(classSchoolId) !== String(adminSchoolId)) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền xem lớp thuộc trường khác' });
         }
       } catch (err) {
