@@ -8,63 +8,55 @@ import {
   TextField,
   Grid,
   CircularProgress,
-  FormControlLabel,
-  Checkbox,
+  IconButton,
   List,
   ListItem,
   ListItemText,
-  IconButton,
+  ListItemSecondaryAction,
   Divider,
   Chip,
   Alert,
   Snackbar,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
 import ArgonButton from "components/ArgonButton";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import schoolAdminService from "services/schoolAdminService";
 
-const ActivityModal = ({ open, onClose }) => {
+const SlotManagementModal = ({ open, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [activities, setActivities] = useState([]);
-  const [editingActivity, setEditingActivity] = useState(null);
+  const [slots, setSlots] = useState([]);
+  const [editingSlot, setEditingSlot] = useState(null);
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    requireOutdoor: false
+    slotName: "",
+    startTime: "",
+    endTime: ""
   });
   const [errors, setErrors] = useState({});
   const [alertInfo, setAlertInfo] = useState({ show: false, message: "", severity: "error" });
 
   useEffect(() => {
     if (open) {
-      fetchActivities();
+      fetchSlots();
       resetForm();
     }
   }, [open]);
 
-  const fetchActivities = async () => {
+  const fetchSlots = async () => {
     try {
       setLoading(true);
-      const response = await schoolAdminService.getAllActivities();
-      // Backend: { success: true, data: [...] }
-      let list = [];
-      if (response && response.data) {
-        if (Array.isArray(response.data)) {
-          list = response.data;
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          list = response.data.data;
-        }
-      }
-      setActivities(list);
+      const response = await schoolAdminService.getAllSlots();
+      const slotsData = response.data || [];
+      setSlots(slotsData);
     } catch (error) {
-      console.error("Error fetching activities:", error);
+      console.error("Error fetching slots:", error);
       setAlertInfo({
         show: true,
-        message: "Không thể tải danh sách môn học",
+        message: "Không thể tải danh sách tiết học",
         severity: "error"
       });
     } finally {
@@ -74,11 +66,11 @@ const ActivityModal = ({ open, onClose }) => {
 
   const resetForm = () => {
     setFormData({
-      name: "",
-      description: "",
-      requireOutdoor: false
+      slotName: "",
+      startTime: "",
+      endTime: ""
     });
-    setEditingActivity(null);
+    setEditingSlot(null);
     setErrors({});
   };
 
@@ -89,32 +81,56 @@ const ActivityModal = ({ open, onClose }) => {
     }
   };
 
-  const handleEdit = (activity) => {
-    setEditingActivity(activity);
+  const validate = () => {
+    const newErrors = {};
+    
+    if (!formData.slotName || formData.slotName.trim() === '') {
+      newErrors.slotName = "Tên tiết học là bắt buộc";
+    }
+    
+    if (!formData.startTime) {
+      newErrors.startTime = "Giờ bắt đầu là bắt buộc";
+    }
+    
+    if (!formData.endTime) {
+      newErrors.endTime = "Giờ kết thúc là bắt buộc";
+    }
+    
+    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+      newErrors.endTime = "Giờ kết thúc phải sau giờ bắt đầu";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleEdit = (slot) => {
+    setEditingSlot(slot);
     setFormData({
-      name: activity.name || "",
-      description: activity.description || "",
-      requireOutdoor: activity.requireOutdoor === 1 || activity.requireOutdoor === true
+      slotName: slot.slotName || "",
+      startTime: slot.startTime || "",
+      endTime: slot.endTime || ""
     });
   };
 
-  const handleDelete = async (activityId) => {
-    if (!window.confirm("Bạn có chắc muốn xóa môn học này?")) return;
+  const handleDelete = async (slotId) => {
+    if (!window.confirm("Bạn có chắc muốn xóa tiết học này?")) return;
 
     try {
       setLoading(true);
-      await schoolAdminService.deleteActivity(activityId);
+      await schoolAdminService.deleteSlot(slotId);
       setAlertInfo({
         show: true,
-        message: "Đã xóa môn học thành công",
+        message: "Đã xóa tiết học thành công",
         severity: "success"
       });
-      fetchActivities();
+      fetchSlots();
+      if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Error deleting activity:", error);
+      console.error("Error deleting slot:", error);
       setAlertInfo({
         show: true,
-        message: error.message || "Không thể xóa môn học này",
+        message: error.message || "Không thể xóa tiết học này vì đang được sử dụng trong lịch học",
         severity: "error"
       });
     } finally {
@@ -122,60 +138,55 @@ const ActivityModal = ({ open, onClose }) => {
     }
   };
 
-  const validate = () => {
-    const newErrors = {};
-    
-    if (!formData.name || formData.name.trim() === '') {
-      newErrors.name = "Tên môn học là bắt buộc";
-    }
-    
-    if (!formData.description || formData.description.trim() === '') {
-      newErrors.description = "Mô tả là bắt buộc";
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = async () => {
     if (!validate()) return;
 
     setLoading(true);
     try {
-      const activityData = {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        requireOutdoor: formData.requireOutdoor ? 1 : 0
+      const slotData = {
+        slotName: formData.slotName,
+        startTime: formData.startTime,
+        endTime: formData.endTime
       };
 
-      if (editingActivity) {
-        // Update existing activity
-        await schoolAdminService.updateActivity(editingActivity._id, activityData);
+      if (editingSlot) {
+        // Update existing slot (bao gồm cả slotName)
+        await schoolAdminService.updateSlot(editingSlot._id, slotData);
         setAlertInfo({
           show: true,
-          message: "Đã cập nhật môn học thành công",
+          message: "Đã cập nhật tiết học thành công",
           severity: "success"
         });
       } else {
-        // Create new activity
-        await schoolAdminService.createActivity(activityData);
+        // Create new slot
+        await schoolAdminService.createSlot(slotData);
         setAlertInfo({
           show: true,
-          message: "Đã thêm môn học mới thành công",
+          message: "Đã thêm tiết học mới thành công",
           severity: "success"
         });
       }
       
       resetForm();
-      fetchActivities();
+      fetchSlots();
+      if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Error saving activity:", error);
+      console.error("Error saving slot:", error);
       const errorMessage = error.message || "Vui lòng thử lại";
-      setAlertInfo({
-        show: true,
-        message: "Lỗi khi lưu môn học: " + errorMessage,
-        severity: "error"
-      });
+      
+      if (errorMessage.includes("trùng") || errorMessage.includes("overlapping")) {
+        setAlertInfo({
+          show: true,
+          message: "Khung giờ này bị trùng với tiết học đã có. Vui lòng chọn khoảng thời gian khác.",
+          severity: "warning"
+        });
+      } else {
+        setAlertInfo({
+          show: true,
+          message: "Lỗi khi lưu tiết học: " + errorMessage,
+          severity: "error"
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -208,7 +219,7 @@ const ActivityModal = ({ open, onClose }) => {
           }}
         >
           <ArgonTypography variant="h5" fontWeight="bold" color="#fff">
-            Quản lý môn học / Hoạt động
+            Quản lý tiết học
           </ArgonTypography>
           <IconButton
             size="small"
@@ -230,7 +241,6 @@ const ActivityModal = ({ open, onClose }) => {
             background: "linear-gradient(135deg, #f8fbff 0%, #ffffff 100%)",
           }}
         >
-
           <Grid container spacing={3}>
             {/* Form thêm/sửa */}
             <Grid item xs={12} md={6}>
@@ -243,19 +253,19 @@ const ActivityModal = ({ open, onClose }) => {
                 }}
               >
                 <ArgonTypography variant="h6" fontWeight="bold" mb={2}>
-                  {editingActivity ? "Chỉnh sửa môn học" : "Thêm môn học mới"}
+                  {editingSlot ? "Chỉnh sửa tiết học" : "Thêm tiết học mới"}
                 </ArgonTypography>
                 <ArgonBox>
                   <ArgonBox mb={2}>
                     <ArgonTypography variant="body2" fontWeight="medium" mb={1}>
-                      Tên môn học *
+                      Tên tiết học *
                     </ArgonTypography>
                     <TextField
-                      value={formData.name}
-                      onChange={(e) => handleChange('name', e.target.value)}
-                      placeholder="VD: Toán học, Nghệ thuật, ..."
-                      error={!!errors.name}
-                      helperText={errors.name || "Nhập tên môn học"}
+                      value={formData.slotName}
+                      onChange={(e) => handleChange('slotName', e.target.value)}
+                      placeholder="VD: Tiết 1, Tiết 2, ..."
+                      error={!!errors.slotName}
+                      helperText={errors.slotName || "Nhập tên tiết học"}
                       required
                       sx={{ 
                         flex: 1, 
@@ -280,16 +290,14 @@ const ActivityModal = ({ open, onClose }) => {
                   </ArgonBox>
                   <ArgonBox mb={2}>
                     <ArgonTypography variant="body2" fontWeight="medium" mb={1}>
-                      Mô tả *
+                      Giờ bắt đầu *
                     </ArgonTypography>
                     <TextField
-                      multiline
-                      rows={4}
-                      value={formData.description}
-                      onChange={(e) => handleChange('description', e.target.value)}
-                      placeholder="Mô tả ngắn về môn học"
-                      error={!!errors.description}
-                      helperText={errors.description || "Nhập mô tả môn học"}
+                      type="time"
+                      value={formData.startTime}
+                      onChange={(e) => handleChange('startTime', e.target.value)}
+                      error={!!errors.startTime}
+                      helperText={errors.startTime || "Chọn giờ bắt đầu tiết học"}
                       required
                       sx={{ 
                         flex: 1, 
@@ -313,24 +321,35 @@ const ActivityModal = ({ open, onClose }) => {
                     />
                   </ArgonBox>
                   <ArgonBox mb={2}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={formData.requireOutdoor}
-                          onChange={(e) => handleChange('requireOutdoor', e.target.checked)}
-                          sx={{
-                            color: "#1976d2",
-                            "&.Mui-checked": {
-                              color: "#1976d2",
-                            },
-                          }}
-                        />
-                      }
-                      label={
-                        <ArgonTypography variant="body2" fontWeight={500}>
-                          Yêu cầu không gian ngoài trời
-                        </ArgonTypography>
-                      }
+                    <ArgonTypography variant="body2" fontWeight="medium" mb={1}>
+                      Giờ kết thúc *
+                    </ArgonTypography>
+                    <TextField
+                      type="time"
+                      value={formData.endTime}
+                      onChange={(e) => handleChange('endTime', e.target.value)}
+                      error={!!errors.endTime}
+                      helperText={errors.endTime || "Chọn giờ kết thúc tiết học"}
+                      required
+                      sx={{ 
+                        flex: 1, 
+                        minWidth: 200, 
+                        maxWidth: '100%',
+                        width: '100%',
+                        borderRadius: 2,
+                        '& .MuiOutlinedInput-root': {
+                          width: '100%',
+                          '&:hover fieldset': {
+                            borderColor: 'primary.main',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: 'primary.main',
+                          },
+                        },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                        }
+                      }}
                     />
                   </ArgonBox>
                   <ArgonBox display="flex" gap={1}>
@@ -340,9 +359,9 @@ const ActivityModal = ({ open, onClose }) => {
                       disabled={loading}
                       fullWidth
                     >
-                      {loading ? <CircularProgress size={20} color="inherit" /> : (editingActivity ? "Cập nhật" : "Thêm mới")}
+                      {loading ? <CircularProgress size={20} color="inherit" /> : (editingSlot ? "Cập nhật" : "Thêm mới")}
                     </ArgonButton>
-                    {editingActivity && (
+                    {editingSlot && (
                       <ArgonButton 
                         onClick={resetForm} 
                         color="secondary"
@@ -356,10 +375,10 @@ const ActivityModal = ({ open, onClose }) => {
               </ArgonBox>
             </Grid>
 
-            {/* Danh sách môn học */}
+            {/* Danh sách tiết học */}
             <Grid item xs={12} md={6}>
               <ArgonTypography variant="h6" fontWeight="bold" mb={2}>
-                Danh sách môn học ({activities.length})
+                Danh sách tiết học ({slots.length})
               </ArgonTypography>
               <ArgonBox 
                 sx={{ 
@@ -370,27 +389,27 @@ const ActivityModal = ({ open, onClose }) => {
                   backgroundColor: '#fff'
                 }}
               >
-                {loading && activities.length === 0 ? (
+                {loading && slots.length === 0 ? (
                   <ArgonBox p={3} textAlign="center">
                     <CircularProgress size={24} />
                   </ArgonBox>
-                ) : activities.length === 0 ? (
+                ) : slots.length === 0 ? (
                   <ArgonBox p={3} textAlign="center">
                     <ArgonTypography variant="body2" color="text">
-                      Chưa có môn học nào
+                      Chưa có tiết học nào
                     </ArgonTypography>
                   </ArgonBox>
                 ) : (
                   <List>
-                    {activities.map((activity, index) => (
-                      <React.Fragment key={activity._id}>
+                    {slots.map((slot, index) => (
+                      <React.Fragment key={slot._id}>
                         <ListItem
                           secondaryAction={
                             <ArgonBox display="flex" gap={0.5}>
                               <IconButton
                                 edge="end"
                                 size="small"
-                                onClick={() => handleEdit(activity)}
+                                onClick={() => handleEdit(slot)}
                                 sx={{ color: '#1976d2' }}
                               >
                                 <EditIcon fontSize="small" />
@@ -398,7 +417,7 @@ const ActivityModal = ({ open, onClose }) => {
                               <IconButton
                                 edge="end"
                                 size="small"
-                                onClick={() => handleDelete(activity._id)}
+                                onClick={() => handleDelete(slot._id)}
                                 sx={{ color: '#f44336' }}
                               >
                                 <DeleteIcon fontSize="small" />
@@ -411,31 +430,29 @@ const ActivityModal = ({ open, onClose }) => {
                             primary={
                               <ArgonBox display="flex" alignItems="center" gap={1}>
                                 <ArgonTypography variant="body2" fontWeight="bold">
-                                  {activity.name}
+                                  {slot.slotName || `Tiết ${index + 1}`}
                                 </ArgonTypography>
-                                {activity.requireOutdoor === 1 && (
-                                  <Chip 
-                                    label="Ngoài trời" 
-                                    size="small" 
-                                    sx={{ 
-                                      height: 20, 
-                                      fontSize: '0.7rem',
-                                      backgroundColor: '#81c784',
-                                      color: '#fff',
-                                      fontWeight: 600
-                                    }} 
-                                  />
-                                )}
+                                <Chip 
+                                  label={`${slot.startTime || ''} - ${slot.endTime || ''}`}
+                                  size="small" 
+                                  sx={{ 
+                                    height: 20, 
+                                    fontSize: '0.7rem',
+                                    backgroundColor: '#e3f2fd',
+                                    color: '#1976d2',
+                                    fontWeight: 600
+                                  }} 
+                                />
                               </ArgonBox>
                             }
                             secondary={
                               <ArgonTypography variant="caption" color="text">
-                                {activity.description}
+                                Khung giờ: {slot.startTime || '00:00'} - {slot.endTime || '00:00'}
                               </ArgonTypography>
                             }
                           />
                         </ListItem>
-                        {index < activities.length - 1 && <Divider />}
+                        {index < slots.length - 1 && <Divider />}
                       </React.Fragment>
                     ))}
                   </List>
@@ -478,9 +495,11 @@ const ActivityModal = ({ open, onClose }) => {
   );
 };
 
-ActivityModal.propTypes = {
+SlotManagementModal.propTypes = {
   open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired
+  onClose: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func
 };
 
-export default ActivityModal;
+export default SlotManagementModal;
+
