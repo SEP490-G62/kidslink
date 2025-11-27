@@ -45,6 +45,12 @@ class NutritionService {
     return await apiService.get(url);
   }
 
+  async getWeeklyAssignedDishes(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const url = `/nutrition/class-age-meals/weekly-dishes?${query}`;
+    return await apiService.get(url);
+  }
+
   // Profile utilities for nutrition staff
   async getProfile() {
     return await apiService.get(`/nutrition/profile`);

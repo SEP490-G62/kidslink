@@ -7,11 +7,20 @@ const User = require('../models/User');
 // GET all posts for school admin (can see all posts regardless of status)
 const getAllPosts = async (req, res) => {
   try {
-    // School admin can see all posts (only one school in system)
+    // Determine school of current admin
+    const admin = await User.findById(req.user.id).select('school_id');
+    if (!admin || !admin.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tài khoản quản trị không có thông tin trường'
+      });
+    }
+    const adminSchoolId = admin.school_id.toString();
+
     const posts = await Post.find()
       .populate({
         path: 'user_id',
-        select: 'full_name email avatar_url role'
+        select: 'full_name email avatar_url role school_id'
       })
       .populate({
         path: 'class_id',
@@ -24,12 +33,18 @@ const getAllPosts = async (req, res) => {
       .sort({ create_at: -1 })
       .lean();
 
-    // No filtering needed - only one school in system
-    const filteredPosts = posts;
+    // Helper to normalize ObjectId/string to string
+    const toIdString = (value) => {
+      if (!value) return null;
+      if (typeof value === 'string') return value;
+      if (value._id) return value._id.toString();
+      if (value.toString) return value.toString();
+      return null;
+    };
 
     // Get images, likes, and comments for each post
     const postsWithDetails = await Promise.all(
-      filteredPosts.map(async (post) => {
+      posts.map(async (post) => {
         // Get images
         const images = await PostImage.find({ post_id: post._id }).lean();
         
@@ -48,10 +63,16 @@ const getAllPosts = async (req, res) => {
       })
     );
 
+    const filteredPosts = postsWithDetails.filter((post) => {
+      const classSchoolId = toIdString(post.class_id?.school_id);
+      const authorSchoolId = toIdString(post.user_id?.school_id);
+      return classSchoolId === adminSchoolId || authorSchoolId === adminSchoolId;
+    });
+
     return res.json({
       success: true,
-      data: postsWithDetails,
-      total: postsWithDetails.length
+      data: filteredPosts,
+      total: filteredPosts.length
     });
   } catch (error) {
     console.error('getAllPosts error:', error);
@@ -71,7 +92,7 @@ const getPostById = async (req, res) => {
     const post = await Post.findById(postId)
       .populate({
         path: 'user_id',
-        select: 'full_name email avatar_url role'
+        select: 'full_name email avatar_url role school_id'
       })
       .populate({
         path: 'class_id',
