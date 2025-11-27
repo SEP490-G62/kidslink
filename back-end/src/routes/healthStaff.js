@@ -13,7 +13,8 @@ const {
   listClasses,
   listStudentsByClass,
   getStaffProfile,
-  updateStaffProfile
+  updateStaffProfile,
+  changeStaffPassword
 } = require('../controllers/healthCareController');
 
 router.use(authenticate, authorize(['health_care_staff']));
@@ -35,6 +36,7 @@ router.delete('/health/notices/:notice_id', deleteHealthNotice);
 // 5. Staff profile
 router.get('/profile', getStaffProfile);
 router.put('/profile', updateStaffProfile);
+router.put('/change-password', changeStaffPassword);
 
 module.exports = router;
 

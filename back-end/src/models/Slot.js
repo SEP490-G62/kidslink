@@ -13,6 +13,11 @@ const slotSchema = new mongoose.Schema({
   end_time: {
     type: String,
     required: true
+  },
+  school_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true
   }
   // Slot giờ chỉ là khung giờ chuẩn, không gắn calendar/activity/teacher
   // Calendar sẽ reference đến Slot

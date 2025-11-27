@@ -59,6 +59,10 @@ class NutritionService {
   async updateProfile(payload) {
     return await apiService.put(`/nutrition/profile`, payload);
   }
+
+  async changePassword(payload) {
+    return await apiService.put(`/nutrition/change-password`, payload);
+  }
 }
 
 const nutritionService = new NutritionService();

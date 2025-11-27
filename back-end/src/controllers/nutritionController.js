@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const { Dish, ClassAge, ClassAgeMeal, Meal, WeekDay, DishesClassAgeMeal, User } = require('../models');
 
 // Lấy danh sách tất cả món ăn
@@ -336,14 +337,51 @@ exports.updateStaffProfile = async (req, res) => {
     if (!user || user.role !== 'nutrition_staff') {
       return res.status(403).json({ error: 'Không đúng vai trò nutrition staff' });
     }
-    const { full_name, avatar_url, email, phone_number, password } = req.body || {};
+    const { full_name, avatar_url, email, phone_number } = req.body || {};
     if (full_name !== undefined) user.full_name = full_name;
     if (avatar_url !== undefined) user.avatar_url = avatar_url;
     if (email !== undefined) user.email = email;
     if (phone_number !== undefined) user.phone_number = phone_number;
-    if (password) user.password_hash = await require('bcryptjs').hash(password, 12);
     await user.save();
     return res.json({ message: 'Cập nhật profile thành công', user: await User.findById(userId).select('-password_hash') });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+// PUT /nutrition/change-password
+exports.changeStaffPassword = async (req, res) => {
+  try {
+    const userId = req?.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Chưa đăng nhập' });
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'nutrition_staff') {
+      return res.status(403).json({ error: 'Không đúng vai trò nutrition staff' });
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = req.body || {};
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: 'Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới' });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'Xác nhận mật khẩu mới không khớp' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+    }
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: 'Mật khẩu mới phải khác mật khẩu hiện tại' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash || '');
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Mật khẩu hiện tại không đúng' });
+    }
+
+    user.password_hash = await bcrypt.hash(newPassword, 12);
+    await user.save();
+
+    return res.json({ message: 'Đổi mật khẩu thành công' });
   } catch (err) {
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
