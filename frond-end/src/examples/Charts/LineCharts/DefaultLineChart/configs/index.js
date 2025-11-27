@@ -47,6 +47,8 @@ function configs(labels, datasets) {
             display: true,
             padding: 10,
             color: "#b2b9bf",
+            precision: 0,
+            callback: (value) => (Number.isInteger(value) ? value : ""),
             font: {
               size: 11,
               family: typography.fontFamily,
