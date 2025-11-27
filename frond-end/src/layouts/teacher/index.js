@@ -56,7 +56,7 @@ function TeacherHome() {
         const result = await teacherService.getAllPosts();
         // Lấy posts của user hiện tại (bao gồm pending và approved)
         const myPostsResult = user?.id ? await teacherService.getMyPosts() : { success: false, data: { data: [] } };
-        
+
         if (result.success) {
           // Transform API data to match component structure
           const transformedPosts = result.data.data.map(post => ({
@@ -81,7 +81,7 @@ function TeacherHome() {
             status: post.status || 'pending',
             create_at: post.create_at
           }));
-          
+
           // Nếu có posts của user, merge vào danh sách
           const myPostsData = myPostsResult.data?.data || myPostsResult.data || [];
           if (myPostsResult.success && Array.isArray(myPostsData) && myPostsData.length > 0) {
@@ -111,7 +111,7 @@ function TeacherHome() {
               };
               myPostsMap.set(post._id, transformedPost);
             });
-            
+
             transformedPosts.forEach(post => {
               if (myPostsMap.has(post.id)) {
                 const myPost = myPostsMap.get(post.id);
@@ -122,18 +122,18 @@ function TeacherHome() {
                 myPostsMap.delete(post.id);
               }
             });
-            
+
             myPostsMap.forEach(post => {
               transformedPosts.push(post);
             });
           }
-          
+
           transformedPosts.sort((a, b) => {
             const dateA = a.create_at ? new Date(a.create_at) : new Date(a._raw?.create_at || a.date);
             const dateB = b.create_at ? new Date(b.create_at) : new Date(b._raw?.create_at || b.date);
             return dateB - dateA;
           });
-          
+
           setPosts(transformedPosts);
         }
       } catch (err) {
@@ -150,7 +150,7 @@ function TeacherHome() {
 
     if (searchFilters.search) {
       const searchTerm = searchFilters.search.toLowerCase();
-      filtered = filtered.filter(post => 
+      filtered = filtered.filter(post =>
         post.author.toLowerCase().includes(searchTerm) ||
         post.content.toLowerCase().includes(searchTerm)
       );
@@ -160,18 +160,18 @@ function TeacherHome() {
       const fromDate = new Date(searchFilters.dateFrom);
       fromDate.setHours(0, 0, 0, 0);
       filtered = filtered.filter(post => {
-        const postDate = post.create_at 
+        const postDate = post.create_at
           ? new Date(post.create_at)
-          : post._raw?.create_at 
+          : post._raw?.create_at
             ? new Date(post._raw.create_at)
             : (() => {
-                try {
-                  const [day, month, year] = post.date.split('/');
-                  return new Date(year, month - 1, day);
-                } catch {
-                  return new Date();
-                }
-              })();
+              try {
+                const [day, month, year] = post.date.split('/');
+                return new Date(year, month - 1, day);
+              } catch {
+                return new Date();
+              }
+            })();
         postDate.setHours(0, 0, 0, 0);
         return postDate >= fromDate;
       });
@@ -181,18 +181,18 @@ function TeacherHome() {
       const toDate = new Date(searchFilters.dateTo);
       toDate.setHours(23, 59, 59, 999);
       filtered = filtered.filter(post => {
-        const postDate = post.create_at 
+        const postDate = post.create_at
           ? new Date(post.create_at)
-          : post._raw?.create_at 
+          : post._raw?.create_at
             ? new Date(post._raw.create_at)
             : (() => {
-                try {
-                  const [day, month, year] = post.date.split('/');
-                  return new Date(year, month - 1, day);
-                } catch {
-                  return new Date();
-                }
-              })();
+              try {
+                const [day, month, year] = post.date.split('/');
+                return new Date(year, month - 1, day);
+              } catch {
+                return new Date();
+              }
+            })();
         postDate.setHours(23, 59, 59, 999);
         return postDate <= toDate;
       });
@@ -203,7 +203,7 @@ function TeacherHome() {
 
   const filteredPosts = getFilteredPosts();
   const approvedPosts = filteredPosts.filter(p => p.status === 'approved');
-  
+
   const tabs = [
     { label: "Tất cả", value: "all", count: approvedPosts.length },
     { label: "Trường", value: "school", count: approvedPosts.filter(p => p.authorRole === "school").length },
@@ -233,11 +233,11 @@ function TeacherHome() {
 
   const handlePostCreated = async () => {
     const currentTab = activeTab;
-    
+
     try {
       const result = await teacherService.getAllPosts();
       const myPostsResult = user?.id ? await teacherService.getMyPosts() : { success: false, data: { data: [] } };
-      
+
       if (result.success) {
         const transformedPosts = result.data.data.map(post => ({
           id: post._id,
@@ -261,7 +261,7 @@ function TeacherHome() {
           status: post.status || 'pending',
           create_at: post.create_at
         }));
-        
+
         const myPostsData = myPostsResult.data?.data || myPostsResult.data || [];
         if (myPostsResult.success && Array.isArray(myPostsData) && myPostsData.length > 0) {
           const myPostsMap = new Map();
@@ -290,7 +290,7 @@ function TeacherHome() {
             };
             myPostsMap.set(post._id, transformedPost);
           });
-          
+
           transformedPosts.forEach(post => {
             if (myPostsMap.has(post.id)) {
               const myPost = myPostsMap.get(post.id);
@@ -301,18 +301,18 @@ function TeacherHome() {
               myPostsMap.delete(post.id);
             }
           });
-          
+
           myPostsMap.forEach(post => {
             transformedPosts.push(post);
           });
         }
-        
+
         transformedPosts.sort((a, b) => {
           const dateA = a.create_at ? new Date(a.create_at) : new Date(a._raw?.create_at || a.date);
           const dateB = b.create_at ? new Date(b.create_at) : new Date(b._raw?.create_at || b.date);
           return dateB - dateA;
         });
-        
+
         setPosts(transformedPosts);
         setActiveTab(currentTab);
       }
@@ -330,7 +330,7 @@ function TeacherHome() {
   const handleDeletePost = (postId) => {
     setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
   };
-  
+
   return (
     <DashboardLayout>
       <TeacherNavbar />
@@ -382,9 +382,9 @@ function TeacherHome() {
         </Grid>
 
         {/* Toolbar: Search + Filters + Category Tabs */}
-        <Card sx={{ 
+        <Card sx={{
           mb: 2,
-          borderRadius: 3, 
+          borderRadius: 3,
           boxShadow: 3,
           p: 3,
           background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
@@ -425,13 +425,16 @@ function TeacherHome() {
               >
                 <i className="ni ni-zoom-split" style={{ fontSize: '18px', color: '#5e72e4', marginRight: '8px' }} />
                 <InputBase
-                  sx={{ 
+                  sx={{
                     flex: 1,
                     fontSize: '15px',
                     fontWeight: '500',
                     '& input::placeholder': {
                       color: 'rgba(0,0,0,0.5)',
                       fontWeight: '400'
+                    },
+                    '& .MuiInputBase-input': {
+                      width: '100% !important',
                     }
                   }}
                   placeholder="Nhập từ khóa tìm kiếm (tác giả, nội dung)..."
@@ -443,7 +446,7 @@ function TeacherHome() {
                   <IconButton
                     size="small"
                     onClick={() => handleSearchChange('search', '')}
-                    sx={{ 
+                    sx={{
                       color: 'rgba(0,0,0,0.5)',
                       '&:hover': { color: '#5e72e4', backgroundColor: 'rgba(94, 114, 228, 0.1)' }
                     }}
@@ -470,8 +473,8 @@ function TeacherHome() {
                   backgroundColor: 'rgba(94, 114, 228, 0.05)',
                   borderRadius: 2,
                   flex: 1,
-                  '& .MuiTab-root': { 
-                    textTransform: 'none', 
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
                     fontWeight: 600,
                     fontSize: '14px',
                     minHeight: 50,
@@ -488,8 +491,8 @@ function TeacherHome() {
                 }}
               >
                 {tabs.map((tab, index) => (
-                  <Tab 
-                    key={tab.value} 
+                  <Tab
+                    key={tab.value}
                     label={tab.label}
                   />
                 ))}
@@ -501,19 +504,19 @@ function TeacherHome() {
         {/* Posts Feed */}
         <Grid container spacing={3} justifyContent="center">
           <Grid item xs={12} sx={{ maxWidth: { xs: '100%', sm: '800px', md: '1000px', lg: '1200px' }, mx: 'auto' }}>
-            <Card sx={{ 
-              mb: 2, 
-              borderRadius: 3, 
+            <Card sx={{
+              mb: 2,
+              borderRadius: 3,
               boxShadow: 3,
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               border: '1px solid rgba(255,255,255,0.2)'
             }}>
               <ArgonBox display="flex" justifyContent="space-between" alignItems="center" p={3}>
-                <ArgonTypography 
-                  variant="h5" 
-                  fontWeight="bold" 
+                <ArgonTypography
+                  variant="h5"
+                  fontWeight="bold"
                   color="white"
-                  sx={{ 
+                  sx={{
                     fontSize: '1.4rem',
                     textShadow: '0 2px 4px rgba(0,0,0,0.3)'
                   }}
@@ -551,9 +554,9 @@ function TeacherHome() {
               </ArgonBox>
             </Card>
 
-            <Card sx={{ 
-              borderRadius: 3, 
-              boxShadow: 3, 
+            <Card sx={{
+              borderRadius: 3,
+              boxShadow: 3,
               minHeight: '600px',
               background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
               border: '1px solid rgba(255,255,255,0.2)',
@@ -562,26 +565,26 @@ function TeacherHome() {
               flexDirection: 'column'
             }}>
               <ArgonBox p={3} pb={2}>
-                <ArgonBox display="flex" alignItems="center" gap={1} mb={1.5}>
+                {/* <ArgonBox display="flex" alignItems="center" gap={1} mb={1.5}>
                   <i className="ni ni-calendar-grid-58" style={{ fontSize: '20px', color: '#5e72e4' }} />
                   <ArgonTypography variant="h6" fontWeight="bold" color="dark">
                     Lọc theo ngày
                   </ArgonTypography>
-                </ArgonBox>
-                <ArgonBox 
-                  display="flex" 
+                </ArgonBox> */}
+                <ArgonBox
+                  display="flex"
                   flexDirection={{ xs: 'column', sm: 'row' }}
-                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                  alignItems={{ xs: 'stretch', sm: 'flex-end' }}
                   gap={2}
                   sx={{
                     p: 2,
                     borderRadius: 2,
-                    backgroundColor: 'rgba(94, 114, 228, 0.03)',
-                    border: '1px solid rgba(94, 114, 228, 0.1)'
+                    // backgroundColor: 'rgba(94, 114, 228, 0.03)',
+                    // border: '1px solid rgba(94, 114, 228, 0.1)'
                   }}
                 >
-                  <ArgonBox 
-                    sx={{ 
+                  <ArgonBox
+                    sx={{
                       flex: { xs: 1, sm: '0 0 auto' },
                       display: 'flex',
                       flexDirection: 'column',
@@ -620,9 +623,9 @@ function TeacherHome() {
                       }}
                     />
                   </ArgonBox>
-                  
-                  <ArgonBox 
-                    sx={{ 
+
+                  <ArgonBox
+                    sx={{
                       flex: { xs: 1, sm: '0 0 auto' },
                       display: 'flex',
                       flexDirection: 'column',
@@ -662,9 +665,9 @@ function TeacherHome() {
                     />
                   </ArgonBox>
 
-                  {(searchFilters.dateFrom || searchFilters.dateTo || searchFilters.search) && (
-                    <ArgonBox 
-                      display="flex" 
+                  {(searchFilters.dateFrom || searchFilters.dateTo) && (
+                    <ArgonBox
+                      display="flex"
                       alignItems={{ xs: 'stretch', sm: 'flex-end' }}
                       sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
                     >
@@ -679,8 +682,9 @@ function TeacherHome() {
                           fontWeight: 'bold',
                           borderColor: 'rgba(244, 67, 54, 0.5)',
                           color: '#f44336',
-                          px: 2,
-                          py: 1.5,
+                          px: 3,
+                          py: 0,
+                          minHeight: 31,
                           width: { xs: '100%', sm: 'auto' },
                           '&:hover': {
                             borderColor: '#f44336',
@@ -688,22 +692,22 @@ function TeacherHome() {
                           }
                         }}
                       >
-                        Xóa tất cả bộ lọc
+                        Xóa lọc
                       </Button>
                     </ArgonBox>
                   )}
                 </ArgonBox>
               </ArgonBox>
 
-              <ArgonBox 
-                sx={{ 
+              <ArgonBox
+                sx={{
                   flex: 1,
                   overflow: 'auto',
                   p: 3,
                   pt: 0
                 }}
               >
-                <PostsFeed 
+                <PostsFeed
                   activeTab={activeTab}
                   tabs={tabs}
                   posts={filteredPosts}
@@ -711,9 +715,9 @@ function TeacherHome() {
                   onEditPost={handleEditPost}
                   onDeletePost={handleDeletePost}
                   onUpdateCommentCount={(postId, increment) => {
-                    setPosts(prevPosts => 
-                      prevPosts.map(post => 
-                        post.id === postId 
+                    setPosts(prevPosts =>
+                      prevPosts.map(post =>
+                        post.id === postId
                           ? { ...post, comments: post.comments + increment }
                           : post
                       )
@@ -725,7 +729,7 @@ function TeacherHome() {
           </Grid>
         </Grid>
       </ArgonBox>
-      
+
       <CreatePostModal
         open={createPostModalOpen}
         onClose={() => {

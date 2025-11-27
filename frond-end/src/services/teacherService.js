@@ -333,6 +333,10 @@ class TeacherService {
       };
     }
   }
+
+  async changePassword(currentPassword, newPassword) {
+    return apiService.put('/users/change-password', { currentPassword, newPassword }, true);
+  }
 }
 
 const teacherService = new TeacherService();

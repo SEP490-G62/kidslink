@@ -1,6 +1,11 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,16}$/;
+const PASSWORD_MESSAGE = 'Mật khẩu phải có từ 8-16 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt';
+
+const isStrongPassword = (password = '') => PASSWORD_REGEX.test(password);
+
 // GET /api/users - Lấy danh sách tất cả users
 const getAllUsers = async (req, res) => {
   try {
@@ -97,6 +102,20 @@ const createUser = async (req, res) => {
       }
     }
     
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập mật khẩu'
+      });
+    }
+
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        success: false,
+        message: PASSWORD_MESSAGE
+      });
+    }
+
     // Hash password
     const saltRounds = 12;
     const password_hash = await bcrypt.hash(password, saltRounds);
@@ -183,6 +202,12 @@ const updateUser = async (req, res) => {
     
     // Hash password mới nếu có
     if (password) {
+      if (!isStrongPassword(password)) {
+        return res.status(400).json({
+          success: false,
+          message: PASSWORD_MESSAGE
+        });
+      }
       const saltRounds = 12;
       updateData.password_hash = await bcrypt.hash(password, saltRounds);
     }
@@ -296,6 +321,106 @@ const restoreUser = async (req, res) => {
   }
 };
 
+// GET /api/users/me - Lấy thông tin tài khoản hiện tại
+const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password_hash');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+    return res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return res.status(500).json({ success: false, message: 'Không thể lấy thông tin tài khoản', error: error.message });
+  }
+};
+
+// PUT /api/users/me - Cập nhật thông tin tài khoản hiện tại
+const updateCurrentUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { full_name, username, email, phone_number, avatar_url } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    if (username && username !== user.username) {
+      const duplicateUsername = await User.findOne({ username, _id: { $ne: userId } });
+      if (duplicateUsername) {
+        return res.status(400).json({ success: false, message: 'Username đã tồn tại' });
+      }
+    }
+
+    if (email && email !== user.email) {
+      const duplicateEmail = await User.findOne({ email, _id: { $ne: userId } });
+      if (duplicateEmail) {
+        return res.status(400).json({ success: false, message: 'Email đã tồn tại' });
+      }
+    }
+
+    if (phone_number && phone_number !== user.phone_number) {
+      const duplicatePhone = await User.findOne({ phone_number, _id: { $ne: userId } });
+      if (duplicatePhone) {
+        return res.status(400).json({ success: false, message: 'Số điện thoại đã tồn tại' });
+      }
+    }
+
+    const updateData = {};
+    if (full_name !== undefined) updateData.full_name = full_name;
+    if (username !== undefined) updateData.username = username;
+    if (email !== undefined) updateData.email = email;
+    if (phone_number !== undefined) updateData.phone_number = phone_number;
+    if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true, runValidators: true }).select('-password_hash');
+    return res.json({ success: true, message: 'Cập nhật thông tin thành công', data: updatedUser });
+  } catch (error) {
+    console.error('Error updating current user:', error);
+    return res.status(500).json({ success: false, message: 'Không thể cập nhật thông tin', error: error.message });
+  }
+};
+
+// PUT /api/users/change-password - Đổi mật khẩu tài khoản hiện tại
+const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword) {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập mật khẩu hiện tại' });
+    }
+
+    if (!newPassword || !isStrongPassword(newPassword)) {
+      return res.status(400).json({ success: false, message: PASSWORD_MESSAGE });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    if (!user.password_hash) {
+      return res.status(400).json({ success: false, message: 'Tài khoản chưa thiết lập mật khẩu' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không chính xác' });
+    }
+
+    const saltRounds = 12;
+    user.password_hash = await bcrypt.hash(newPassword, saltRounds);
+    await user.save();
+
+    return res.json({ success: true, message: 'Đổi mật khẩu thành công' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    return res.status(500).json({ success: false, message: 'Không thể đổi mật khẩu', error: error.message });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -303,5 +428,8 @@ module.exports = {
   updateUser,
   deleteUser,
   hardDeleteUser,
-  restoreUser
+  restoreUser,
+  getCurrentUser,
+  updateCurrentUser,
+  changePassword
 };

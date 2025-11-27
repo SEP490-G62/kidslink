@@ -5,6 +5,7 @@
 */
 
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 
 // @mui material components
 import Grid from "@mui/material/Grid";
@@ -22,6 +23,12 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
+import Stack from "@mui/material/Stack";
+import Paper from "@mui/material/Paper";
+import CloseIcon from "@mui/icons-material/Close";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
+import ChecklistOutlinedIcon from "@mui/icons-material/ChecklistOutlined";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -34,6 +41,54 @@ import Footer from "examples/Footer";
 
 // Services
 import parentService from "services/parentService";
+
+const PasswordSectionCard = ({ icon, title, subtitle, children }) => (
+  <Paper
+    sx={{
+      p: 3,
+      borderRadius: 3,
+      border: "1px solid #e3f2fd",
+      background: "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(243,248,255,0.98) 100%)",
+      boxShadow: "0 10px 25px rgba(25,118,210,0.12)",
+    }}
+  >
+    <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+      <ArgonBox
+        sx={{
+          width: 44,
+          height: 44,
+          borderRadius: "50%",
+          backgroundColor: "#e3f2fd",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#1976d2",
+        }}
+      >
+        {icon}
+      </ArgonBox>
+      <ArgonBox>
+        <ArgonTypography variant="subtitle1" fontWeight="bold" color="dark">
+          {title}
+        </ArgonTypography>
+        {subtitle && (
+          <ArgonTypography variant="caption" color="text" fontWeight="regular">
+            {subtitle}
+          </ArgonTypography>
+        )}
+      </ArgonBox>
+    </Stack>
+    <Divider sx={{ mb: 2 }} />
+    {children}
+  </Paper>
+);
+
+PasswordSectionCard.propTypes = {
+  icon: PropTypes.node.isRequired,
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
+  children: PropTypes.node.isRequired,
+};
 
 function PersonalInformation() {
   const [loading, setLoading] = useState(true);
@@ -54,13 +109,22 @@ function PersonalInformation() {
     avatar_url: "",
   });
   const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
     newPassword: "",
     confirmPassword: ""
   });
+  const [passwordErrors, setPasswordErrors] = useState({});
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [children, setChildren] = useState([]);
   const [activeForm, setActiveForm] = useState(null); // null, "profile", or "password"
   const [avatarPreview, setAvatarPreview] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({
+    full_name: '',
+    email: '',
+    phone_number: ''
+  });
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
     fetchPersonalInfo();
@@ -111,17 +175,91 @@ function PersonalInformation() {
     }
   };
 
+  // Validation functions
+  const validateFullName = (value) => {
+    if (!value) return 'Họ và tên là bắt buộc';
+    if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(value)) {
+      return 'Họ và tên chỉ được nhập chữ cái';
+    }
+    return '';
+  };
+
+  const validateEmail = (value) => {
+    if (!value) return 'Email là bắt buộc';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      return 'Email không hợp lệ';
+    }
+    return '';
+  };
+
+  const validatePhone = (value) => {
+    if (!value) return 'Số điện thoại là bắt buộc';
+    // Loại bỏ khoảng trắng, dấu + và ký tự đặc biệt
+    const cleaned = value.replace(/[\s\+\-\(\)]/g, '');
+    if (!/^\d+$/.test(cleaned)) {
+      return 'Số điện thoại chỉ được nhập số';
+    }
+    // Nếu bắt đầu bằng 84 (mã quốc gia), loại bỏ để kiểm tra số thực tế
+    let phoneNumber = cleaned;
+    if (cleaned.startsWith('84') && cleaned.length > 10) {
+      phoneNumber = cleaned.substring(2);
+    }
+    // Kiểm tra độ dài (10 hoặc 11 số)
+    if (phoneNumber.length === 10 || phoneNumber.length === 11) {
+      return '';
+    }
+    return 'Số điện thoại phải có 10 hoặc 11 số';
+  };
+
   const handleInputChange = (field) => (e) => {
+    const value = e.target.value;
+    
     setFormData({
       ...formData,
-      [field]: e.target.value
+      [field]: value
     });
+
+    // Chỉ validate nếu đã submit trước đó
+    if (hasSubmitted) {
+      let errorMessage = '';
+      if (field === 'full_name') {
+        errorMessage = validateFullName(value);
+      } else if (field === 'email') {
+        errorMessage = validateEmail(value);
+      } else if (field === 'phone_number') {
+        errorMessage = validatePhone(value);
+      }
+
+      setFieldErrors({
+        ...fieldErrors,
+        [field]: errorMessage
+      });
+    }
   };
 
   const handleSave = async () => {
+    setHasSubmitted(true);
+    
+    // Validate all fields
+    const errors = {
+      full_name: validateFullName(formData.full_name),
+      email: validateEmail(formData.email),
+      phone_number: validatePhone(formData.phone_number)
+    };
+
+    setFieldErrors(errors);
+
+    // Check if there are any errors
+    const hasErrors = Object.values(errors).some(error => error !== '');
+    if (hasErrors) {
+      setAlert({ open: true, message: "Vui lòng kiểm tra lại thông tin đã nhập", severity: "error" });
+      return false;
+    }
+
     try {
       setSaving(true);
-      
+
       const result = await parentService.updatePersonalInfo(formData);
       if (result.success) {
         setAlert({ open: true, message: "Cập nhật thông tin thành công", severity: "success" });
@@ -129,11 +267,15 @@ function PersonalInformation() {
         await fetchPersonalInfo();
         // Clear file after successful upload
         setAvatarFile(null);
+        setHasSubmitted(false);
+        return true;
       } else {
         setAlert({ open: true, message: result.error || "Không thể cập nhật thông tin", severity: "error" });
+        return false;
       }
     } catch (error) {
       setAlert({ open: true, message: "Có lỗi xảy ra khi cập nhật thông tin", severity: "error" });
+      return false;
     } finally {
       setSaving(false);
     }
@@ -141,48 +283,78 @@ function PersonalInformation() {
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
-    setPasswordData({
-      ...passwordData,
+    setPasswordData((prev) => ({
+      ...prev,
       [name]: value
-    });
+    }));
+    setPasswordErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const getPasswordError = (password) => {
+    if (!password) return "Vui lòng nhập mật khẩu mới";
+    if (password.length < 8 || password.length > 16) {
+      return "Mật khẩu phải có từ 8-16 ký tự";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 chữ hoa";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 chữ thường";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 số";
+    }
+    if (!/[!@#$%^&*(),.?\":{}|<>]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)";
+    }
+    return "";
   };
 
   const handleChangePassword = async () => {
-    // Validation
-    if (!passwordData.newPassword || !passwordData.confirmPassword) {
-      setAlert({ open: true, message: "Vui lòng điền đầy đủ thông tin mật khẩu mới", severity: "error" });
-      return;
+    const errors = {};
+    if (!passwordData.currentPassword) {
+      errors.currentPassword = "Vui lòng nhập mật khẩu hiện tại";
+    }
+    const passwordError = getPasswordError(passwordData.newPassword);
+    if (passwordError) {
+      errors.newPassword = passwordError;
+    }
+    if (!passwordData.confirmPassword) {
+      errors.confirmPassword = "Vui lòng xác nhận mật khẩu mới";
+    } else if (!errors.newPassword && passwordData.newPassword !== passwordData.confirmPassword) {
+      errors.confirmPassword = "Mật khẩu xác nhận không khớp";
     }
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setAlert({ open: true, message: "Mật khẩu mới không khớp", severity: "error" });
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      setAlert({ open: true, message: "Mật khẩu phải có ít nhất 6 ký tự", severity: "error" });
-      return;
+    setPasswordErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setAlert({ open: true, message: "Vui lòng kiểm tra lại thông tin mật khẩu", severity: "error" });
+      return false;
     }
 
     try {
-      setSaving(true);
-      const result = await parentService.updatePersonalInfo({
-        password: passwordData.newPassword
-      });
+      setPasswordSaving(true);
+      const result = await parentService.changePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword
+      );
       if (result.success) {
         setAlert({ open: true, message: "Đổi mật khẩu thành công", severity: "success" });
-        // Clear password fields
-        setPasswordData({
-          newPassword: "",
-          confirmPassword: ""
-        });
+        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        setPasswordErrors({});
+        return true;
       } else {
-        setAlert({ open: true, message: result.error || "Không thể đổi mật khẩu", severity: "error" });
+        const message = result.error || "Không thể đổi mật khẩu";
+        setPasswordErrors((prev) => ({ ...prev, currentPassword: message || "Mật khẩu hiện tại không chính xác" }));
+        setAlert({ open: true, message, severity: "error" });
+        return false;
       }
     } catch (error) {
-      setAlert({ open: true, message: "Có lỗi xảy ra khi đổi mật khẩu", severity: "error" });
+      const fallbackMessage = error?.message || "Có lỗi xảy ra khi đổi mật khẩu";
+      setPasswordErrors((prev) => ({ ...prev, currentPassword: fallbackMessage }));
+      setAlert({ open: true, message: fallbackMessage, severity: "error" });
+      return false;
     } finally {
-      setSaving(false);
+      setPasswordSaving(false);
     }
   };
 
@@ -196,6 +368,12 @@ function PersonalInformation() {
     setAvatarPreview(profileData.avatar_url || "");
     setAvatarFile(null);
     setActiveForm("profile");
+    setFieldErrors({
+      full_name: '',
+      email: '',
+      phone_number: ''
+    });
+    setHasSubmitted(false);
   };
 
   const openPasswordForm = () => {
@@ -208,16 +386,28 @@ function PersonalInformation() {
     setAvatarPreview("");
     setAvatarFile(null);
     setActiveForm(null);
+    setPasswordErrors({});
+    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setFieldErrors({
+      full_name: '',
+      email: '',
+      phone_number: ''
+    });
+    setHasSubmitted(false);
   };
 
   const handleSaveAndClose = async () => {
-    await handleSave();
-    closeForms();
+    const success = await handleSave();
+    if (success) {
+      closeForms();
+    }
   };
 
   const handlePasswordAndClose = async () => {
-    await handleChangePassword();
-    closeForms();
+    const success = await handleChangePassword();
+    if (success) {
+      closeForms();
+    }
   };
 
   if (loading) {
@@ -267,31 +457,31 @@ function PersonalInformation() {
                   <ArgonBox flex={1}>
                     <ArgonTypography variant="h5" fontWeight="bold" color="dark">
                       {profileData.full_name}
-                  </ArgonTypography>
+                    </ArgonTypography>
                     <ArgonTypography variant="body2" color="text" mb={2}>
                       Phụ huynh
-                  </ArgonTypography>
-                    
+                    </ArgonTypography>
+
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-single-02" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Username: <span style={{ fontWeight: 'bold' }}>{profileData.username}</span>
-                  </ArgonTypography>
-                </ArgonBox>
+                      </ArgonTypography>
+                    </ArgonBox>
 
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-email-83" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Email: <span style={{ fontWeight: 'bold' }}>{profileData.email}</span>
-                  </ArgonTypography>
+                      </ArgonTypography>
                     </ArgonBox>
-                    
+
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
                       <i className="ni ni-mobile-button" style={{ color: '#5e72e4', fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         SĐT: <span style={{ fontWeight: 'bold' }}>{profileData.phone_number}</span>
-                  </ArgonTypography>
-                </ArgonBox>
+                      </ArgonTypography>
+                    </ArgonBox>
 
                     {children.length > 0 && (
                       <ArgonBox display="flex" alignItems="center" gap={1.5}>
@@ -311,12 +501,12 @@ function PersonalInformation() {
 
                 {/* Action Buttons */}
                 <ArgonBox display="flex" gap={2} justifyContent="flex-end" mt={3}>
-                  <Button 
-                    variant="outlined" 
+                  <Button
+                    variant="outlined"
                     color="warning"
                     onClick={openPasswordForm}
                     startIcon={<i className="ni ni-lock-circle-open" />}
-                    sx={{ 
+                    sx={{
                       minWidth: 160,
                       height: 44,
                       fontSize: '14px',
@@ -335,12 +525,12 @@ function PersonalInformation() {
                   >
                     Đổi mật khẩu
                   </Button>
-                  <Button 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     color="primary"
                     onClick={openProfileForm}
                     startIcon={<i className="ni ni-single-02" />}
-                    sx={{ 
+                    sx={{
                       minWidth: 160,
                       height: 44,
                       fontSize: '14px',
@@ -352,17 +542,17 @@ function PersonalInformation() {
                     }}
                   >
                     Cập nhật thông tin
-                </Button>
+                  </Button>
                 </ArgonBox>
               </CardContent>
             </Card>
 
           </Grid>
-          </Grid>
+        </Grid>
 
         {/* Edit Profile Dialog */}
-        <Dialog 
-          open={activeForm === "profile"} 
+        <Dialog
+          open={activeForm === "profile"}
           onClose={closeForms}
           maxWidth="md"
           fullWidth
@@ -370,7 +560,7 @@ function PersonalInformation() {
             sx: { borderRadius: 3, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }
           }}
         >
-          <DialogTitle sx={{ 
+          <DialogTitle sx={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
             py: 2.5
@@ -402,9 +592,9 @@ function PersonalInformation() {
                   <Avatar
                     src={avatarPreview || formData.avatar_url}
                     alt="Avatar"
-                    sx={{ 
-                      width: 120, 
-                      height: 120, 
+                    sx={{
+                      width: 120,
+                      height: 120,
                       border: '2px solid #e0e0e0',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
@@ -432,34 +622,37 @@ function PersonalInformation() {
                     </ArgonBox>
                     <TextField
                       fullWidth
+                      required
                       value={formData.full_name}
                       onChange={handleInputChange("full_name")}
                       variant="outlined"
                       placeholder="Nhập họ và tên"
+                      error={!!fieldErrors.full_name}
+                      helperText={fieldErrors.full_name}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.full_name ? 'error.main' : 'primary.main',
                           },
                           '& .MuiInputBase-input': {
-                          width: '100% !important',
-                          minWidth: '0 !important',
-                          maxWidth: 'none !important',
-                          overflow: 'visible !important',
-                          textOverflow: 'unset !important',
-                          whiteSpace: 'nowrap !important',
-                          boxSizing: 'border-box !important',
-                        },
+                            width: '100% !important',
+                            minWidth: '0 !important',
+                            maxWidth: 'none !important',
+                            overflow: 'visible !important',
+                            textOverflow: 'unset !important',
+                            whiteSpace: 'nowrap !important',
+                            boxSizing: 'border-box !important',
+                          },
                           '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.full_name ? 'error.main' : 'primary.main',
                             borderWidth: '2px',
                           },
                         },
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <ArgonBox mb={1}>
                       <ArgonTypography variant="body2" fontWeight="medium" color="dark">
@@ -478,11 +671,11 @@ function PersonalInformation() {
                         },
                       }}
                     />
-                    <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: 'block' }}>
+                    {/* <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: 'block' }}>
                       Username không thể thay đổi
-                    </ArgonTypography>
+                    </ArgonTypography> */}
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <ArgonBox mb={1}>
                       <ArgonTypography variant="body2" fontWeight="medium" color="dark">
@@ -491,19 +684,22 @@ function PersonalInformation() {
                     </ArgonBox>
                     <TextField
                       fullWidth
+                      required
                       value={formData.email}
                       onChange={handleInputChange("email")}
                       variant="outlined"
                       type="email"
                       placeholder="Nhập email"
+                      error={!!fieldErrors.email}
+                      helperText={fieldErrors.email}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.email ? 'error.main' : 'primary.main',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.email ? 'error.main' : 'primary.main',
                             borderWidth: '2px',
                           },
                         },
@@ -524,7 +720,7 @@ function PersonalInformation() {
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <ArgonBox mb={1}>
                       <ArgonTypography variant="body2" fontWeight="medium" color="dark">
@@ -533,18 +729,21 @@ function PersonalInformation() {
                     </ArgonBox>
                     <TextField
                       fullWidth
+                      required
                       value={formData.phone_number}
                       onChange={handleInputChange("phone_number")}
                       variant="outlined"
-                      placeholder="Nhập số điện thoại"
+                      // placeholder="Nhập số điện thoại (10 hoặc 11 số)"
+                      error={!!fieldErrors.phone_number}
+                      helperText={fieldErrors.phone_number}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: '#f8f9fa',
                           '&:hover fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.phone_number ? 'error.main' : 'primary.main',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
+                            borderColor: fieldErrors.phone_number ? 'error.main' : 'primary.main',
                             borderWidth: '2px',
                           },
                         },
@@ -586,7 +785,7 @@ function PersonalInformation() {
             >
               Hủy
             </Button>
-            <Button 
+            <Button
               onClick={handleSaveAndClose}
               variant="contained"
               color="primary"
@@ -614,141 +813,248 @@ function PersonalInformation() {
         </Dialog>
 
         {/* Change Password Dialog */}
-        <Dialog 
-          open={activeForm === "password"} 
+        <Dialog
+          open={activeForm === "password"}
           onClose={closeForms}
           maxWidth="sm"
-                      fullWidth
+          fullWidth
           PaperProps={{
-            sx: { borderRadius: 3, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }
+            sx: { borderRadius: 3, boxShadow: '0 16px 40px rgba(13,71,161,0.25)' }
           }}
         >
-          <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            py: 2.5
-          }}>
-            <ArgonBox display="flex" justifyContent="space-between" alignItems="center">
-              <ArgonTypography variant="h5" fontWeight="bold" color="white">
-                Đổi mật khẩu
-              </ArgonTypography>
-              <IconButton onClick={closeForms} sx={{ color: 'white' }}>
-                <i className="ni ni-fat-remove" style={{ fontSize: '24px' }} />
-              </IconButton>
-            </ArgonBox>
-          </DialogTitle>
-          <DialogContent>
-            <ArgonBox sx={{ mt: 2 }}>
-              {/* Password Section */}
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <ArgonBox mb={1}>
-                    <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                      Mật khẩu mới
-                    </ArgonTypography>
-                  </ArgonBox>
-                    <TextField
-                      fullWidth
-                    name="newPassword"
-                    value={passwordData.newPassword}
-                    onChange={handlePasswordChange}
-                      variant="outlined"
-                    type="password"
-                    placeholder="Nhập mật khẩu mới"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: '#f8f9fa',
-                        '&:hover fieldset': {
-                          borderColor: 'primary.main',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: 'primary.main',
-                          borderWidth: '2px',
-                        },
-                      },
-                    }}
-                  />
-                  <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: 'block' }}>
-                    Tối thiểu 6 ký tự
+          <DialogTitle
+            sx={{
+              background: (theme) =>
+                `linear-gradient(135deg, ${theme.palette.warning.main} 0%, ${theme.palette.info.main} 100%)`,
+              color: "#fff",
+              py: 2.5,
+              px: 3
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <LockOutlinedIcon sx={{ fontSize: 26 }} />
+                <ArgonBox>
+                  <ArgonTypography variant="h5" fontWeight="bold" color="#fff">
+                    Đổi mật khẩu
                   </ArgonTypography>
-                  </Grid>
-                
-                  <Grid item xs={12}>
-                  <ArgonBox mb={1}>
-                    <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                      Xác nhận mật khẩu mới
+                  <ArgonTypography variant="caption" color="rgba(255,255,255,0.85)">
+                    Bảo vệ tài khoản phụ huynh của bạn
+                  </ArgonTypography>
+                </ArgonBox>
+              </Stack>
+              <Button
+                onClick={closeForms}
+                disabled={passwordSaving}
+                sx={{
+                  minWidth: "auto",
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  p: 0,
+                  color: "#fff",
+                  backgroundColor: "rgba(255,255,255,0.18)",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  '&:hover': {
+                    backgroundColor: "rgba(255,255,255,0.3)",
+                    borderColor: "rgba(255,255,255,0.45)"
+                  }
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </Button>
+            </Stack>
+          </DialogTitle>
+          <DialogContent
+            sx={{
+              p: 3,
+              background: "linear-gradient(135deg, #ffffff 0%, #f6f9ff 100%)"
+            }}
+          >
+            <Stack spacing={3}>
+              <PasswordSectionCard
+                icon={<SecurityOutlinedIcon />}
+                title="Thông tin bảo mật"
+                subtitle="Nhập mật khẩu mới cho tài khoản của bạn"
+              >
+                <Stack spacing={2.5}>
+                  <ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={0.75}>
+                      Mật khẩu hiện tại <span style={{ color: "#d32f2f" }}>*</span>
                     </ArgonTypography>
-                  </ArgonBox>
                     <TextField
                       fullWidth
-                    name="confirmPassword"
-                    value={passwordData.confirmPassword}
-                    onChange={handlePasswordChange}
-                      variant="outlined"
-                    type="password"
-                    placeholder="Nhập lại mật khẩu mới"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: '#f8f9fa',
-                        '&:hover fieldset': {
-                          borderColor: 'primary.main',
+                      name="currentPassword"
+                      sx={{
+                        flex: 1,
+                        width: "100%",
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "25px",
+                          backgroundColor: "white",
+                          width: "100%",
+                          "&:hover": {
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                          },
+                          "&.Mui-focused": {
+                            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.2)"
+                          }
                         },
-                        '&.Mui-focused fieldset': {
-                          borderColor: 'primary.main',
-                          borderWidth: '2px',
-                        },
-                      },
-                    }}
+                        "& .MuiInputBase-input": {
+                          width: "100% !important",
+                          wordWrap: "break-word",
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "break-word"
+                        }
+                      }}
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      type="password"
+                      placeholder="Nhập mật khẩu hiện tại"
+                      error={Boolean(passwordErrors.currentPassword)}
+                      helperText={passwordErrors.currentPassword || "Nhập mật khẩu hiện tại để xác nhận"}
                     />
-                  </Grid>
-                </Grid>
-            </ArgonBox>
+                  </ArgonBox>
+                  <ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={0.75}>
+                      Mật khẩu mới <span style={{ color: "#d32f2f" }}>*</span>
+                    </ArgonTypography>
+                    <TextField
+                      fullWidth
+                      name="newPassword"
+                      sx={{
+                        flex: 1,
+                        width: '100%',
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '25px',
+                          backgroundColor: 'white',
+                          width: '100%',
+                          '&:hover': {
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          },
+                          '&.Mui-focused': {
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+                          }
+                        },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                          wordWrap: 'break-word',
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'break-word'
+                        }
+                      }}
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      type="password"
+                      placeholder="Nhập mật khẩu mới"
+                      error={Boolean(passwordErrors.newPassword)}
+                      helperText={passwordErrors.newPassword || "8-16 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt"}
+                    />
+                  </ArgonBox>
+                  <ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={0.75}>
+                      Xác nhận mật khẩu mới <span style={{ color: "#d32f2f" }}>*</span>
+                    </ArgonTypography>
+                    <TextField
+                      fullWidth
+                      name="confirmPassword"
+                      sx={{
+                        flex: 1,
+                        width: '100%',
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '25px',
+                          backgroundColor: 'white',
+                          width: '100%',
+                          '&:hover': {
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          },
+                          '&.Mui-focused': {
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+                          }
+                        },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                          wordWrap: 'break-word',
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'break-word'
+                        }
+                      }}
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      type="password"
+                      placeholder="Nhập lại mật khẩu mới"
+                      error={Boolean(passwordErrors.confirmPassword)}
+                      helperText={passwordErrors.confirmPassword}
+                    />
+                  </ArgonBox>
+                </Stack>
+              </PasswordSectionCard>
+
+              <PasswordSectionCard
+                icon={<ChecklistOutlinedIcon />}
+                title="Yêu cầu mật khẩu mạnh"
+                subtitle="Đảm bảo đáp ứng đầy đủ các điều kiện sau"
+              >
+                <Stack spacing={1.2} color="text.secondary">
+                  <ArgonTypography variant="body2">• Độ dài từ 8 - 16 ký tự</ArgonTypography>
+                  <ArgonTypography variant="body2">• Chứa ít nhất 1 chữ hoa và 1 chữ thường</ArgonTypography>
+                  <ArgonTypography variant="body2">• Chứa ít nhất 1 chữ số</ArgonTypography>
+                  <ArgonTypography variant="body2">• Chứa ít nhất 1 ký tự đặc biệt (!@#$%^&*...)</ArgonTypography>
+                </Stack>
+              </PasswordSectionCard>
+            </Stack>
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+          <DialogActions
+            sx={{
+              px: 3,
+              py: 2,
+              background: "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)",
+              borderTop: "1px solid #e3f2fd"
+            }}
+          >
             <Button
               onClick={closeForms}
-              disabled={saving}
+              disabled={passwordSaving}
               sx={{
                 borderRadius: 2,
                 px: 3,
                 py: 1,
-                textTransform: 'none',
-                fontWeight: 'bold',
-                border: '2px solid',
-                borderColor: 'grey.300',
-                '&:hover': { borderWidth: 2 }
+                textTransform: "none",
+                fontWeight: "bold",
+                border: "2px solid",
+                borderColor: "grey.300",
+                "&:hover": { borderWidth: 2 }
               }}
             >
-                    Hủy
-                  </Button>
-            <Button 
+              Hủy
+            </Button>
+            <Button
               onClick={handlePasswordAndClose}
-              variant="contained" 
-                            color="primary"
-              disabled={saving}
+              variant="contained"
+              color="warning"
+              disabled={passwordSaving}
               sx={{
                 borderRadius: 2,
                 px: 4,
                 py: 1,
-                textTransform: 'none',
-                fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                textTransform: "none",
+                fontWeight: "bold",
                 boxShadow: 3,
-                color: 'white !important',
-                '&:hover': {
+                color: "white !important",
+                background: "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)",
+                "&:hover": {
                   boxShadow: 5,
-                  background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-                  color: 'white !important'
+                  background: "linear-gradient(135deg, #f57c00 0%, #ff9800 100%)",
+                  color: "white !important"
                 },
-                '&:disabled': { background: '#ccc', color: 'white !important' }
+                "&:disabled": { background: "#ccc", color: "white !important" }
               }}
             >
-              {saving ? "Đang lưu..." : "Đổi mật khẩu"}
+              {passwordSaving ? "Đang lưu..." : "Đổi mật khẩu"}
             </Button>
           </DialogActions>
         </Dialog>
       </ArgonBox>
-            <Footer />
+      <Footer />
 
     </DashboardLayout>
   );
