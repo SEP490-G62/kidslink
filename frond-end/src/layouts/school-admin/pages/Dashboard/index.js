@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
@@ -41,49 +41,56 @@ function SchoolDashboard() {
   const [yearStart, setYearStart] = useState("");
   const [yearEnd, setYearEnd] = useState("");
 
-  useEffect(() => {
-    let mounted = true;
-    const fetchAll = async () => {
-      setLoading(true);
-      setErrorMessage("");
-      try {
-        const schoolResponse = await api.get(`/school-admin/school`, true);
-        const resolvedSchool = schoolResponse?.data || schoolResponse?.school || schoolResponse || null;
-        const resolvedSchoolId = resolvedSchool?._id ? resolvedSchool._id.toString() : null;
-        setSchoolInfo(resolvedSchool);
+  const fetchDashboardData = useCallback(async () => {
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      const schoolResponse = await api.get(`/school-admin/school`, true);
+      const resolvedSchool = schoolResponse?.data || schoolResponse?.school || schoolResponse || null;
+      const resolvedSchoolId = resolvedSchool?._id ? resolvedSchool._id.toString() : null;
+      setSchoolInfo(resolvedSchool);
 
-        const studentEndpoint = resolvedSchoolId
-          ? `/student/all?school_id=${resolvedSchoolId}`
-          : `/student/all`;
+      const studentEndpoint = resolvedSchoolId ? `/student/all?school_id=${resolvedSchoolId}` : `/student/all`;
 
-        const [u, c, p, s] = await Promise.all([
-          api.get(`/users?limit=1000&page=1`, true).catch(() => ({ data: [] })),
-          api.get(`/classes`, true).catch(() => []),
-          api.get(`/school-admin/posts`, true).catch(() => []),
-          api.get(studentEndpoint, true).catch(() => ({ students: [] })),
-        ]);
-        if (!mounted) return;
-        setUsers(Array.isArray(u?.data) ? u.data : (u?.data?.data || []));
-        setClasses(Array.isArray(c) ? c : (c?.data || []));
-        setPosts(Array.isArray(p) ? p : (p?.data || []));
-        const rawStudents = Array.isArray(s) ? s : (s?.students || s?.data || []);
-        setStudents(Array.isArray(rawStudents) ? rawStudents : []);
-      } catch (error) {
-        console.error("SchoolDashboard fetch error:", error);
-        if (mounted) {
-          setErrorMessage(error.message || "Không thể tải dữ liệu trường học");
-          setUsers([]);
-          setClasses([]);
-          setPosts([]);
-          setStudents([]);
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-    fetchAll();
-    return () => { mounted = false; };
+      const [u, c, p, s] = await Promise.all([
+        api.get(`/users?limit=1000&page=1`, true).catch(() => ({ data: [] })),
+        api.get(`/classes`, true).catch(() => []),
+        api.get(`/school-admin/posts`, true).catch(() => []),
+        api.get(studentEndpoint, true).catch(() => ({ students: [] })),
+      ]);
+      setUsers(Array.isArray(u?.data) ? u.data : (u?.data?.data || []));
+      setClasses(Array.isArray(c) ? c : (c?.data || []));
+      setPosts(Array.isArray(p) ? p : (p?.data || []));
+      const rawStudents = Array.isArray(s) ? s : (s?.students || s?.data || []);
+      const activeStudents = Array.isArray(rawStudents)
+        ? rawStudents.filter((student) => Number(student?.status ?? 1) === 1)
+        : [];
+      setStudents(activeStudents);
+    } catch (error) {
+      console.error("SchoolDashboard fetch error:", error);
+      setErrorMessage(error.message || "Không thể tải dữ liệu trường học");
+      setUsers([]);
+      setClasses([]);
+      setPosts([]);
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  useEffect(() => {
+    const handleStudentsUpdated = () => {
+      fetchDashboardData();
+    };
+    window.addEventListener("students-updated", handleStudentsUpdated);
+    return () => {
+      window.removeEventListener("students-updated", handleStudentsUpdated);
+    };
+  }, [fetchDashboardData]);
 
   const counts = useMemo(() => {
     const byRole = users.reduce((acc, u) => { acc[u.role] = (acc[u.role] || 0) + 1; return acc; }, {});

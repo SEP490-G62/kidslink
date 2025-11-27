@@ -33,22 +33,27 @@ import configs from "examples/Charts/LineCharts/DefaultLineChart/configs";
 
 // Argon Dashboard 2 MUI base styles
 import colors from "assets/theme/base/colors";
+import rgba from "assets/theme/functions/rgba";
 
 function DefaultLineChart({ title, description, height, chart }) {
   const chartDatasets = chart.datasets
-    ? chart.datasets.map((dataset) => ({
-        ...dataset,
-        tension: 0.4,
-        borderWidth: 3,
-        pointRadius: 2,
-        pointBackgroundColor: colors[dataset.color]
-          ? colors[dataset.color || "dark"].main
-          : colors.dark.main,
-        borderColor: colors[dataset.color]
-          ? colors[dataset.color || "dark"].main
-          : colors.dark.main,
-        maxBarThickness: 6,
-      }))
+    ? chart.datasets.map((dataset) => {
+        const palette = colors[dataset.color] ? colors[dataset.color || "dark"] : colors.dark;
+        const color = palette.main;
+        return {
+          ...dataset,
+          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          pointHitRadius: 12,
+          fill: true,
+          backgroundColor: rgba(color, 0.12),
+          pointBackgroundColor: color,
+          borderColor: color,
+          maxBarThickness: 6,
+        };
+      })
     : [];
 
   const { data, options } = configs(chart.labels || [], chartDatasets);
