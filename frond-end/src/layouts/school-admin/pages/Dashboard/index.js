@@ -47,25 +47,8 @@ function SchoolDashboard() {
         setUsers(Array.isArray(u?.data) ? u.data : (u?.data?.data || []));
         setClasses(Array.isArray(c) ? c : (c?.data || []));
         setPosts(Array.isArray(p) ? p : (p?.data || []));
-        let listS = Array.isArray(s) ? s : (s?.students || s?.data || []);
-        // demo growth if data quá ít: sinh dữ liệu giả để thấy xu hướng rõ hơn
-        if (!Array.isArray(listS)) listS = [];
-        if (listS.length < 10) {
-          const synthetic = [];
-          const ageBuckets = ["3-4 years", "4-5 years", "5-6 years"];
-          const now = new Date();
-          for (let i = 0; i < 60; i++) {
-            const m = new Date(now.getFullYear(), now.getMonth() - Math.floor(Math.random() * 18), 1 + Math.floor(Math.random() * 27));
-            synthetic.push({
-              _id: `fake_${i}`,
-              full_name: `HS ${i}`,
-              enrolled_at: m.toISOString(),
-              class_age_id: { age_name: ageBuckets[i % ageBuckets.length] },
-            });
-          }
-          listS = [...listS, ...synthetic];
-        }
-        setStudents(listS);
+        const listS = Array.isArray(s) ? s : (s?.students || s?.data || []);
+        setStudents(Array.isArray(listS) ? listS : []);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -90,17 +73,19 @@ function SchoolDashboard() {
   const availableMonths = useMemo(() => {
     const set = new Set();
     students.forEach((s) => {
-      const d = new Date(s.enrolled_at || s.created_at || s.createdAt || Date.now());
+      const d = new Date(s.createdAt || s.created_at || Date.now());
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       set.add(key);
     });
-    return Array.from(set).sort();
+    const sorted = Array.from(set).sort();
+    // Giới hạn chỉ hiển thị 24 tháng gần nhất
+    return sorted.slice(-24);
   }, [students]);
 
   const availableYears = useMemo(() => {
     const set = new Set();
     students.forEach((s) => {
-      const d = new Date(s.enrolled_at || s.created_at || s.createdAt || Date.now());
+      const d = new Date(s.createdAt || s.created_at || Date.now());
       set.add(`${d.getFullYear()}`);
     });
     return Array.from(set).sort();
@@ -185,7 +170,7 @@ function SchoolDashboard() {
     const lastKey = ym(last);
     const map = new Map();
     students.forEach((s) => {
-      const dt = new Date(s.enrolled_at || s.created_at || s.createdAt || s.updated_at || Date.now());
+      const dt = new Date(s.createdAt || s.created_at || Date.now());
       const key = ym(dt);
       map.set(key, (map.get(key) || 0) + 1);
     });
@@ -198,7 +183,7 @@ function SchoolDashboard() {
   const studentsGrowthLine = useMemo(() => {
     const map = new Map();
     students.forEach((s) => {
-      const d = new Date(s.enrolled_at || s.created_at || s.createdAt || Date.now());
+      const d = new Date(s.createdAt || s.created_at || Date.now());
       const key = growthView === "year" ? `${d.getFullYear()}` : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       map.set(key, (map.get(key) || 0) + 1);
     });
@@ -217,11 +202,71 @@ function SchoolDashboard() {
 
   const ageOrClassDistribution = useMemo(() => {
     const buckets = new Map();
+    const now = new Date();
+    
     students.forEach((s) => {
-      const label = s.class_age_id?.age_name || s.class_id?.class_age_id?.age_name || s.class_name || "Khác";
-      buckets.set(label, (buckets.get(label) || 0) + 1);
+      // Tính tuổi từ ngày sinh (dob)
+      let ageLabel = "Không xác định";
+      
+      if (s.dob) {
+        const birthDate = new Date(s.dob);
+        if (!isNaN(birthDate.getTime())) {
+          // Tính tuổi (năm)
+          let age = now.getFullYear() - birthDate.getFullYear();
+          const monthDiff = now.getMonth() - birthDate.getMonth();
+          
+          // Điều chỉnh nếu chưa đến sinh nhật trong năm
+          if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          
+          // Phân nhóm theo độ tuổi
+          if (age < 0) {
+            ageLabel = "Dưới 1 tuổi";
+          } else if (age < 3) {
+            ageLabel = "1-2 tuổi";
+          } else if (age < 4) {
+            ageLabel = "3 tuổi";
+          } else if (age < 5) {
+            ageLabel = "4 tuổi";
+          } else if (age < 6) {
+            ageLabel = "5 tuổi";
+          } else if (age < 7) {
+            ageLabel = "6 tuổi";
+          } else if (age < 8) {
+            ageLabel = "7 tuổi";
+          } else if (age < 9) {
+            ageLabel = "8 tuổi";
+          } else if (age < 10) {
+            ageLabel = "9 tuổi";
+          } else {
+            ageLabel = "10 tuổi trở lên";
+          }
+        }
+      }
+      
+      buckets.set(ageLabel, (buckets.get(ageLabel) || 0) + 1);
     });
-    const labels = Array.from(buckets.keys());
+    
+    // Sắp xếp labels theo thứ tự độ tuổi
+    const ageOrder = [
+      "Dưới 1 tuổi",
+      "1-2 tuổi",
+      "3 tuổi",
+      "4 tuổi",
+      "5 tuổi",
+      "6 tuổi",
+      "7 tuổi",
+      "8 tuổi",
+      "9 tuổi",
+      "10 tuổi trở lên",
+      "Không xác định"
+    ];
+    
+    const allLabels = Array.from(buckets.keys());
+    const sortedLabels = ageOrder.filter(label => allLabels.includes(label))
+      .concat(allLabels.filter(label => !ageOrder.includes(label)));
+    
     const gradientKeys = ["info", "warning", "success", "primary", "error", "secondary", "dark", "info"];
     const resolve = (key) => {
       const { gradients, dark } = colorsTheme;
@@ -230,11 +275,11 @@ function SchoolDashboard() {
       }
       return dark.main;
     };
-    const legendColors = labels.map((_, idx) => resolve(gradientKeys[idx % gradientKeys.length]));
+    const legendColors = sortedLabels.map((_, idx) => resolve(gradientKeys[idx % gradientKeys.length]));
     return {
-      labels,
+      labels: sortedLabels,
       colors: legendColors,
-      datasets: { label: "Số HS", backgroundColors: gradientKeys.slice(0, labels.length), data: labels.map(l => buckets.get(l)) },
+      datasets: { label: "Số HS", backgroundColors: gradientKeys.slice(0, sortedLabels.length), data: sortedLabels.map(l => buckets.get(l)) },
     };
   }, [students]);
 
