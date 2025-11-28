@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
-const { listDishes, createDish, updateDish, deleteDish, listClassAges, listClassAgeMeals, listMeals, listWeekDays, assignDishesToClassAgeMeal, getAssignedDishes, getWeeklyAssignedDishes, getStaffProfile, updateStaffProfile, changeStaffPassword } = require('../controllers/nutritionController');
+const { listDishes, createDish, updateDish, deleteDish, listClassAges, listClassAgeMeals, listMeals, createMeal, updateMeal, deleteMeal, listWeekDays, assignDishesToClassAgeMeal, getAssignedDishes, getWeeklyAssignedDishes, getStaffProfile, updateStaffProfile, changeStaffPassword } = require('../controllers/nutritionController');
 
 // Áp dụng xác thực và phân quyền cho toàn bộ route
 router.use(authenticate, authorize(['nutrition_staff']));
@@ -21,6 +21,9 @@ router.get('/class-age-meals', listClassAgeMeals);
 
 // Danh sách bữa ăn và ngày trong tuần
 router.get('/meals', listMeals);
+router.post('/meals', createMeal);
+router.put('/meals/:id', updateMeal);
+router.delete('/meals/:id', deleteMeal);
 router.get('/weekdays', listWeekDays);
 
 // Gán món ăn cho một ngày/bữa của một nhóm tuổi

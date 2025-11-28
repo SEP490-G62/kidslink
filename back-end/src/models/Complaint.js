@@ -6,6 +6,12 @@ const complaintSchema = new mongoose.Schema({
     ref: 'ComplaintType',
     required: true
   },
+  school_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true,
+    index: true
+  },
   complaintTypeName: {
     type: String,
     required: true,
