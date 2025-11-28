@@ -6,6 +6,11 @@ const studentSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  school_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true
+  },
   dob: {
     type: Date,
     required: true
