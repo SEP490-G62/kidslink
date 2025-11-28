@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import PropTypes from "prop-types";
 import Card from "@mui/material/Card";
 import CardHeader from "@mui/material/CardHeader";
 import CardContent from "@mui/material/CardContent";
 import CircularProgress from "@mui/material/CircularProgress";
 import Grid from "@mui/material/Grid";
 import FormControl from "@mui/material/FormControl";
+import FormGroup from "@mui/material/FormGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
@@ -27,13 +30,28 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
+import InputAdornment from "@mui/material/InputAdornment";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import CloseIcon from "@mui/icons-material/Close";
+import RestaurantIcon from "@mui/icons-material/Restaurant";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import SearchIcon from "@mui/icons-material/Search";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import ClearIcon from "@mui/icons-material/Clear";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import GroupIcon from "@mui/icons-material/Group";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import Alert from "@mui/material/Alert";
 import Divider from "@mui/material/Divider";
+import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
+import Stack from "@mui/material/Stack";
 import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
+import ArgonButton from "components/ArgonButton";
 import nutritionService from "services/nutritionService";
 
 // Helper functions for Vietnam timezone (UTC+7)
@@ -86,6 +104,55 @@ const toVietnamISOString = (dateString) => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}T00:00:00.000Z`;
+};
+
+// SectionCard component for better UI organization
+const SectionCard = ({ icon, title, subtitle, children }) => (
+  <Paper
+    sx={{
+      p: 3,
+      borderRadius: 3,
+      border: "1px solid #e3f2fd",
+      background: "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(243,248,255,0.98) 100%)",
+      boxShadow: "0 12px 30px rgba(25,118,210,0.12)",
+    }}
+  >
+    <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          borderRadius: "50%",
+          backgroundColor: "#e3f2fd",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#1976d2",
+        }}
+      >
+        {icon}
+      </Box>
+      <Box>
+        <ArgonTypography variant="subtitle1" fontWeight="bold" color="dark">
+          {title}
+        </ArgonTypography>
+        {subtitle && (
+          <ArgonTypography variant="caption" color="text" fontWeight="regular">
+            {subtitle}
+          </ArgonTypography>
+        )}
+      </Box>
+    </Stack>
+    <Divider sx={{ mb: 2 }} />
+    {children}
+  </Paper>
+);
+
+SectionCard.propTypes = {
+  icon: PropTypes.node.isRequired,
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
+  children: PropTypes.node.isRequired,
 };
 
 export default function NutritionDishList() {
@@ -525,93 +592,202 @@ export default function NutritionDishList() {
           {loading && <ArgonBox display="flex" justifyContent="center" py={4}><CircularProgress /></ArgonBox>}
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {!loading && (
-            <Grid container spacing={2}>
-              <Grid item xs={12} display="flex" gap={2} alignItems="flex-start" flexWrap="wrap">
-                <FormControl size="small" sx={{ flex: 1, minWidth: 200, maxWidth: 400 }}>
-                  <ArgonTypography variant="caption" color="text" sx={{ mb: 0.5, fontSize: '0.75rem' }}>
-                    Tìm kiếm món ăn
-                  </ArgonTypography>
-                  <TextField
-                    placeholder="Tìm kiếm theo tên món ăn"
-                    value={search}
-                    onChange={(e)=>setSearch(e.target.value)}
-                    size="small"
-                    fullWidth
-                    sx={{
-                      borderRadius: 2,
-                      '& .MuiOutlinedInput-root': {
-                        '&:hover fieldset': {
-                          borderColor: 'primary.main',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: 'primary.main',
-                        },
-                      },  flex: 1, minWidth: 200, maxWidth: 400,  
-                      width: '100%',
-                      borderRadius: 2,
-                      '& .MuiOutlinedInput-root': {
-                        width: '100%',
-                        '&:hover fieldset': {
-                          borderColor: 'primary.main',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: 'primary.main',
-                        },
-                      },
-                      '& .MuiInputBase-input': {
-                        width: '100% !important',
-                      }
-                    }}
-                  />
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 200 }}>
-                  <ArgonTypography variant="caption" color="text" sx={{ mb: 0.5, fontSize: '0.75rem' }}>
-                    Lọc theo loại bữa ăn
-                  </ArgonTypography>
-                  <Select
-                    value={mealTypeFilter}
-                    onChange={(e) => setMealTypeFilter(e.target.value)}
-                    displayEmpty
-                    sx={{
-                      borderRadius: 2,
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#e0e0e0',
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'primary.main',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'primary.main',
-                      },
-                    }}
-                    renderValue={(selected) => {
-                      if (!selected) {
-                        return <em>Tất cả</em>;
-                      }
-                      const selectedMeal = meals.find(m => m._id === selected);
-                      return selectedMeal ? selectedMeal.meal : '';
-                    }}
+            <>
+              <Card 
+                sx={{ 
+                  mb: 3,
+                  background: "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)",
+                  border: "1px solid #e3f2fd",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                }}
+              >
+                <CardContent>
+                  <ArgonBox
+                    display="flex"
+                    gap={2}
+                    flexWrap="wrap"
+                    alignItems="center"
                   >
-                    <MenuItem value="">
-                      <em>Tất cả</em>
-                    </MenuItem>
-                    {meals.map(meal => (
-                      <MenuItem key={meal._id} value={meal._id}>
-                        {meal.meal}
+                    <TextField
+                      size="small"
+                      placeholder="Tìm kiếm theo tên món ăn hoặc mô tả..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      sx={{ 
+                        flex: 1, 
+                        minWidth: 200, 
+                        maxWidth: 400,  
+                        width: '100%',
+                        borderRadius: 2,
+                        '& .MuiOutlinedInput-root': {
+                          width: '100%',
+                          bgcolor: "#fff",
+                          borderRadius: 2,
+                          transition: "all 0.3s ease",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                          '&:hover fieldset': {
+                            borderColor: 'primary.main',
+                            boxShadow: "0 2px 6px rgba(25, 118, 210, 0.15)",
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: 'primary.main',
+                            boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
+                          },
+                        },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                        }
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon sx={{ color: "#1976d2" }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <TextField
+                      select
+                      size="small"
+                      value={mealTypeFilter}
+                      onChange={(e) => setMealTypeFilter(e.target.value)}
+                      sx={{
+                        minWidth: 280,
+                        "& .MuiOutlinedInput-root": {
+                          bgcolor: "#fff",
+                          borderRadius: 2,
+                          transition: "all 0.3s ease",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                          pl: 1,
+                        },
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#e0e0e0",
+                          borderWidth: 1.5,
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#1976d2",
+                          boxShadow: "0 2px 6px rgba(25, 118, 210, 0.15)",
+                        },
+                        "& .MuiOutlinedInput-root.Mui-focused": {
+                          boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#1976d2",
+                            borderWidth: 2,
+                          },
+                        },
+                        "& .MuiInputBase-input": {
+                          fontWeight: mealTypeFilter ? 600 : 400,
+                        },
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <IconButton
+                              size="small"
+                              edge="start"
+                              sx={{ color: "#1976d2" }}
+                              onMouseDown={(event) => event.preventDefault()}
+                            >
+                              <FilterListIcon />
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                      SelectProps={{
+                        displayEmpty: true,
+                        renderValue: (value) => {
+                          if (!value) return "Tất cả loại bữa ăn";
+                          const selectedMeal = meals.find((m) => m._id === value);
+                          return selectedMeal ? selectedMeal.meal : value;
+                        },
+                        MenuProps: {
+                          PaperProps: {
+                            sx: {
+                              borderRadius: 2,
+                              mt: 1,
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                              "& .MuiMenuItem-root": {
+                                borderRadius: 1,
+                                mx: 0.5,
+                                my: 0.25,
+                                "&:hover": {
+                                  backgroundColor: "#e3f2fd",
+                                },
+                                "&.Mui-selected": {
+                                  backgroundColor: "#1976d2",
+                                  color: "#fff",
+                                  "&:hover": {
+                                    backgroundColor: "#1565c0",
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>Tất cả loại bữa ăn</em>
                       </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Button 
-                  startIcon={<AddIcon />} 
-                  variant="contained" 
-                  color="success" 
-                  onClick={openAddDish}
-                  sx={{ minWidth: 140 }}
-                >
-                  Thêm món
-                </Button>
-              </Grid>
+                      {meals.map((meal) => (
+                        <MenuItem key={meal._id} value={meal._id}>
+                          {meal.meal}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    <ArgonButton
+                      size="small"
+                      variant="contained"
+                      color="success"
+                      onClick={openAddDish}
+                      startIcon={<AddIcon />}
+                      sx={{
+                        minWidth: 140,
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                        transition: "all 0.3s ease",
+                        "&:hover": {
+                          transform: "translateY(-1px)",
+                          boxShadow: "0 4px 12px rgba(67, 160, 71, 0.3)",
+                        },
+                      }}
+                    >
+                      Thêm món
+                    </ArgonButton>
+                    {(search || mealTypeFilter) && (
+                      <ArgonButton
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        onClick={() => {
+                          setSearch("");
+                          setMealTypeFilter("");
+                        }}
+                        startIcon={<ClearIcon />}
+                        sx={{
+                          minWidth: 120,
+                          borderRadius: 2,
+                          textTransform: "none",
+                          fontWeight: 500,
+                          borderWidth: 1.5,
+                          "&:hover": {
+                            borderWidth: 1.5,
+                            backgroundColor: "#ffebee",
+                            transform: "translateY(-1px)",
+                            boxShadow: "0 2px 6px rgba(211, 47, 47, 0.2)",
+                          },
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        Xóa bộ lọc
+                      </ArgonButton>
+                    )}
+                  </ArgonBox>
+                </CardContent>
+              </Card>
+
+              <Grid container spacing={2}>
 
               <Grid item xs={12}>
                 <TableContainer 
@@ -680,7 +856,8 @@ export default function NutritionDishList() {
                   </Table>
                 </TableContainer>
               </Grid>
-            </Grid>
+              </Grid>
+            </>
           )}
         </CardContent>
       </Card>
@@ -695,66 +872,210 @@ export default function NutritionDishList() {
           {loading && <ArgonBox display="flex" justifyContent="center" py={4}><CircularProgress /></ArgonBox>}
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {!loading && (
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth>
-                  <InputLabel id="class-age-table-label">Nhóm tuổi</InputLabel>
-                  <Select 
-                    labelId="class-age-table-label" 
-                    label="Nhóm tuổi" 
-                    value={selectedClassAgeForTable} 
-                    onChange={(e) => {
-                      console.log('Selected class age:', e.target.value);
-                      setSelectedClassAgeForTable(e.target.value);
-                    }}
-                    disabled={loading || classAges.length === 0}
-                    displayEmpty
-                    renderValue={(selected) => {
-                      if (!selected) {
-                        return <em>Chọn nhóm tuổi</em>;
-                      }
-                      const selectedAge = classAges.find(ca => ca._id === selected);
-                      return selectedAge ? selectedAge.age_name : '';
-                    }}
+            <>
+              <Card 
+                sx={{ 
+                  mb: 3,
+                  background: "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)",
+                  border: "1px solid #e3f2fd",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                }}
+              >
+                <CardContent>
+                  <ArgonBox
+                    display="flex"
+                    gap={2}
+                    flexWrap="wrap"
+                    alignItems="center"
+                    justifyContent="space-between"
                   >
-                    {classAges.length === 0 ? (
-                      <MenuItem disabled value="">
-                        <em>Chưa có nhóm tuổi nào</em>
-                      </MenuItem>
-                    ) : (
-                      classAges.map(ca => (
-                        <MenuItem key={ca._id} value={ca._id}>
-                          {ca.age_name}
+                    <TextField
+                      select
+                      size="small"
+                      value={selectedClassAgeForTable}
+                      onChange={(e) => {
+                        console.log('Selected class age:', e.target.value);
+                        setSelectedClassAgeForTable(e.target.value);
+                      }}
+                      disabled={loading || classAges.length === 0}
+                      sx={{
+                        minWidth: 200,
+                        maxWidth: 220,
+                        width: 220,
+                        flexShrink: 0,
+                        "& .MuiOutlinedInput-root": {
+                          bgcolor: "#fff",
+                          borderRadius: 2,
+                          transition: "all 0.3s ease",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                          pl: 1,
+                        },
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#e0e0e0",
+                          borderWidth: 1.5,
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#1976d2",
+                          boxShadow: "0 2px 6px rgba(25, 118, 210, 0.15)",
+                        },
+                        "& .MuiOutlinedInput-root.Mui-focused": {
+                          boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#1976d2",
+                            borderWidth: 2,
+                          },
+                        },
+                        "& .MuiInputBase-input": {
+                          fontWeight: selectedClassAgeForTable ? 600 : 400,
+                        },
+                        "&.Mui-disabled": {
+                          bgcolor: "#f5f5f5",
+                        },
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <IconButton
+                              size="small"
+                              edge="start"
+                              sx={{ color: "#1976d2" }}
+                              onMouseDown={(event) => event.preventDefault()}
+                            >
+                              <GroupIcon />
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                      SelectProps={{
+                        displayEmpty: true,
+                        renderValue: (value) => {
+                          if (!value) return "Chọn nhóm tuổi";
+                          const selectedAge = classAges.find((ca) => ca._id === value);
+                          return selectedAge ? selectedAge.age_name : value;
+                        },
+                        MenuProps: {
+                          PaperProps: {
+                            sx: {
+                              borderRadius: 2,
+                              mt: 1,
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                              "& .MuiMenuItem-root": {
+                                borderRadius: 1,
+                                mx: 0.5,
+                                my: 0.25,
+                                "&:hover": {
+                                  backgroundColor: "#e3f2fd",
+                                },
+                                "&.Mui-selected": {
+                                  backgroundColor: "#1976d2",
+                                  color: "#fff",
+                                  "&:hover": {
+                                    backgroundColor: "#1565c0",
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      {classAges.length === 0 ? (
+                        <MenuItem disabled value="">
+                          <em>Chưa có nhóm tuổi nào</em>
                         </MenuItem>
-                      ))
-                    )}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={8} display="flex" alignItems="center" gap={2}>
-                <Button 
-                  variant="outlined" 
-                  size="small"
-                  onClick={() => {
-                    setWeekStartForTable(addDaysVietnam(weekStartForTable, -7));
-                  }}
-                >
-                  <i className="ni ni-bold-left" style={{ fontSize: '16px' }} />
-                </Button>
-                <ArgonTypography variant="body1" fontWeight="bold" color="dark" sx={{ minWidth: '200px', textAlign: 'center' }}>
-                  Tuần ({getDateForWeekdayTable(0).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} - {getDateForWeekdayTable(6).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })})
-                </ArgonTypography>
-                <Button 
-                  variant="outlined" 
-                  size="small"
-                  onClick={() => {
-                    setWeekStartForTable(addDaysVietnam(weekStartForTable, 7));
-                  }}
-                >
-                  <i className="ni ni-bold-right" style={{ fontSize: '16px' }} />
-                </Button>
-              </Grid>
-            </Grid>
+                      ) : (
+                        classAges.map((ca) => (
+                          <MenuItem key={ca._id} value={ca._id}>
+                            {ca.age_name}
+                          </MenuItem>
+                        ))
+                      )}
+                    </TextField>
+                    <ArgonBox
+                      display="flex"
+                      alignItems="center"
+                      gap={2}
+                      sx={{ flex: 1, justifyContent: "center", minWidth: 300 }}
+                    >
+                      <ArgonButton
+                        variant="contained"
+                        color="info"
+                        size="medium"
+                        onClick={() => {
+                          setWeekStartForTable(addDaysVietnam(weekStartForTable, -7));
+                        }}
+                        startIcon={<ChevronLeftIcon />}
+                        sx={{
+                          minWidth: 140,
+                          borderRadius: 2,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          fontSize: '14px',
+                          py: 1.2,
+                          px: 2,
+                          boxShadow: "0 2px 8px rgba(25, 118, 210, 0.2)",
+                          "&:hover": {
+                            backgroundColor: "#1565c0",
+                            transform: "translateY(-2px)",
+                            boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                          },
+                          transition: "all 0.3s ease",
+                        }}
+                      >
+                        Tuần trước
+                      </ArgonButton>
+                      <ArgonBox
+                        sx={{
+                          px: 3,
+                          py: 1.5,
+                          borderRadius: 2,
+                          backgroundColor: "#fff",
+                          border: "2px solid #1976d2",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          minWidth: 280,
+                          justifyContent: "center",
+                          boxShadow: "0 2px 8px rgba(25, 118, 210, 0.15)",
+                        }}
+                      >
+                        <CalendarTodayIcon sx={{ color: "#1976d2", fontSize: 24 }} />
+                        <ArgonTypography variant="body1" fontWeight="bold" color="dark" sx={{ fontSize: '15px' }}>
+                          Tuần ({getDateForWeekdayTable(0).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} - {getDateForWeekdayTable(6).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })})
+                        </ArgonTypography>
+                      </ArgonBox>
+                      <ArgonButton
+                        variant="contained"
+                        color="info"
+                        size="medium"
+                        onClick={() => {
+                          setWeekStartForTable(addDaysVietnam(weekStartForTable, 7));
+                        }}
+                        endIcon={<ChevronRightIcon />}
+                        sx={{
+                          minWidth: 140,
+                          borderRadius: 2,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          fontSize: '14px',
+                          py: 1.2,
+                          px: 2,
+                          boxShadow: "0 2px 8px rgba(25, 118, 210, 0.2)",
+                          "&:hover": {
+                            backgroundColor: "#1565c0",
+                            transform: "translateY(-2px)",
+                            boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                          },
+                          transition: "all 0.3s ease",
+                        }}
+                      >
+                        Tuần sau
+                      </ArgonButton>
+                    </ArgonBox>
+                  </ArgonBox>
+                </CardContent>
+              </Card>
+            </>
           )}
 
           {selectedClassAgeForTable && !loading && !loadingWeeklySelection && !hasAnyDishThisWeek && (
@@ -768,9 +1089,25 @@ export default function NutritionDishList() {
                   <CircularProgress />
                 </ArgonBox>
               ) : (
-                <TableContainer sx={{ border: '1px solid #e0e0e0', borderRadius: 2 }}>
+                <TableContainer 
+                  sx={{ 
+                    border: '1px solid #e0e0e0', 
+                    borderRadius: 3,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    background: "linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)",
+                    overflow: 'hidden'
+                  }}
+                >
                   <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
-                      <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableRow 
+                        sx={{ 
+                          backgroundColor: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+                          background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+                          '& .MuiTableCell-root': {
+                            borderBottom: 'none',
+                          }
+                        }}
+                      >
                         {weekDaysOptions.map((wd, idx) => {
                           const date = getDateForWeekdayTable(idx);
                           const cellWidth = weekDaysOptions.length > 0 ? `${100 / weekDaysOptions.length}%` : 'auto';
@@ -781,17 +1118,18 @@ export default function NutritionDishList() {
                               sx={{ 
                                 fontWeight: 700, 
                                 fontSize: '14px', 
-                                py: 2, 
-                                borderLeft: idx > 0 ? '1px solid #e0e0e0' : 'none',
+                                py: 2.5, 
+                                borderLeft: idx > 0 ? '1px solid rgba(255,255,255,0.3)' : 'none',
                                 width: cellWidth,
                                 maxWidth: cellWidth,
-                                minWidth: cellWidth
+                                minWidth: cellWidth,
+                                color: '#ffffff'
                               }}
                             >
-                              <ArgonTypography variant="body2" fontWeight="bold" color="dark">
+                              <ArgonTypography variant="body2" fontWeight="bold" color="#ffffff">
                                 {wd.name}
                               </ArgonTypography>
-                              <ArgonTypography variant="caption" color="text.secondary">
+                              <ArgonTypography variant="caption" sx={{ color: 'rgba(255,255,255,0.9)', display: 'block', mt: 0.5 }}>
                                 {date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
                               </ArgonTypography>
                             </TableCell>
@@ -841,11 +1179,11 @@ export default function NutritionDishList() {
                                   ) : (
                                     <ArgonBox 
                                       sx={{
-                                        border: '1px solid #e0e0e0',
-                                        borderRadius: 1.5,
+                                        border: `2px solid ${mealColor}`,
+                                        borderRadius: 2,
                                         p: 1.5,
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s',
+                                        transition: 'all 0.3s ease',
                                         backgroundColor: '#fff',
                                         width: '100%',
                                         height: '100%',
@@ -853,10 +1191,13 @@ export default function NutritionDishList() {
                                         boxSizing: 'border-box',
                                         display: 'flex',
                                         flexDirection: 'column',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                                         '&:hover': {
                                           backgroundColor: '#f9f9f9',
-                                          boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                                          transform: 'translateY(-1px)'
+                                          boxShadow: `0 4px 12px ${mealColor}40`,
+                                          transform: 'translateY(-2px)',
+                                          borderColor: mealColor,
+                                          borderWidth: 2.5
                                         }
                                       }}
                                       onClick={() => {
@@ -865,22 +1206,37 @@ export default function NutritionDishList() {
                                         handleOpenWeeklyMealSlot(meal._id, wd.id, dateStrISO);
                                       }}
                                     >
-                                      <ArgonTypography 
-                                        variant="body2" 
-                                        fontWeight="bold"
-                                        sx={{ color: mealColor, mb: 1, fontSize: '13px', flexShrink: 0 }}
-                                      >
-                                        {meal.meal}
-                                      </ArgonTypography>
+                                      <ArgonBox display="flex" alignItems="center" gap={0.5} mb={1} flexShrink={0}>
+                                        <Box
+                                          sx={{
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: '50%',
+                                            backgroundColor: mealColor,
+                                            flexShrink: 0
+                                          }}
+                                        />
+                                        <ArgonTypography 
+                                          variant="body2" 
+                                          fontWeight="bold"
+                                          sx={{ color: mealColor, fontSize: '13px' }}
+                                        >
+                                          {meal.meal}
+                                        </ArgonTypography>
+                                      </ArgonBox>
                                       {slotData.dishes.length === 0 ? (
                                         <ArgonTypography 
                                           variant="caption" 
                                           sx={{ 
                                             fontSize: '11px', 
-                                            color: 'error.main',
+                                            color: 'text.secondary',
+                                            fontStyle: 'italic',
                                             flex: 1,
                                             display: 'flex',
-                                            alignItems: 'flex-start'
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            textAlign: 'center',
+                                            py: 1
                                           }}
                                         >
                                           Click để chọn món
@@ -893,27 +1249,42 @@ export default function NutritionDishList() {
                                             overflowWrap: 'break-word',
                                             flex: 1,
                                             display: 'flex',
-                                            flexDirection: 'column'
+                                            flexDirection: 'column',
+                                            gap: 0.6
                                           }}
                                         >
-                                          {slotData.dishes.map((dish, idx) => (
-                                            <ArgonTypography 
-                                              key={dish._id || idx} 
-                                              variant="caption" 
-                                              display="block"
-                                              sx={{ 
-                                                fontSize: '12px', 
-                                                mb: 0.5, 
-                                                color: '#333', 
-                                                fontWeight: 'bold', 
-                                                fontStyle: 'italic',
-                                                wordBreak: 'break-word',
-                                                overflowWrap: 'break-word'
-                                              }}
-                                            >
-                                              {dish.dish_name || dish.name}
-                                            </ArgonTypography>
-                                          ))}
+                                          {slotData.dishes.map((dish, idx) => {
+                                            const dishName = dish.dish_name || dish.name || '';
+                                            return (
+                                              <Chip
+                                                key={dish._id || idx}
+                                                label={dishName}
+                                                size="small"
+                                                sx={{
+                                                  height: 'auto',
+                                                  minHeight: '24px',
+                                                  fontSize: '11px',
+                                                  fontWeight: 500,
+                                                  backgroundColor: '#f5f5f5',
+                                                  border: '1px solid #e0e0e0',
+                                                  maxWidth: '100%',
+                                                  cursor: 'pointer',
+                                                  '& .MuiChip-label': {
+                                                    px: 1,
+                                                    py: 0.5,
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    display: 'block'
+                                                  },
+                                                  '&:hover': {
+                                                    backgroundColor: '#e3f2fd',
+                                                    borderColor: mealColor
+                                                  }
+                                                }}
+                                              />
+                                            );
+                                          })}
                                         </ArgonBox>
                                       )}
                                     </ArgonBox>
@@ -946,130 +1317,334 @@ export default function NutritionDishList() {
         open={mealSlotDialogOpen} 
         onClose={() => setMealSlotDialogOpen(false)} 
         fullWidth 
-        maxWidth="sm"
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            background: "linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)",
+          },
+        }}
       >
-        <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #43a047 0%, #2e7d32 100%)',
-          color: 'white',
-          fontWeight: 'bold'
-        }}>
-          Chọn món ăn
-          {currentSlot && meals.find(m => m._id === currentSlot.meal_id) && weekDaysOptions.find(w => w.id === currentSlot.weekday_id) && (
-            <ArgonTypography variant="body2" color="white" sx={{ mt: 0.5, opacity: 0.9 }}>
-              {meals.find(m => m._id === currentSlot.meal_id)?.meal} - {weekDaysOptions.find(w => w.id === currentSlot.weekday_id)?.name}
-              {currentSlot?.date && (
-                <>
-                  {" "}- {new Date(currentSlot.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                </>
+        <DialogTitle
+          sx={{
+            background: (theme) =>
+              `linear-gradient(135deg, ${theme.palette.info.main} 0%, ${theme.palette.info.dark} 100%)`,
+            color: "#ffffff",
+            py: 2.5,
+            px: 3,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <RestaurantIcon sx={{ fontSize: 28 }} />
+            <Box>
+              <ArgonTypography variant="h5" fontWeight="bold" color="#ffffff">
+                Chọn món ăn
+              </ArgonTypography>
+              {currentSlot && meals.find(m => m._id === currentSlot.meal_id) && weekDaysOptions.find(w => w.id === currentSlot.weekday_id) && (
+                <ArgonTypography variant="body2" color="white" sx={{ mt: 0.5, opacity: 0.9 }}>
+                  {meals.find(m => m._id === currentSlot.meal_id)?.meal} - {weekDaysOptions.find(w => w.id === currentSlot.weekday_id)?.name}
+                  {currentSlot?.date && (
+                    <>
+                      {" "}- {new Date(currentSlot.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </>
+                  )}
+                </ArgonTypography>
               )}
-            </ArgonTypography>
-          )}
+            </Box>
+          </Stack>
+          <ArgonButton
+            onClick={() => setMealSlotDialogOpen(false)}
+            sx={{
+              minWidth: "auto",
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              p: 0,
+              color: "#ffffff",
+              backgroundColor: "rgba(255,255,255,0.15)",
+              border: "2px solid rgba(255,255,255,0.3)",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.3)",
+                borderColor: "rgba(255,255,255,0.5)",
+                transform: "scale(1.05)",
+              },
+              transition: "all 0.2s ease",
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 22 }} />
+          </ArgonButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField 
-                fullWidth 
-                size="small"
-                placeholder="Tìm món theo tên" 
-                value={dishSearch} 
-                onChange={(e) => setDishSearch(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <ArgonBox display="flex" flexWrap="wrap" gap={1}>
-                {Array.from(selectedDishIds).map(id => {
-                  const dish = dishes.find(x => x._id === id);
-                  if (!dish) return null;
-                  return (
-                    <Chip 
-                      key={id} 
-                      label={dish.dish_name} 
-                      color="success" 
-                      variant="outlined" 
-                      onDelete={() => handleToggleDish(id)}
+
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={3}>
+            <SectionCard
+              icon={<RestaurantIcon />}
+              title="Danh sách món ăn"
+              subtitle="Chọn các món ăn cho slot này"
+            >
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    placeholder="Tìm kiếm món ăn..."
+                    value={dishSearch}
+                    onChange={(e) => setDishSearch(e.target.value)}
+                    variant="outlined"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ color: "#43a047" }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      borderRadius: 2,
+                      '& .MuiOutlinedInput-root': {
+                        '&:hover fieldset': {
+                          borderColor: 'success.main',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: 'success.main',
+                        },
+                      },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+                    <ArgonButton
                       size="small"
-                    />
-                  );
-                })}
-                {selectedDishIds.size === 0 && (
-                  <ArgonTypography variant="caption" color="text.secondary">Chưa chọn món nào</ArgonTypography>
-                )}
-              </ArgonBox>
-            </Grid>
-            <Grid item xs={12} display="flex" justifyContent="space-between">
-              <Button 
-                size="small" 
-                variant="contained" 
-                color="success"
-                onClick={() => {
-                  const allIds = new Set(filteredAllDishes.map(d => d._id));
-                  setSelectedDishIds(allIds);
-                }}
-              >
-                Chọn tất cả
-              </Button>
-              <Button 
-                size="small" 
-                variant="text" 
-                color="error"
-                onClick={() => setSelectedDishIds(new Set())}
-              >
-                Bỏ chọn hết
-              </Button>
-            </Grid>
-            <Grid item xs={12}>
-              <List dense sx={{ maxHeight: 400, overflow: 'auto', border: '1px solid #e0e0e0', borderRadius: 1, p: 0 }}>
-                {filteredAllDishes.length === 0 ? (
-                  <ListItem>
-                    <ListItemText 
-                      primary="Không tìm thấy món phù hợp" 
-                      secondary={
-                        dishSearch 
-                          ? `Từ khóa: "${dishSearch}"` 
-                          : 'Vui lòng thêm món ăn ở phần trên'
-                      }
-                    />
-                  </ListItem>
-                ) : (
-                  filteredAllDishes.map(d => (
-                    <ListItem 
-                      key={d._id} 
-                      button 
-                      onClick={() => handleToggleDish(d._id)}
-                      sx={{ '&:hover': { backgroundColor: '#fafafa' }, py: 0.5 }}
+                      variant="contained"
+                      color="info"
+                      onClick={() => {
+                        const allIds = new Set(filteredAllDishes.map(d => d._id));
+                        setSelectedDishIds(allIds);
+                      }}
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                      }}
                     >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <Checkbox 
-                          edge="start" 
-                          color="success"
-                          checked={selectedDishIds.has(d._id)} 
-                          tabIndex={-1} 
-                          disableRipple
-                          size="small" 
-                        />
-                      </ListItemIcon>
-                      <ListItemText 
-                        primaryTypographyProps={{ sx: { fontWeight: selectedDishIds.has(d._id) ? 'bold' : 500 } }}
-                        primary={d.dish_name}
-                      />
-                    </ListItem>
-                  ))
+                      Chọn tất cả
+                    </ArgonButton>
+                    <ArgonButton
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      onClick={() => setSelectedDishIds(new Set())}
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Bỏ chọn hết
+                    </ArgonButton>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12}>
+                  {selectedDishIds.size > 0 && (
+                    <Box sx={{ mb: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      {Array.from(selectedDishIds).map(id => {
+                        const dish = dishes.find(x => x._id === id);
+                        if (!dish) return null;
+                        return (
+                          <Chip
+                            key={id}
+                            label={dish.dish_name}
+                            color="primary"
+                            variant="outlined"
+                            onDelete={() => handleToggleDish(id)}
+                            size="small"
+                            sx={{
+                              fontWeight: 500,
+                              borderWidth: 1.5,
+                            }}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      maxHeight: 400,
+                      overflowY: "auto",
+                      borderRadius: 2,
+                      bgcolor: "#fff",
+                      border: "1px solid #e0e0e0",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                      "&::-webkit-scrollbar": {
+                        width: "8px",
+                      },
+                      "&::-webkit-scrollbar-track": {
+                        background: "#f1f1f1",
+                        borderRadius: "4px",
+                      },
+                      "&::-webkit-scrollbar-thumb": {
+                        background: "#43a047",
+                        borderRadius: "4px",
+                        "&:hover": {
+                          background: "#2e7d32",
+                        },
+                      },
+                    }}
+                  >
+                    <FormGroup>
+                      {filteredAllDishes.length === 0 ? (
+                        <Box sx={{ p: 3, textAlign: "center" }}>
+                          <ArgonTypography variant="body2" color="text.secondary">
+                            {dishSearch
+                              ? `Không tìm thấy món phù hợp với "${dishSearch}"`
+                              : "Chưa có món ăn nào. Vui lòng thêm món ăn ở phần trên."}
+                          </ArgonTypography>
+                        </Box>
+                      ) : (
+                        filteredAllDishes.map(d => {
+                          const isChecked = selectedDishIds.has(d._id);
+                          return (
+                            <Box
+                              key={d._id}
+                              sx={{
+                                mb: 1,
+                                p: 1.5,
+                                borderRadius: 1.5,
+                                border: isChecked ? "1px solid #1976d2" : "1px solid #e0e0e0",
+                                bgcolor: isChecked ? "#e3f2fd" : "#fff",
+                                transition: "all 0.2s ease",
+                                "&:hover": {
+                                  bgcolor: isChecked ? "#e3f2fd" : "#f5f5f5",
+                                },
+                              }}
+                            >
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={isChecked}
+                                    onChange={() => handleToggleDish(d._id)}
+                                    sx={{
+                                      color: "#1976d2",
+                                      "&.Mui-checked": {
+                                        color: "#1976d2",
+                                      },
+                                      "&:hover": {
+                                        backgroundColor: "rgba(25, 118, 210, 0.08)",
+                                      },
+                                    }}
+                                  />
+                                }
+                                label={
+                                  <Box>
+                                    <ArgonTypography
+                                      variant="body2"
+                                      fontWeight={isChecked ? 600 : 400}
+                                      color={isChecked ? "#1976d2" : "#424242"}
+                                    >
+                                      {d.dish_name}
+                                    </ArgonTypography>
+                                    {d.description && (
+                                      <ArgonTypography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ display: "block", mt: 0.5 }}
+                                      >
+                                        {d.description}
+                                      </ArgonTypography>
+                                    )}
+                                  </Box>
+                                }
+                                sx={{ m: 0 }}
+                              />
+                            </Box>
+                          );
+                        })
+                      )}
+                    </FormGroup>
+                  </Paper>
+                </Grid>
+
+                {selectedDishIds.size > 0 && (
+                  <Grid item xs={12}>
+                    <ArgonTypography
+                      variant="caption"
+                      color="info"
+                      sx={{ display: "block", fontWeight: 500 }}
+                    >
+                      Đã chọn {selectedDishIds.size} món ăn
+                    </ArgonTypography>
+                  </Grid>
                 )}
-              </List>
-            </Grid>
-          </Grid>
+              </Grid>
+            </SectionCard>
+          </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setMealSlotDialogOpen(false)}>Hủy</Button>
-          <Button 
-            variant="contained" 
-            color="success" 
-            onClick={handleSaveSlot} 
+
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2.5,
+            background: "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)",
+            borderTop: "1px solid #e3f2fd",
+          }}
+        >
+          <ArgonButton
+            onClick={() => setMealSlotDialogOpen(false)}
+            variant="outlined"
+            color="error"
+            sx={{
+              minWidth: 120,
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              borderWidth: 1.5,
+              "&:hover": {
+                borderWidth: 1.5,
+                backgroundColor: "#ffebee",
+                transform: "translateY(-1px)",
+                boxShadow: "0 2px 6px rgba(211, 47, 47, 0.2)",
+              },
+              transition: "all 0.2s ease",
+            }}
             disabled={savingSlot}
           >
-            {savingSlot ? 'Đang lưu...' : 'Lưu'}
-          </Button>
+            Hủy
+          </ArgonButton>
+          <ArgonButton
+            variant="contained"
+            color="info"
+            onClick={handleSaveSlot}
+            disabled={savingSlot}
+            sx={{
+              minWidth: 140,
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-1px)",
+                boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+              },
+            }}
+            startIcon={
+              savingSlot ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <RestaurantIcon />
+              )
+            }
+          >
+            {savingSlot ? "Đang lưu..." : "Lưu"}
+          </ArgonButton>
         </DialogActions>
       </Dialog>
 
@@ -1078,207 +1653,587 @@ export default function NutritionDishList() {
         open={weeklyMealDialogOpen} 
         onClose={() => setWeeklyMealDialogOpen(false)} 
         fullWidth 
-        maxWidth="sm"
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            background: "linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)",
+          },
+        }}
       >
-        <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #43a047 0%, #2e7d32 100%)',
-          color: 'white',
-          fontWeight: 'bold'
-        }}>
-          Chọn món ăn
-          {currentWeeklySlot && meals.find(m => m._id === currentWeeklySlot.meal_id) && weekDaysOptions.find(w => w.id === currentWeeklySlot.weekday_id) && (
-            <ArgonTypography variant="body2" color="white" sx={{ mt: 0.5, opacity: 0.9 }}>
-              {meals.find(m => m._id === currentWeeklySlot.meal_id)?.meal} - {weekDaysOptions.find(w => w.id === currentWeeklySlot.weekday_id)?.name}
-              {currentWeeklySlot?.date && (
-                <>
-                  {" "}- {new Date(currentWeeklySlot.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                </>
+        <DialogTitle
+          sx={{
+            background: (theme) =>
+              `linear-gradient(135deg, ${theme.palette.info.main} 0%, ${theme.palette.info.dark} 100%)`,
+            color: "#ffffff",
+            py: 2.5,
+            px: 3,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <RestaurantIcon sx={{ fontSize: 28 }} />
+            <Box>
+              <ArgonTypography variant="h5" fontWeight="bold" color="#ffffff">
+                Chọn món ăn
+              </ArgonTypography>
+              {currentWeeklySlot && meals.find(m => m._id === currentWeeklySlot.meal_id) && weekDaysOptions.find(w => w.id === currentWeeklySlot.weekday_id) && (
+                <ArgonTypography variant="body2" color="white" sx={{ mt: 0.5, opacity: 0.9 }}>
+                  {meals.find(m => m._id === currentWeeklySlot.meal_id)?.meal} - {weekDaysOptions.find(w => w.id === currentWeeklySlot.weekday_id)?.name}
+                  {currentWeeklySlot?.date && (
+                    <>
+                      {" "}- {new Date(currentWeeklySlot.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </>
+                  )}
+                </ArgonTypography>
               )}
-            </ArgonTypography>
-          )}
+            </Box>
+          </Stack>
+          <ArgonButton
+            onClick={() => setWeeklyMealDialogOpen(false)}
+            sx={{
+              minWidth: "auto",
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              p: 0,
+              color: "#ffffff",
+              backgroundColor: "rgba(255,255,255,0.15)",
+              border: "2px solid rgba(255,255,255,0.3)",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.3)",
+                borderColor: "rgba(255,255,255,0.5)",
+                transform: "scale(1.05)",
+              },
+              transition: "all 0.2s ease",
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 22 }} />
+          </ArgonButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField 
-                fullWidth 
-                size="small"
-                placeholder="Tìm món theo tên " 
-                value={dishSearchWeekly} 
-                onChange={(e) => setDishSearchWeekly(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <ArgonBox display="flex" flexWrap="wrap" gap={1}>
-                {Array.from(selectedDishesForWeekly).map(id => {
-                  const dish = dishes.find(x => x._id === id);
-                  if (!dish) return null;
-                  return (
-                    <Chip 
-                      key={id} 
-                      label={dish.dish_name} 
-                      color="success" 
-                      variant="outlined" 
-                      onDelete={() => handleToggleDishForWeekly(id)}
+
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={3}>
+            <SectionCard
+              icon={<RestaurantIcon />}
+              title="Danh sách món ăn"
+              subtitle="Chọn các món ăn cho slot này"
+            >
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    placeholder="Tìm kiếm món ăn..."
+                    value={dishSearchWeekly}
+                    onChange={(e) => setDishSearchWeekly(e.target.value)}
+                    variant="outlined"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ color: "#1976d2" }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      borderRadius: 2,
+                      '& .MuiOutlinedInput-root': {
+                        '&:hover fieldset': {
+                          borderColor: 'primary.main',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: 'primary.main',
+                        },
+                      },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+                    <ArgonButton
                       size="small"
-                    />
-                  );
-                })}
-                {selectedDishesForWeekly.size === 0 && (
-                  <ArgonTypography variant="caption" color="text.secondary">Chưa chọn món nào</ArgonTypography>
-                )}
-              </ArgonBox>
-            </Grid>
-            <Grid item xs={12} display="flex" justifyContent="space-between">
-              <Button 
-                size="small" 
-                variant="contained" 
-                color="success"
-                onClick={() => {
-                  const allIds = new Set(filteredAllDishesWeekly.map(d => d._id));
-                  setSelectedDishesForWeekly(allIds);
-                }}
-              >
-                Chọn tất cả
-              </Button>
-              <Button 
-                size="small" 
-                variant="text" 
-                color="error"
-                onClick={() => setSelectedDishesForWeekly(new Set())}
-              >
-                Bỏ chọn hết
-              </Button>
-            </Grid>
-            <Grid item xs={12}>
-              <List dense sx={{ maxHeight: 400, overflow: 'auto', border: '1px solid #e0e0e0', borderRadius: 1, p: 0 }}>
-                {filteredAllDishesWeekly.length === 0 ? (
-                  <ListItem>
-                    <ListItemText 
-                      primary="Không tìm thấy món phù hợp" 
-                      secondary={
-                        dishSearchWeekly 
-                          ? `Từ khóa: "${dishSearchWeekly}"` 
-                          : 'Vui lòng thêm món ăn ở phần trên'
-                      }
-                    />
-                  </ListItem>
-                ) : (
-                  filteredAllDishesWeekly.map(d => (
-                    <ListItem 
-                      key={d._id} 
-                      button 
-                      onClick={() => handleToggleDishForWeekly(d._id)}
-                      sx={{ '&:hover': { backgroundColor: '#fafafa' }, py: 0.5 }}
+                      variant="contained"
+                      color="info"
+                      onClick={() => {
+                        const allIds = new Set(filteredAllDishesWeekly.map(d => d._id));
+                        setSelectedDishesForWeekly(allIds);
+                      }}
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                      }}
                     >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <Checkbox 
-                          edge="start" 
-                          color="success"
-                          checked={selectedDishesForWeekly.has(d._id)} 
-                          tabIndex={-1} 
-                          disableRipple
-                          size="small" 
-                        />
-                      </ListItemIcon>
-                      <ListItemText 
-                        primaryTypographyProps={{ sx: { fontWeight: selectedDishesForWeekly.has(d._id) ? 'bold' : 500 } }}
-                        primary={d.dish_name}
-                      />
-                    </ListItem>
-                  ))
+                      Chọn tất cả
+                    </ArgonButton>
+                    <ArgonButton
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      onClick={() => setSelectedDishesForWeekly(new Set())}
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Bỏ chọn hết
+                    </ArgonButton>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12}>
+                  {selectedDishesForWeekly.size > 0 && (
+                    <Box sx={{ mb: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      {Array.from(selectedDishesForWeekly).map(id => {
+                        const dish = dishes.find(x => x._id === id);
+                        if (!dish) return null;
+                        return (
+                          <Chip
+                            key={id}
+                            label={dish.dish_name}
+                            color="primary"
+                            variant="outlined"
+                            onDelete={() => handleToggleDishForWeekly(id)}
+                            size="small"
+                            sx={{
+                              fontWeight: 500,
+                              borderWidth: 1.5,
+                            }}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      maxHeight: 400,
+                      overflowY: "auto",
+                      borderRadius: 2,
+                      bgcolor: "#fff",
+                      border: "1px solid #e0e0e0",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                      "&::-webkit-scrollbar": {
+                        width: "8px",
+                      },
+                      "&::-webkit-scrollbar-track": {
+                        background: "#f1f1f1",
+                        borderRadius: "4px",
+                      },
+                      "&::-webkit-scrollbar-thumb": {
+                        background: "#1976d2",
+                        borderRadius: "4px",
+                        "&:hover": {
+                          background: "#1565c0",
+                        },
+                      },
+                    }}
+                  >
+                    <FormGroup>
+                      {filteredAllDishesWeekly.length === 0 ? (
+                        <Box sx={{ p: 3, textAlign: "center" }}>
+                          <ArgonTypography variant="body2" color="text.secondary">
+                            {dishSearchWeekly
+                              ? `Không tìm thấy món phù hợp với "${dishSearchWeekly}"`
+                              : "Chưa có món ăn nào. Vui lòng thêm món ăn ở phần trên."}
+                          </ArgonTypography>
+                        </Box>
+                      ) : (
+                        filteredAllDishesWeekly.map(d => {
+                          const isChecked = selectedDishesForWeekly.has(d._id);
+                          return (
+                            <Box
+                              key={d._id}
+                              sx={{
+                                mb: 1,
+                                p: 1.5,
+                                borderRadius: 1.5,
+                                border: isChecked ? "1px solid #1976d2" : "1px solid #e0e0e0",
+                                bgcolor: isChecked ? "#e3f2fd" : "#fff",
+                                transition: "all 0.2s ease",
+                                "&:hover": {
+                                  bgcolor: isChecked ? "#e3f2fd" : "#f5f5f5",
+                                },
+                              }}
+                            >
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={isChecked}
+                                    onChange={() => handleToggleDishForWeekly(d._id)}
+                                    sx={{
+                                      color: "#1976d2",
+                                      "&.Mui-checked": {
+                                        color: "#1976d2",
+                                      },
+                                      "&:hover": {
+                                        backgroundColor: "rgba(25, 118, 210, 0.08)",
+                                      },
+                                    }}
+                                  />
+                                }
+                                label={
+                                  <Box>
+                                    <ArgonTypography
+                                      variant="body2"
+                                      fontWeight={isChecked ? 600 : 400}
+                                      color={isChecked ? "#1976d2" : "#424242"}
+                                    >
+                                      {d.dish_name}
+                                    </ArgonTypography>
+                                    {d.description && (
+                                      <ArgonTypography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ display: "block", mt: 0.5 }}
+                                      >
+                                        {d.description}
+                                      </ArgonTypography>
+                                    )}
+                                  </Box>
+                                }
+                                sx={{ m: 0 }}
+                              />
+                            </Box>
+                          );
+                        })
+                      )}
+                    </FormGroup>
+                  </Paper>
+                </Grid>
+
+                {selectedDishesForWeekly.size > 0 && (
+                  <Grid item xs={12}>
+                    <ArgonTypography
+                      variant="caption"
+                      color="info"
+                      sx={{ display: "block", fontWeight: 500 }}
+                    >
+                      Đã chọn {selectedDishesForWeekly.size} món ăn
+                    </ArgonTypography>
+                  </Grid>
                 )}
-              </List>
-            </Grid>
-          </Grid>
+              </Grid>
+            </SectionCard>
+          </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setWeeklyMealDialogOpen(false)}>Hủy</Button>
-          <Button 
-            variant="contained" 
-            color="success" 
-            onClick={handleSaveWeeklyMeal} 
+
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2.5,
+            background: "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)",
+            borderTop: "1px solid #e3f2fd",
+          }}
+        >
+          <ArgonButton
+            onClick={() => setWeeklyMealDialogOpen(false)}
+            variant="outlined"
+            color="error"
+            sx={{
+              minWidth: 120,
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              borderWidth: 1.5,
+              "&:hover": {
+                borderWidth: 1.5,
+                backgroundColor: "#ffebee",
+                transform: "translateY(-1px)",
+                boxShadow: "0 2px 6px rgba(211, 47, 47, 0.2)",
+              },
+              transition: "all 0.2s ease",
+            }}
             disabled={savingWeeklyMeal}
           >
-            {savingWeeklyMeal ? 'Đang lưu...' : 'Lưu'}
-          </Button>
+            Hủy
+          </ArgonButton>
+          <ArgonButton
+            variant="contained"
+            color="info"
+            onClick={handleSaveWeeklyMeal}
+            disabled={savingWeeklyMeal}
+            sx={{
+              minWidth: 140,
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-1px)",
+                boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+              },
+            }}
+            startIcon={
+              savingWeeklyMeal ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <RestaurantIcon />
+              )
+            }
+          >
+            {savingWeeklyMeal ? "Đang lưu..." : "Lưu"}
+          </ArgonButton>
         </DialogActions>
       </Dialog>
 
       {/* Dialog Add/Edit Dish */}
-      <Dialog open={dishDialogOpen} onClose={() => setDishDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #43a047 0%, #2e7d32 100%)',
-          color: 'white',
-          fontWeight: 'bold'
-        }}>
-          {editingDish ? 'Sửa món ăn' : 'Thêm món ăn'}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField 
-                fullWidth 
-                label="Tên món" 
-                value={dishForm.dish_name} 
-                onChange={(e)=>setDishForm(v=>({...v, dish_name: e.target.value}))}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField 
-                fullWidth 
-                label="Mô tả" 
-                multiline 
-                rows={3} 
-                value={dishForm.description} 
-                onChange={(e)=>setDishForm(v=>({...v, description: e.target.value}))}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth required>
-                <InputLabel id="meal-type-label">Loại bữa ăn</InputLabel>
-                <Select
-                  labelId="meal-type-label"
-                  label="Loại bữa ăn"
-                  value={dishForm.meal_type}
-                  onChange={(e) => setDishForm(v => ({ ...v, meal_type: e.target.value }))}
-                  displayEmpty
-                  renderValue={(selected) => {
-                    if (!selected) {
-                      return <em>Chọn loại bữa ăn</em>;
-                    }
-                    const selectedMeal = meals.find(m => m._id === selected);
-                    return selectedMeal ? selectedMeal.meal : '';
-                  }}
-                >
-                  {meals.length === 0 ? (
-                    <MenuItem disabled value="">
-                      <em>Chưa có loại bữa ăn nào</em>
-                    </MenuItem>
-                  ) : (
-                    meals.map(meal => (
-                      <MenuItem key={meal._id} value={meal._id}>
-                        {meal.meal}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={()=>setDishDialogOpen(false)}>Hủy</Button>
-          <Button 
-            variant="contained" 
-            color="success" 
-            onClick={submitDish} 
-            disabled={dishSubmitting || !dishForm.dish_name?.trim() || !dishForm.description?.trim() || !dishForm.meal_type}
+      <Dialog 
+        open={dishDialogOpen} 
+        onClose={() => setDishDialogOpen(false)} 
+        fullWidth 
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            background: "linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            background: (theme) =>
+              `linear-gradient(135deg, ${theme.palette.info.main} 0%, ${theme.palette.info.dark} 100%)`,
+            color: "#ffffff",
+            py: 2.5,
+            px: 3,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <RestaurantIcon sx={{ fontSize: 28 }} />
+            <ArgonTypography variant="h5" fontWeight="bold" color="#ffffff">
+              {editingDish ? "Chỉnh sửa món ăn" : "Thêm món ăn mới"}
+            </ArgonTypography>
+          </Stack>
+          <ArgonButton
+            onClick={() => setDishDialogOpen(false)}
+            sx={{
+              minWidth: "auto",
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              p: 0,
+              color: "#ffffff",
+              backgroundColor: "rgba(255,255,255,0.15)",
+              border: "2px solid rgba(255,255,255,0.3)",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.3)",
+                borderColor: "rgba(255,255,255,0.5)",
+                transform: "scale(1.05)",
+              },
+              transition: "all 0.2s ease",
+            }}
           >
-            {dishSubmitting ? 'Đang lưu...' : 'Lưu'}
-          </Button>
+            <CloseIcon sx={{ fontSize: 22 }} />
+          </ArgonButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 3 }}>
+          {error && (
+            <Alert
+              severity="error"
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                "& .MuiAlert-message": {
+                  fontWeight: 500,
+                },
+              }}
+            >
+              {error}
+            </Alert>
+          )}
+
+          <Stack spacing={3}>
+            <SectionCard
+              icon={<InfoOutlinedIcon />}
+              title="Thông tin món ăn"
+              subtitle="Nhập các chi tiết cơ bản cho món ăn"
+            >
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                    Tên món <span style={{ color: "#d32f2f" }}>*</span>
+                  </ArgonTypography>
+                  <TextField
+                    fullWidth
+                    placeholder="Nhập tên món ăn..."
+                    value={dishForm.dish_name}
+                    onChange={(e) => setDishForm(v => ({ ...v, dish_name: e.target.value }))}
+                    variant="outlined"
+                    required
+                    sx={{
+                      flex: 1,
+                      minWidth: 200,
+                      maxWidth: 1000,
+                      width: '100%',
+                      borderRadius: 2,
+                      '& .MuiOutlinedInput-root': {
+                        width: '100%',
+                        '&:hover fieldset': {
+                          borderColor: 'primary.main',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: 'primary.main',
+                        },
+                      },
+                      '& .MuiInputBase-input': {
+                        width: '100% !important',
+                      }
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                    Mô tả <span style={{ color: "#d32f2f" }}>*</span>
+                  </ArgonTypography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    placeholder="Nhập mô tả món ăn..."
+                    value={dishForm.description}
+                    onChange={(e) => setDishForm(v => ({ ...v, description: e.target.value }))}
+                    variant="outlined"
+                    required
+                    sx={{
+                      flex: 1,
+                      minWidth: 200,
+                      maxWidth: 1000,
+                      width: '100%',
+                      borderRadius: 2,
+                      '& .MuiOutlinedInput-root': {
+                        width: '100%',
+                        '&:hover fieldset': {
+                          borderColor: 'primary.main',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: 'primary.main',
+                        },
+                      },
+                      '& .MuiInputBase-input': {
+                        width: '100% !important',
+                      }
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                    Loại bữa ăn <span style={{ color: "#d32f2f" }}>*</span>
+                  </ArgonTypography>
+                  <FormControl fullWidth required>
+                    <Select
+                      value={dishForm.meal_type}
+                      onChange={(e) => setDishForm(v => ({ ...v, meal_type: e.target.value }))}
+                      displayEmpty
+                      renderValue={(selected) => {
+                        if (!selected) {
+                          return <em>Chọn loại bữa ăn</em>;
+                        }
+                        const selectedMeal = meals.find(m => m._id === selected);
+                        return selectedMeal ? selectedMeal.meal : '';
+                      }}
+                      sx={{
+                        borderRadius: 2,
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#e0e0e0',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'primary.main',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'primary.main',
+                        },
+                      }}
+                    >
+                      {meals.length === 0 ? (
+                        <MenuItem disabled value="">
+                          <em>Chưa có loại bữa ăn nào</em>
+                        </MenuItem>
+                      ) : (
+                        meals.map(meal => (
+                          <MenuItem key={meal._id} value={meal._id}>
+                            {meal.meal}
+                          </MenuItem>
+                        ))
+                      )}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+            </SectionCard>
+          </Stack>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2.5,
+            background: "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)",
+            borderTop: "1px solid #e3f2fd",
+          }}
+        >
+          <ArgonButton
+            onClick={() => setDishDialogOpen(false)}
+            variant="outlined"
+            color="error"
+            sx={{
+              minWidth: 120,
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              borderWidth: 1.5,
+              "&:hover": {
+                borderWidth: 1.5,
+                backgroundColor: "#ffebee",
+                transform: "translateY(-1px)",
+                boxShadow: "0 2px 6px rgba(211, 47, 47, 0.2)",
+              },
+              transition: "all 0.2s ease",
+            }}
+            disabled={dishSubmitting}
+          >
+            Hủy
+          </ArgonButton>
+          <ArgonButton
+            onClick={submitDish}
+            variant="contained"
+            color="info"
+            sx={{
+              minWidth: 140,
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-1px)",
+                boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+              },
+            }}
+            disabled={dishSubmitting || !dishForm.dish_name?.trim() || !dishForm.description?.trim() || !dishForm.meal_type}
+            startIcon={
+              dishSubmitting ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <RestaurantIcon />
+              )
+            }
+          >
+            {dishSubmitting ? "Đang lưu..." : editingDish ? "Cập nhật" : "Tạo mới"}
+          </ArgonButton>
         </DialogActions>
       </Dialog>
     </>
