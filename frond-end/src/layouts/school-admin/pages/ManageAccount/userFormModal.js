@@ -189,6 +189,13 @@ const UserFormModal = ({ open, onClose, onSuccess, user, students }) => {
     [students, parentProfile.student_id]
   );
 
+  const formatDate = (value) => {
+    if (!value) return "Chưa cập nhật";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
+    return date.toLocaleDateString("vi-VN");
+  };
+
   useEffect(() => {
     if (!open) return;
     if (isEdit && user) {
@@ -753,13 +760,39 @@ const UserFormModal = ({ open, onClose, onSuccess, user, students }) => {
                   <InputLabel shrink sx={labelSx}>
                     Chọn học sinh
                   </InputLabel>
-                  <Autocomplete
+                <Autocomplete
                     options={students}
                     getOptionLabel={(option) => option.full_name || "Không tên"}
                     value={selectedStudent}
                     onChange={(_, newValue) =>
                       setParentProfile((prev) => ({ ...prev, student_id: newValue?._id || "" }))
                     }
+                    renderOption={(props, option) => (
+                      <Box
+                        component="li"
+                        {...props}
+                        key={option._id}
+                        sx={{ display: "flex", gap: 1.5, alignItems: "center" }}
+                      >
+                        <Avatar
+                          src={option.avatar_url}
+                          alt={option.full_name}
+                          sx={{ width: 40, height: 40 }}
+                        >
+                          {option.full_name?.charAt(0)?.toUpperCase()}
+                        </Avatar>
+                        <Box>
+                          <ArgonTypography variant="body2" fontWeight="600">
+                            {option.full_name || "Không tên"}
+                          </ArgonTypography>
+                          <ArgonTypography variant="caption" color="text.secondary">
+                            {(option.class_id?.class_name
+                              ? `${option.class_id.class_name} (${option.class_id.academic_year || "N/A"})`
+                              : "Chưa có lớp") + " • " + formatDate(option.dob)}
+                          </ArgonTypography>
+                        </Box>
+                      </Box>
+                    )}
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -789,10 +822,34 @@ const UserFormModal = ({ open, onClose, onSuccess, user, students }) => {
                 </Grid>
                 {selectedStudent && (
                   <Grid item xs={12}>
-                    <Typography variant="caption" color="text.secondary">
-                      Phụ huynh sẽ gắn với học sinh:{" "}
-                      <strong>{selectedStudent.full_name}</strong>
-                    </Typography>
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        border: "1px solid #e3f2fd",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        backgroundColor: "#f8fbff",
+                      }}
+                    >
+                      <Avatar src={selectedStudent.avatar_url} alt={selectedStudent.full_name}>
+                        {selectedStudent.full_name?.charAt(0)?.toUpperCase()}
+                      </Avatar>
+                      <Box>
+                        <ArgonTypography variant="subtitle2" fontWeight="bold">
+                          {selectedStudent.full_name}
+                        </ArgonTypography>
+                        <ArgonTypography variant="caption" color="text.secondary" display="block">
+                          {selectedStudent.class_id?.class_name
+                            ? `${selectedStudent.class_id.class_name} (${selectedStudent.class_id.academic_year || "N/A"})`
+                            : "Chưa có lớp"}
+                        </ArgonTypography>
+                        <ArgonTypography variant="caption" color="text.secondary" display="block">
+                          Ngày sinh: {formatDate(selectedStudent.dob)}
+                        </ArgonTypography>
+                      </Box>
+                    </Box>
                   </Grid>
                 )}
         </Grid>

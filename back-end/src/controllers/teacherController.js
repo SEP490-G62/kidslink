@@ -2,6 +2,17 @@ const mongoose = require('mongoose');
 const { Class, Teacher, StudentClass, Student, DailyReport, Calendar, User } = require('../models');
 const cloudinary = require('../utils/cloudinary');
 
+const getDateRange = (dateInput) => {
+  const start = new Date(dateInput);
+  if (Number.isNaN(start.getTime())) {
+    return null;
+  }
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+};
+
 // --- Helper để lấy teacher từ request (có thể bỏ qua tạm khi test) ---
 async function getTeacherByReqUser(req) {
   // Tạm thời hardcode một teacher ID để test
@@ -155,14 +166,17 @@ async function getStudentsAttendanceByDate(req, res) {
     const mappings = await StudentClass.find({ class_id: classId });
     const studentIds = mappings.map((m) => m.student_id);
 
-    const start = new Date(date);
-    if (Number.isNaN(start.getTime())) return res.status(400).json({ error: 'Ngày không hợp lệ' });
-    const end = new Date(start);
-    end.setHours(23, 59, 59, 999);
+    const range = getDateRange(date);
+    if (!range) return res.status(400).json({ error: 'Ngày không hợp lệ' });
+
+    const hasSchedule = await Calendar.exists({
+      class_id: classId,
+      date: { $gte: range.start, $lte: range.end }
+    });
 
     const reports = await DailyReport.find({
       student_id: { $in: studentIds },
-      report_date: { $gte: start, $lte: end }
+      report_date: { $gte: range.start, $lte: range.end }
     })
       .populate('student_id')
       .populate('teacher_checkin_id')
@@ -220,7 +234,14 @@ async function getStudentsAttendanceByDate(req, res) {
       school: cls.school_id || null
     };
 
-    return res.json({ class_id: classId, date: start.toISOString().split('T')[0], class_info, statistics, students });
+    return res.json({ 
+      class_id: classId, 
+      date: range.start.toISOString().split('T')[0], 
+      class_info, 
+      statistics, 
+      students,
+      has_schedule: !!hasSchedule
+    });
   } catch (err) {
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
