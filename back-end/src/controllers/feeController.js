@@ -5,6 +5,9 @@ const StudentClass = require('../models/StudentClass');
 const Student = require('../models/Student');
 const Invoice = require('../models/Invoice');
 const Payment = require('../models/Payment');
+const Class = require('../models/Class');
+const School = require('../models/School');
+const User = require('../models/User');
 
 const allowedLateFeeTypes = new Set(['none', 'fixed', 'percentage']);
 
@@ -67,29 +70,109 @@ const parseDateString = (dateString) => {
   return date;
 };
 
+async function getSchoolIdForAdmin(userId) {
+  const admin = await User.findById(userId).select('school_id');
+  if (!admin || !admin.school_id) {
+    const error = new Error('School admin chưa được gán trường học');
+    error.statusCode = 400;
+    throw error;
+  }
+  return admin.school_id;
+}
+
+async function resolveSchoolId(req, providedSchoolId) {
+  if (req.user?.role === 'school_admin') {
+    return getSchoolIdForAdmin(req.user.id);
+  }
+
+  if (providedSchoolId) {
+    if (!mongoose.Types.ObjectId.isValid(providedSchoolId)) {
+      const error = new Error('school_id không hợp lệ');
+      error.statusCode = 400;
+      throw error;
+    }
+    return providedSchoolId;
+  }
+
+  const school = await School.findOne().select('_id');
+  if (!school) {
+    const error = new Error('Không tìm thấy trường học trong hệ thống. Vui lòng tạo trường trước.');
+    error.statusCode = 400;
+    throw error;
+  }
+  return school._id;
+}
+
+async function validateClassesBelongToSchool(classIds = [], schoolId) {
+  if (!Array.isArray(classIds) || classIds.length === 0) {
+    return;
+  }
+
+  const validIds = classIds.filter(id => mongoose.Types.ObjectId.isValid(id));
+  if (validIds.length !== classIds.length) {
+    const error = new Error('Danh sách lớp chứa ID không hợp lệ');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const classes = await Class.find({ _id: { $in: validIds } }).select('school_id');
+  if (classes.length !== validIds.length) {
+    const error = new Error('Một số lớp áp dụng phí không tồn tại');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const invalidClass = classes.find(cls => !cls.school_id || String(cls.school_id) !== String(schoolId));
+  if (invalidClass) {
+    const error = new Error('Không thể áp dụng phí cho lớp thuộc trường khác');
+    error.statusCode = 403;
+    throw error;
+  }
+}
+
 // GET /fees - Lấy danh sách tất cả phí
 exports.getAllFees = async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
+    const { page = 1, limit = 50, school_id } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
+    const filter = {};
 
-    const fees = await Fee.find()
+    if (req.user?.role === 'school_admin') {
+      try {
+        const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        filter.school_id = adminSchoolId;
+      } catch (error) {
+        return res.status(error.statusCode || 400).json({ 
+          success: false, 
+          message: error.message 
+        });
+      }
+    } else if (school_id) {
+      if (!mongoose.Types.ObjectId.isValid(school_id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'school_id không hợp lệ'
+        });
+      }
+      filter.school_id = school_id;
+    }
+
+    const fees = await Fee.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
       .lean();
 
-    // Get ClassFee entries for all fees and populate class info
-    const Class = require('../models/Class');
     const feeIds = fees.map(f => f._id);
-    const classFees = await ClassFee.find({ 
-      fee_id: { $in: feeIds }, 
-      status: 1 
-    })
-      .populate('class_id', 'class_name academic_year')
-      .lean();
+    const classFees = feeIds.length > 0
+      ? await ClassFee.find({ 
+          fee_id: { $in: feeIds }, 
+          status: 1 
+        })
+        .populate('class_id', 'class_name academic_year')
+        .lean()
+      : [];
 
-    // Group classFees by fee_id
     const classFeesByFeeId = {};
     classFees.forEach(cf => {
       if (!classFeesByFeeId[cf.fee_id.toString()]) {
@@ -100,9 +183,9 @@ exports.getAllFees = async (req, res) => {
       }
     });
 
-    // Convert Decimal128 to string and add classes info
     const feesWithStringAmount = fees.map(fee => ({
       ...fee,
+      school_id: fee.school_id ? fee.school_id.toString() : null,
       amount: fee.amount ? fee.amount.toString() : null,
       late_fee_type: fee.late_fee_type || 'none',
       late_fee_value: typeof fee.late_fee_value === 'number' ? fee.late_fee_value : 0,
@@ -111,7 +194,7 @@ exports.getAllFees = async (req, res) => {
       class_ids: (classFeesByFeeId[fee._id.toString()] || []).map(c => c._id.toString())
     }));
 
-    const total = await Fee.countDocuments();
+    const total = await Fee.countDocuments(filter);
 
     return res.json({
       success: true,
@@ -154,14 +237,31 @@ exports.getFeeById = async (req, res) => {
       });
     }
 
+    if (req.user?.role === 'school_admin') {
+      try {
+        const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        if (!fee.school_id || fee.school_id.toString() !== adminSchoolId.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Bạn không có quyền truy cập phí thuộc trường khác'
+          });
+        }
+      } catch (error) {
+        return res.status(error.statusCode || 400).json({
+          success: false,
+          message: error.message
+        });
+      }
+    }
+
     // Convert Decimal128 to string
     fee.amount = fee.amount ? fee.amount.toString() : null;
     fee.late_fee_type = fee.late_fee_type || 'none';
     fee.late_fee_value = typeof fee.late_fee_value === 'number' ? fee.late_fee_value : 0;
     fee.late_fee_description = fee.late_fee_description || '';
+    fee.school_id = fee.school_id ? fee.school_id.toString() : null;
 
     // Get associated class_ids with due_date and populate class info
-    const Class = require('../models/Class');
     const classFees = await ClassFee.find({ fee_id: id, status: 1 })
       .populate('class_id', 'class_name academic_year')
       .lean();
@@ -200,7 +300,8 @@ exports.createFee = async (req, res) => {
       due_date,
       late_fee_type,
       late_fee_value,
-      late_fee_description
+      late_fee_description,
+      school_id: payloadSchoolId
     } = req.body;
 
     // Validate required fields
@@ -223,6 +324,25 @@ exports.createFee = async (req, res) => {
       });
     }
 
+    let schoolId;
+    try {
+      schoolId = await resolveSchoolId(req, payloadSchoolId);
+    } catch (error) {
+      return res.status(error.statusCode || 400).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    try {
+      await validateClassesBelongToSchool(class_ids, schoolId);
+    } catch (error) {
+      return res.status(error.statusCode || 400).json({
+        success: false,
+        message: error.message
+      });
+    }
+
     // Create fee with Decimal128 amount
     const lateFeePayload = normalizeLateFeePayload(
       { late_fee_type, late_fee_value, late_fee_description },
@@ -233,6 +353,7 @@ exports.createFee = async (req, res) => {
       fee_name: fee_name.trim(),
       description: description.trim(),
       amount: mongoose.Types.Decimal128.fromString(parseFloat(amount).toFixed(2)),
+      school_id: schoolId,
       ...lateFeePayload
     });
 
@@ -273,6 +394,7 @@ exports.createFee = async (req, res) => {
     const feeResponse = {
       ...newFee.toObject(),
       amount: newFee.amount.toString(),
+      school_id: newFee.school_id ? newFee.school_id.toString() : null,
       class_ids: class_ids,
       late_fee_type: newFee.late_fee_type,
       late_fee_value: newFee.late_fee_value,
@@ -358,6 +480,69 @@ exports.updateFee = async (req, res) => {
       });
     }
 
+    let adminSchoolId = null;
+    if (req.user?.role === 'school_admin') {
+      try {
+        adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+      } catch (error) {
+        return res.status(error.statusCode || 400).json({
+          success: false,
+          message: error.message
+        });
+      }
+
+      if (!existingFee.school_id || existingFee.school_id.toString() !== adminSchoolId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền chỉnh sửa phí thuộc trường khác'
+        });
+      }
+    }
+
+    let targetSchoolId = existingFee.school_id;
+    if (req.body.school_id !== undefined) {
+      if (req.user?.role === 'school_admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'School admin không được phép thay đổi school_id của phí'
+        });
+      }
+      if (!mongoose.Types.ObjectId.isValid(req.body.school_id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'school_id không hợp lệ'
+        });
+      }
+      targetSchoolId = req.body.school_id;
+      updateData.school_id = targetSchoolId;
+    }
+
+    if (!targetSchoolId) {
+      if (adminSchoolId) {
+        targetSchoolId = adminSchoolId;
+        updateData.school_id = adminSchoolId;
+      } else {
+        try {
+          targetSchoolId = await resolveSchoolId(req, req.body.school_id);
+          if (!existingFee.school_id) {
+            updateData.school_id = targetSchoolId;
+          }
+        } catch (error) {
+          return res.status(error.statusCode || 400).json({
+            success: false,
+            message: error.message
+          });
+        }
+      }
+    }
+
+    if (!targetSchoolId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không xác định được trường áp dụng phí'
+      });
+    }
+
     // Late fee update
     const lateFeeFieldsProvided = (
       late_fee_type !== undefined ||
@@ -389,6 +574,7 @@ exports.updateFee = async (req, res) => {
     updatedFee.late_fee_type = updatedFee.late_fee_type || 'none';
     updatedFee.late_fee_value = typeof updatedFee.late_fee_value === 'number' ? updatedFee.late_fee_value : 0;
     updatedFee.late_fee_description = updatedFee.late_fee_description || '';
+    updatedFee.school_id = updatedFee.school_id ? updatedFee.school_id.toString() : null;
 
     // Update ClassFee entries if class_fees or class_ids provided
     if (class_fees !== undefined || class_ids !== undefined) {
@@ -420,6 +606,15 @@ exports.updateFee = async (req, res) => {
         const classId = item.class_id || item;
         return classId.toString();
       });
+
+      try {
+        await validateClassesBelongToSchool(newClassIds, targetSchoolId);
+      } catch (error) {
+        return res.status(error.statusCode || 400).json({
+          success: false,
+          message: error.message
+        });
+      }
 
       // Find classes to add
       const toAdd = newClassFeeData.filter(item => {
@@ -510,7 +705,6 @@ exports.updateFee = async (req, res) => {
     }
 
     // Get updated class_ids with due_date
-    const Class = require('../models/Class');
     const classFees = await ClassFee.find({ fee_id: id, status: 1 })
       .populate('class_id', 'class_name academic_year')
       .lean();
@@ -559,8 +753,24 @@ exports.deleteFee = async (req, res) => {
       });
     }
 
+    if (req.user?.role === 'school_admin') {
+      try {
+        const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        if (!existingFee.school_id || existingFee.school_id.toString() !== adminSchoolId.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Bạn không có quyền xóa phí thuộc trường khác'
+          });
+        }
+      } catch (error) {
+        return res.status(error.statusCode || 400).json({
+          success: false,
+          message: error.message
+        });
+      }
+    }
+
     // Check if fee is being used in ClassFee (only active ones)
-    const ClassFee = require('../models/ClassFee');
     const activeClassFeeCount = await ClassFee.countDocuments({ fee_id: id, status: 1 });
     
     if (activeClassFeeCount > 0) {
@@ -603,6 +813,31 @@ exports.getClassFeePayments = async (req, res) => {
         success: false,
         message: 'ID không hợp lệ',
       });
+    }
+
+    const feeDoc = await Fee.findById(id).select('school_id');
+    if (!feeDoc) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy phí'
+      });
+    }
+
+    if (req.user?.role === 'school_admin') {
+      try {
+        const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        if (!feeDoc.school_id || feeDoc.school_id.toString() !== adminSchoolId.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Bạn không có quyền truy cập phí thuộc trường khác'
+          });
+        }
+      } catch (error) {
+        return res.status(error.statusCode || 400).json({
+          success: false,
+          message: error.message
+        });
+      }
     }
 
     const classFee = await ClassFee.findOne({
@@ -827,6 +1062,31 @@ exports.markInvoicePaidOffline = async (req, res) => {
       });
     }
 
+    const feeDoc = await Fee.findById(id).select('school_id');
+    if (!feeDoc) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy phí'
+      });
+    }
+
+    if (req.user?.role === 'school_admin') {
+      try {
+        const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        if (!feeDoc.school_id || feeDoc.school_id.toString() !== adminSchoolId.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Bạn không có quyền thao tác trên phí thuộc trường khác'
+          });
+        }
+      } catch (error) {
+        return res.status(error.statusCode || 400).json({
+          success: false,
+          message: error.message
+        });
+      }
+    }
+
     // Validate amount
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
       return res.status(400).json({
@@ -970,6 +1230,31 @@ exports.createOrGetInvoice = async (req, res) => {
         success: false,
         message: 'ID không hợp lệ',
       });
+    }
+
+    const feeDoc = await Fee.findById(id).select('school_id');
+    if (!feeDoc) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy phí'
+      });
+    }
+
+    if (req.user?.role === 'school_admin') {
+      try {
+        const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        if (!feeDoc.school_id || feeDoc.school_id.toString() !== adminSchoolId.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Bạn không có quyền thao tác trên phí thuộc trường khác'
+          });
+        }
+      } catch (error) {
+        return res.status(error.statusCode || 400).json({
+          success: false,
+          message: error.message
+        });
+      }
     }
 
     // Find classFee

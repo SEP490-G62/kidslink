@@ -170,6 +170,13 @@ export default function NutritionDishList() {
   const [search, setSearch] = useState("");
   const [mealTypeFilter, setMealTypeFilter] = useState("");
 
+  // Dialog state for add/edit meal
+  const [mealDialogOpen, setMealDialogOpen] = useState(false);
+  const [editingMeal, setEditingMeal] = useState(null);
+  const [mealForm, setMealForm] = useState({ meal: "" });
+  const [mealSubmitting, setMealSubmitting] = useState(false);
+  const [mealSearch, setMealSearch] = useState("");
+
   // Dialog state for add/edit dish
   const [dishDialogOpen, setDishDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState(null);
@@ -265,6 +272,18 @@ export default function NutritionDishList() {
     }
     loadInit();
   }, []);
+
+  const filteredMeals = useMemo(() => {
+    let filtered = meals;
+    
+    // Filter by search term
+    if (mealSearch.trim()) {
+      const q = mealSearch.trim().toLowerCase();
+      filtered = filtered.filter(m => (m.meal || "").toLowerCase().includes(q));
+    }
+    
+    return filtered;
+  }, [meals, mealSearch]);
 
   const filteredDishes = useMemo(() => {
     let filtered = dishes;
@@ -458,6 +477,52 @@ export default function NutritionDishList() {
     }
   };
 
+  // Meal CRUD handlers
+  const openAddMeal = () => {
+    setEditingMeal(null);
+    setMealForm({ meal: "" });
+    setMealDialogOpen(true);
+  };
+
+  const openEditMeal = (meal) => {
+    setEditingMeal(meal);
+    setMealForm({ meal: meal.meal || "" });
+    setMealDialogOpen(true);
+  };
+
+  const submitMeal = async () => {
+    if (!mealForm.meal?.trim()) return;
+    setMealSubmitting(true);
+    try {
+      if (editingMeal) {
+        const updated = await nutritionService.updateMeal(editingMeal._id, mealForm);
+        setMeals(prev => prev.map(m => (m._id === updated._id ? updated : m)).sort((a,b)=>a.meal.localeCompare(b.meal)));
+      } else {
+        const created = await nutritionService.createMeal(mealForm);
+        setMeals(prev => [...prev, created].sort((a,b)=>a.meal.localeCompare(b.meal)));
+      }
+      setMealDialogOpen(false);
+    } catch (e) {
+      setError(e.message || 'Không thể lưu bữa ăn');
+    } finally {
+      setMealSubmitting(false);
+    }
+  };
+
+  const deleteMeal = async (id) => {
+    if (!window.confirm('Xoá bữa ăn này? Tất cả món ăn liên quan sẽ bị ảnh hưởng.')) return;
+    try {
+      await nutritionService.deleteMeal(id);
+      setMeals(prev => prev.filter(m => m._id !== id));
+      // Also remove from filter if was selected
+      if (mealTypeFilter === id) {
+        setMealTypeFilter("");
+      }
+    } catch (e) {
+      setError(e.message || 'Xoá thất bại');
+    }
+  };
+
   // Load weekly meal selection when class age or week changes
   useEffect(() => {
     async function loadWeeklyMealSelection() {
@@ -582,6 +647,177 @@ export default function NutritionDishList() {
 
   return (
     <>
+      {/* Card 0: Danh sách bữa ăn (Meal) */}
+      <Card sx={{ maxWidth: 1200, mx: "auto", mb: 3, borderRadius: 4, boxShadow: 4 }}>
+        <CardHeader 
+          title={<ArgonTypography variant="h5" fontWeight="bold" color="success.main">Quản lý bữa ăn</ArgonTypography>} 
+        />
+        <Divider />
+        <CardContent>
+          {loading && <ArgonBox display="flex" justifyContent="center" py={4}><CircularProgress /></ArgonBox>}
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {!loading && (
+            <>
+              <Card 
+                sx={{ 
+                  mb: 3,
+                  background: "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)",
+                  border: "1px solid #e3f2fd",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                }}
+              >
+                <CardContent>
+                  <ArgonBox
+                    display="flex"
+                    gap={2}
+                    flexWrap="wrap"
+                    alignItems="center"
+                  >
+                    <TextField
+                      size="small"
+                      placeholder="Tìm kiếm theo tên bữa ăn..."
+                      value={mealSearch}
+                      onChange={(e) => setMealSearch(e.target.value)}
+                      sx={{ 
+                        flex: 1, 
+                        minWidth: 200, 
+                        maxWidth: 400,  
+                        width: '100%',
+                        borderRadius: 2,
+                        '& .MuiOutlinedInput-root': {
+                          width: '100%',
+                          bgcolor: "#fff",
+                          borderRadius: 2,
+                          transition: "all 0.3s ease",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                          '&:hover fieldset': {
+                            borderColor: 'primary.main',
+                            boxShadow: "0 2px 6px rgba(25, 118, 210, 0.15)",
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: 'primary.main',
+                            boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
+                          },
+                        },
+                        '& .MuiInputBase-input': {
+                          width: '100% !important',
+                        }
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon sx={{ color: "#1976d2" }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <ArgonButton
+                      size="small"
+                      variant="contained"
+                      color="success"
+                      onClick={openAddMeal}
+                      startIcon={<AddIcon />}
+                      sx={{
+                        minWidth: 140,
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                        transition: "all 0.3s ease",
+                        "&:hover": {
+                          transform: "translateY(-1px)",
+                          boxShadow: "0 4px 12px rgba(67, 160, 71, 0.3)",
+                        },
+                      }}
+                    >
+                      Thêm bữa ăn
+                    </ArgonButton>
+                    {mealSearch && (
+                      <ArgonButton
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        onClick={() => setMealSearch("")}
+                        startIcon={<ClearIcon />}
+                        sx={{
+                          minWidth: 120,
+                          borderRadius: 2,
+                          textTransform: "none",
+                          fontWeight: 500,
+                          borderWidth: 1.5,
+                          "&:hover": {
+                            borderWidth: 1.5,
+                            backgroundColor: "#ffebee",
+                            transform: "translateY(-1px)",
+                            boxShadow: "0 2px 6px rgba(211, 47, 47, 0.2)",
+                          },
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        Xóa bộ lọc
+                      </ArgonButton>
+                    )}
+                  </ArgonBox>
+                </CardContent>
+              </Card>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TableContainer 
+                    sx={{ 
+                      border: '1px solid #e0e0e0', 
+                      borderRadius: 2,
+                      maxHeight: 400,
+                      overflow: 'auto'
+                    }}
+                  >
+                    <Table size="medium" sx={{ tableLayout: 'fixed' }}>
+                      <TableHead>
+                        <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '15px', width: '70%', py: 2, position: 'sticky', top: 0, backgroundColor: '#f5f5f5', zIndex: 1 }}>Tên bữa ăn</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 700, fontSize: '15px', width: '30%', py: 2, position: 'sticky', top: 0, backgroundColor: '#f5f5f5', zIndex: 1 }}>Cập nhật</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {filteredMeals.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={2} align="center" sx={{ py: 4 }}>
+                              <ArgonTypography color="text">Không có bữa ăn nào</ArgonTypography>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredMeals.map(m => (
+                            <TableRow key={m._id} hover sx={{ '&:hover': { backgroundColor: '#fafafa' } }}>
+                              <TableCell sx={{ fontSize: '14px', width: '70%', py: 2 }}>{m.meal}</TableCell>
+                              <TableCell align="right" sx={{ width: '30%', py: 2 }}>
+                                <IconButton 
+                                  size="small" 
+                                  color="primary" 
+                                  onClick={() => openEditMeal(m)}
+                                  sx={{ mr: 1 }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton 
+                                  size="small" 
+                                  color="error" 
+                                  onClick={() => deleteMeal(m._id)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Grid>
+              </Grid>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Card 1: Danh sách món ăn */}
       <Card sx={{ maxWidth: 1200, mx: "auto", mb: 3, borderRadius: 4, boxShadow: 4 }}>
         <CardHeader 
@@ -1980,6 +2216,180 @@ export default function NutritionDishList() {
             }
           >
             {savingWeeklyMeal ? "Đang lưu..." : "Lưu"}
+          </ArgonButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog Add/Edit Meal */}
+      <Dialog 
+        open={mealDialogOpen} 
+        onClose={() => setMealDialogOpen(false)} 
+        fullWidth 
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            background: "linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            background: (theme) =>
+              `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
+            color: "#ffffff",
+            py: 2.5,
+            px: 3,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <RestaurantIcon sx={{ fontSize: 28 }} />
+            <ArgonTypography variant="h5" fontWeight="bold" color="#ffffff">
+              {editingMeal ? "Chỉnh sửa bữa ăn" : "Thêm bữa ăn mới"}
+            </ArgonTypography>
+          </Stack>
+          <ArgonButton
+            onClick={() => setMealDialogOpen(false)}
+            sx={{
+              minWidth: "auto",
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              p: 0,
+              color: "#ffffff",
+              backgroundColor: "rgba(255,255,255,0.15)",
+              border: "2px solid rgba(255,255,255,0.3)",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.3)",
+                borderColor: "rgba(255,255,255,0.5)",
+                transform: "scale(1.05)",
+              },
+              transition: "all 0.2s ease",
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 22 }} />
+          </ArgonButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 3 }}>
+          {error && (
+            <Alert
+              severity="error"
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                "& .MuiAlert-message": {
+                  fontWeight: 500,
+                },
+              }}
+            >
+              {error}
+            </Alert>
+          )}
+
+          <Stack spacing={3}>
+            <SectionCard
+              icon={<InfoOutlinedIcon />}
+              title="Thông tin bữa ăn"
+              subtitle="Nhập tên bữa ăn (ví dụ: Breakfast, Lunch, Snack)"
+            >
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                    Tên bữa ăn <span style={{ color: "#d32f2f" }}>*</span>
+                  </ArgonTypography>
+                  <TextField
+                    fullWidth
+                    placeholder="Nhập tên bữa ăn (ví dụ: Breakfast, Lunch, Snack)..."
+                    value={mealForm.meal}
+                    onChange={(e) => setMealForm(v => ({ ...v, meal: e.target.value }))}
+                    variant="outlined"
+                    required
+                    sx={{
+                      flex: 1,
+                      minWidth: 200,
+                      maxWidth: 1000,
+                      width: '100%',
+                      borderRadius: 2,
+                      '& .MuiOutlinedInput-root': {
+                        width: '100%',
+                        '&:hover fieldset': {
+                          borderColor: 'success.main',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: 'success.main',
+                        },
+                      },
+                      '& .MuiInputBase-input': {
+                        width: '100% !important',
+                      }
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </SectionCard>
+          </Stack>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2.5,
+            background: "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)",
+            borderTop: "1px solid #e3f2fd",
+          }}
+        >
+          <ArgonButton
+            onClick={() => setMealDialogOpen(false)}
+            variant="outlined"
+            color="error"
+            sx={{
+              minWidth: 120,
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              borderWidth: 1.5,
+              "&:hover": {
+                borderWidth: 1.5,
+                backgroundColor: "#ffebee",
+                transform: "translateY(-1px)",
+                boxShadow: "0 2px 6px rgba(211, 47, 47, 0.2)",
+              },
+              transition: "all 0.2s ease",
+            }}
+            disabled={mealSubmitting}
+          >
+            Hủy
+          </ArgonButton>
+          <ArgonButton
+            onClick={submitMeal}
+            variant="contained"
+            color="success"
+            sx={{
+              minWidth: 140,
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-1px)",
+                boxShadow: "0 4px 12px rgba(67, 160, 71, 0.3)",
+              },
+            }}
+            disabled={mealSubmitting || !mealForm.meal?.trim()}
+            startIcon={
+              mealSubmitting ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <RestaurantIcon />
+              )
+            }
+          >
+            {mealSubmitting ? "Đang lưu..." : editingMeal ? "Cập nhật" : "Tạo mới"}
           </ArgonButton>
         </DialogActions>
       </Dialog>
