@@ -174,6 +174,7 @@ const ChildrenPage = () => {
           item._id === student._id ? { ...item, status: nextStatus } : item
         )
       );
+      window.dispatchEvent(new CustomEvent("students-updated"));
     } catch (err) {
       alert(err.message || "Không thể cập nhật trạng thái học sinh.");
     }

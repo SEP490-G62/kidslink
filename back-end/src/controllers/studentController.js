@@ -969,7 +969,9 @@ exports.toggleStudentStatus = async (req, res) => {
 
     if (req.user?.role === 'school_admin') {
       const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
-      if (String(student.school_id) !== String(adminSchoolId)) {
+      if (!student.school_id) {
+        student.school_id = adminSchoolId;
+      } else if (String(student.school_id) !== String(adminSchoolId)) {
         return res.status(403).json({ message: 'Bạn không có quyền thay đổi trạng thái học sinh này' });
       }
     }
