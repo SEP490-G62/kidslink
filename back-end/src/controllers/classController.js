@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Class: ClassModel, StudentClass } = require('../models');
+const { Class: ClassModel, StudentClass, Student } = require('../models');
 const User = require('../models/User');
 
 // Helper function để lấy school_id từ school_admin
@@ -54,6 +54,13 @@ async function listClasses(req, res) {
   }
 }
 
+async function getLatestAcademicYearForSchool(schoolId) {
+  const academicYears = await ClassModel.find({ school_id: schoolId }).distinct('academic_year');
+  if (!academicYears || academicYears.length === 0) return null;
+  academicYears.sort((a, b) => (a > b ? -1 : a < b ? 1 : 0));
+  return academicYears[0];
+}
+
 // GET /classes/:id
 async function getClassById(req, res) {
   try {
@@ -72,7 +79,8 @@ async function getClassById(req, res) {
     if (req.user?.role === 'school_admin') {
       try {
         const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
-        if (String(cls.school_id) !== String(adminSchoolId)) {
+        const classSchoolId = cls?.school_id?._id || cls?.school_id;
+        if (!classSchoolId || String(classSchoolId) !== String(adminSchoolId)) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền xem lớp thuộc trường khác' });
         }
       } catch (err) {
@@ -586,6 +594,182 @@ async function promoteClass(req, res) {
   }
 }
 
+// DELETE /classes/:classId/students/:studentId - remove a student from class
+async function removeStudentFromClass(req, res) {
+  try {
+    const { classId, studentId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(classId) || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+    }
+
+    const cls = await ClassModel.findById(classId);
+    if (!cls) return res.status(404).json({ success: false, message: 'Không tìm thấy lớp' });
+
+    // Ensure school_admin only manages their own school
+    if (req.user?.role === 'school_admin') {
+      try {
+        const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        if (String(cls.school_id) !== String(adminSchoolId)) {
+          return res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với lớp thuộc trường khác' });
+        }
+      } catch (err) {
+        return res.status(err.statusCode || 400).json({ success: false, message: err.message });
+      }
+    }
+
+    const student = await Student.findById(studentId);
+    if (!student) return res.status(404).json({ success: false, message: 'Không tìm thấy học sinh' });
+
+    if (String(student.school_id) !== String(cls.school_id)) {
+      return res.status(400).json({ success: false, message: 'Học sinh không thuộc cùng trường với lớp' });
+    }
+
+    const studentClassLink = await StudentClass.findOne({ class_id: classId, student_id: studentId });
+    if (!studentClassLink) {
+      return res.status(404).json({ success: false, message: 'Học sinh không thuộc lớp này' });
+    }
+
+    await StudentClass.deleteOne({ _id: studentClassLink._id });
+
+    res.json({ success: true, message: 'Đã xóa học sinh khỏi lớp' });
+  } catch (err) {
+    console.error('classController.removeStudentFromClass Error:', err);
+    res.status(500).json({ success: false, message: 'Lỗi server', error: err.message });
+  }
+}
+
+// GET /classes/:classId/eligible-students
+async function getEligibleStudents(req, res) {
+  try {
+    const { classId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(classId)) {
+      return res.status(400).json({ success: false, message: 'classId không hợp lệ' });
+    }
+
+    const cls = await ClassModel.findById(classId);
+    if (!cls) return res.status(404).json({ success: false, message: 'Không tìm thấy lớp' });
+
+    if (req.user?.role === 'school_admin') {
+      try {
+        const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        if (String(cls.school_id) !== String(adminSchoolId)) {
+          return res.status(403).json({ success: false, message: 'Bạn không có quyền truy cập lớp thuộc trường khác' });
+        }
+      } catch (err) {
+        return res.status(err.statusCode || 400).json({ success: false, message: err.message });
+      }
+    }
+
+    const latestAcademicYear = await getLatestAcademicYearForSchool(cls.school_id);
+    if (!latestAcademicYear) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const latestYearClasses = await ClassModel.find({
+      school_id: cls.school_id,
+      academic_year: latestAcademicYear,
+    }).select('_id');
+
+    const classIds = latestYearClasses.map(c => c._id);
+    let studentsInLatest = [];
+    if (classIds.length > 0) {
+      const studentLinks = await StudentClass.find({ class_id: { $in: classIds } }).select('student_id');
+      studentsInLatest = studentLinks.map(link => link.student_id.toString());
+    }
+
+    const eligibleStudents = await Student.find({
+      school_id: cls.school_id,
+      status: 1,
+      _id: { $nin: studentsInLatest },
+    }).select('full_name dob gender avatar_url');
+
+    res.json({
+      success: true,
+      data: eligibleStudents,
+      metadata: {
+        latestAcademicYear,
+        total: eligibleStudents.length,
+      },
+    });
+  } catch (err) {
+    console.error('classController.getEligibleStudents Error:', err);
+    res.status(500).json({ success: false, message: 'Lỗi server', error: err.message });
+  }
+}
+
+// POST /classes/:classId/students
+async function addStudentToClass(req, res) {
+  try {
+    const { classId } = req.params;
+    const { student_id } = req.body || {};
+
+    if (!mongoose.Types.ObjectId.isValid(classId) || !mongoose.Types.ObjectId.isValid(student_id)) {
+      return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+    }
+
+    const cls = await ClassModel.findById(classId);
+    if (!cls) return res.status(404).json({ success: false, message: 'Không tìm thấy lớp' });
+
+    if (req.user?.role === 'school_admin') {
+      try {
+        const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        if (String(cls.school_id) !== String(adminSchoolId)) {
+          return res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với lớp thuộc trường khác' });
+        }
+      } catch (err) {
+        return res.status(err.statusCode || 400).json({ success: false, message: err.message });
+      }
+    }
+
+    const student = await Student.findById(student_id);
+    if (!student) return res.status(404).json({ success: false, message: 'Không tìm thấy học sinh' });
+    if (String(student.school_id) !== String(cls.school_id)) {
+      return res.status(400).json({ success: false, message: 'Học sinh không thuộc trường này' });
+    }
+
+    const latestAcademicYear = await getLatestAcademicYearForSchool(cls.school_id);
+    if (latestAcademicYear && cls.academic_year !== latestAcademicYear) {
+      return res.status(400).json({ success: false, message: `Chỉ có thể thêm học sinh vào lớp thuộc năm học mới nhất (${latestAcademicYear})` });
+    }
+
+    // Ensure student has no class in latest academic year
+    if (latestAcademicYear) {
+      const latestYearClasses = await ClassModel.find({
+        school_id: cls.school_id,
+        academic_year: latestAcademicYear,
+      }).select('_id');
+      const classIds = latestYearClasses.map(c => c._id);
+
+      if (classIds.length > 0) {
+        const existingLink = await StudentClass.findOne({
+          student_id,
+          class_id: { $in: classIds },
+        });
+        if (existingLink) {
+          return res.status(400).json({ success: false, message: 'Học sinh đã thuộc một lớp trong năm học mới nhất' });
+        }
+      }
+    }
+
+    const existingInClass = await StudentClass.findOne({ class_id: classId, student_id });
+    if (existingInClass) {
+      return res.status(400).json({ success: false, message: 'Học sinh đã thuộc lớp này' });
+    }
+
+    await StudentClass.create({
+      class_id: classId,
+      student_id,
+      discount: 0,
+    });
+
+    res.status(201).json({ success: true, message: 'Thêm học sinh vào lớp thành công' });
+  } catch (err) {
+    console.error('classController.addStudentToClass Error:', err);
+    res.status(500).json({ success: false, message: 'Lỗi server', error: err.message });
+  }
+}
+
 module.exports = {
   listClasses,
   getClassById,
@@ -593,5 +777,8 @@ module.exports = {
   updateClass,
   deleteClass,
   promoteClass,
+  removeStudentFromClass,
+  getEligibleStudents,
+  addStudentToClass,
   getAllClasses: listClasses,
 };

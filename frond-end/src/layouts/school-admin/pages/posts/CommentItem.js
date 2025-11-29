@@ -46,7 +46,8 @@ function CommentItem({
   onCommentUpdate,
   onCommentDelete,
   forceShowReplies = false,
-  isAdmin = false
+  isAdmin = false,
+  isReadOnly = false
 }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [showReplies, setShowReplies] = useState(forceShowReplies || false);
@@ -82,6 +83,7 @@ function CommentItem({
     : (comment.replies || []).slice(0, INITIAL_REPLIES_COUNT);
 
   const handleStartReply = (commentToReply) => {
+    if (isReadOnly) return;
     setReplyingTo(commentToReply);
     setShowReplyForm(true);
   };
@@ -93,7 +95,7 @@ function CommentItem({
   };
 
   const handleReplyComment = async (parentCommentId) => {
-    if (!replyText.trim() || !postId) return;
+    if (isReadOnly || !replyText.trim() || !postId) return;
     
     try {
       setReplyLoading(true);
@@ -126,8 +128,8 @@ function CommentItem({
   };
 
   const isOwnComment = currentUserId && comment.user_id?._id && comment.user_id._id === currentUserId;
-  const canEditComment = isOwnComment;
-  const canDeleteComment = isAdmin || isOwnComment;
+  const canEditComment = !isReadOnly && isOwnComment;
+  const canDeleteComment = !isReadOnly && (isAdmin || isOwnComment);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -323,7 +325,7 @@ function CommentItem({
 
           {/* Actions row: like, reply, timestamp, menu */}
           <ArgonBox display="flex" alignItems="center" gap={1.5} mt={0.75} ml={0.5}>
-            {!isEditing && (
+            {!isEditing && !isReadOnly && (
               <Button
                 size="small"
                 onClick={() => handleStartReply(comment)}
@@ -382,7 +384,7 @@ function CommentItem({
       </ArgonBox>
 
       {/* Reply Form */}
-      {showReplyForm && replyingTo && replyingTo._id === comment._id && (
+      {!isReadOnly && showReplyForm && replyingTo && replyingTo._id === comment._id && (
         <ArgonBox ml={depth >= 2 ? 6 : getMarginLeft(depth) + 3} mt={1}>
           <ArgonBox display="flex" alignItems="flex-end" gap={1}>
             <TextField
@@ -512,6 +514,7 @@ function CommentItem({
                 // Hoặc nếu comment này nằm trong danh sách cần hiển thị (vừa được reply vào)
                 forceShowReplies={forceShowReplies || (depth >= 1 && showReplies)}
                 isAdmin={isAdmin}
+                isReadOnly={isReadOnly}
               />
             );
           })}
@@ -693,7 +696,8 @@ CommentItem.propTypes = {
   onCommentUpdate: PropTypes.func,
   onCommentDelete: PropTypes.func,
   forceShowReplies: PropTypes.bool,
-  isAdmin: PropTypes.bool
+  isAdmin: PropTypes.bool,
+  isReadOnly: PropTypes.bool
 };
 
 export default CommentItem;
