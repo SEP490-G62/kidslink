@@ -5,11 +5,6 @@ const mealSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
-  },
-  school_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'School',
-    required: true
   }
 }, {
   timestamps: true

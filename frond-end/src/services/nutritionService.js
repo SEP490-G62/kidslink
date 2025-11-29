@@ -25,18 +25,6 @@ class NutritionService {
     return await apiService.get('/nutrition/meals');
   }
 
-  async createMeal(payload) {
-    return await apiService.post('/nutrition/meals', payload);
-  }
-
-  async updateMeal(id, payload) {
-    return await apiService.put(`/nutrition/meals/${id}`, payload);
-  }
-
-  async deleteMeal(id) {
-    return await apiService.delete(`/nutrition/meals/${id}`);
-  }
-
   async getWeekDays() {
     return await apiService.get('/nutrition/weekdays');
   }
