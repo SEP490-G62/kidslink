@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -98,6 +98,7 @@ const INFO_COLORS = {
 export default function StudentNotices() {
   const { studentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -105,6 +106,8 @@ export default function StudentNotices() {
   const [payload, setPayload] = useState({ notice_time: '', symptoms: '', actions_taken: '', medications: '', note: '' });
   const [edit, setEdit] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  const [studentInfo, setStudentInfo] = useState(location.state?.student || null);
+  const [classInfo, setClassInfo] = useState(location.state?.classInfo || null);
 
   const load = async () => {
     try {
@@ -127,6 +130,28 @@ export default function StudentNotices() {
   };
 
   useEffect(() => { load(); }, [studentId]);
+
+  useEffect(() => {
+    if (location.state?.student && !studentInfo) {
+      setStudentInfo(location.state.student);
+    }
+    if (location.state?.classInfo && !classInfo) {
+      setClassInfo(location.state.classInfo);
+    }
+  }, [classInfo, location.state, studentInfo]);
+
+  useEffect(() => {
+    if (!studentInfo && notices.length > 0) {
+      setStudentInfo(notices[0].student_id || null);
+    }
+  }, [notices, studentInfo]);
+
+  // Memoized values - must be before any early returns
+  const studentName = useMemo(() => studentInfo?.full_name || "Học sinh", [studentInfo]);
+  const classDisplayName = useMemo(() => {
+    if (classInfo?.class_name) return `Lớp ${classInfo.class_name}`;
+    return null;
+  }, [classInfo]);
 
   const openCreate = () => {
     setEdit(null);
@@ -260,16 +285,12 @@ export default function StudentNotices() {
               <Box>
                 <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
                   <NotificationsActiveIcon color="warning" />
-                  <ArgonTypography
-                    variant="h5"
-                    fontWeight="bold"
-                    letterSpacing={0.2}
-                  >
-                    Thông báo y tế
+                  <ArgonTypography variant="h5" fontWeight="bold" letterSpacing={0.2}>
+                    Thông báo y tế - {studentName}
                   </ArgonTypography>
                 </Stack>
                 <ArgonTypography variant="body2" color="text" mt={0.5}>
-                  Ghi nhận nhanh các tình huống sức khỏe phát sinh của học sinh
+                  {classDisplayName || "Ghi nhận nhanh các tình huống sức khỏe phát sinh của học sinh"}
                 </ArgonTypography>
               </Box>
               <Stack
@@ -282,6 +303,12 @@ export default function StudentNotices() {
                   color="warning"
                   variant="outlined"
                   label={`${notices.length} thông báo`}
+                  sx={{ fontWeight: 600 }}
+                />
+                <Chip
+                  color="primary"
+                  variant="outlined"
+                  label={studentName}
                   sx={{ fontWeight: 600 }}
                 />
                 <Stack direction="row" spacing={1}>
@@ -319,7 +346,7 @@ export default function StudentNotices() {
         <Card>
           <CardContent>
             <ArgonTypography variant="h6" fontWeight="bold" mb={3}>
-              Danh sách thông báo y tế ({notices.length} thông báo)
+              Danh sách thông báo y tế - {studentName} ({notices.length} thông báo)
             </ArgonTypography>
 
             {notices.length === 0 ? (
