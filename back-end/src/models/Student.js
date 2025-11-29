@@ -31,7 +31,11 @@ const studentSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
-
+  school_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: false
+  }
 }, {
   timestamps: true
 });
