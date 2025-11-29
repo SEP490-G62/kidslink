@@ -1,5 +1,34 @@
 const DailyReport = require('../models/DailyReport');
 const Student = require('../models/Student');
+const StudentClass = require('../models/StudentClass');
+const Calendar = require('../models/Calendar');
+// Helper: tìm lớp mà giáo viên phụ trách đối với học sinh
+const getTeacherClassForStudent = async (studentId, teacherId) => {
+  const mappings = await StudentClass.find({ student_id: studentId }).populate('class_id');
+  for (const mapping of mappings) {
+    const classDoc = mapping.class_id;
+    if (!classDoc) continue;
+    const isOwner = (classDoc.teacher_id && classDoc.teacher_id.equals(teacherId)) ||
+      (classDoc.teacher_id2 && classDoc.teacher_id2.equals(teacherId));
+    if (isOwner) {
+      return classDoc;
+    }
+  }
+  return null;
+};
+
+const hasScheduleForClassDate = async (classId, dateInput) => {
+  if (!classId || !dateInput) return false;
+  const start = new Date(dateInput);
+  if (Number.isNaN(start.getTime())) return false;
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(23, 59, 59, 999);
+  return await Calendar.exists({
+    class_id: classId,
+    date: { $gte: start, $lte: end }
+  });
+};
 
 // Helper function: Lấy ngày hiện tại theo múi giờ Việt Nam (UTC+7)
 const getTodayVietnam = () => {
@@ -48,6 +77,9 @@ const studentValidators = [
         if (!student) {
           return res.status(404).json({ error: 'Không tìm thấy học sinh' });
         }
+        if (student.status !== 1) {
+          return res.status(403).json({ error: 'Chỉ có thể thao tác với học sinh đang hoạt động' });
+        }
         req.student = student;
         next();
       })
@@ -76,6 +108,12 @@ const checkIn = async (req, res) => {
     const teacher_id = teacher._id;
     console.log('Teacher found:', teacher_id);
     
+    // Tìm lớp mà giáo viên phụ trách đối với học sinh
+    const classDoc = await getTeacherClassForStudent(student_id, teacher_id);
+    if (!classDoc) {
+      return res.status(403).json({ error: 'Học sinh không thuộc lớp mà bạn phụ trách' });
+    }
+    
     // Sử dụng ngày từ request hoặc ngày hiện tại
     let targetDate;
     if (report_date) {
@@ -87,6 +125,11 @@ const checkIn = async (req, res) => {
     
     const currentTime = new Date().toTimeString().split(' ')[0]; // Format HH:MM:SS
     console.log('Target date:', targetDate, 'Current time:', currentTime);
+
+    const hasSchedule = await hasScheduleForClassDate(classDoc._id, targetDate);
+    if (!hasSchedule) {
+      return res.status(400).json({ error: 'Lớp không có lịch học trong ngày đã chọn' });
+    }
     
     // Kiểm tra xem đã có báo cáo cho ngày đã chọn chưa
     console.log('Looking for existing report for student:', student_id, 'on date:', targetDate);
@@ -154,6 +197,12 @@ const checkOut = async (req, res) => {
     const teacher_id = teacher._id;
     console.log('Teacher found:', teacher_id);
     
+    // Tìm lớp mà giáo viên phụ trách đối với học sinh
+    const classDoc = await getTeacherClassForStudent(student_id, teacher_id);
+    if (!classDoc) {
+      return res.status(403).json({ error: 'Học sinh không thuộc lớp mà bạn phụ trách' });
+    }
+    
     // Sử dụng ngày từ request hoặc ngày hiện tại
     let targetDate;
     if (report_date) {
@@ -165,6 +214,11 @@ const checkOut = async (req, res) => {
     
     const currentTime = new Date().toTimeString().split(' ')[0]; // Format HH:MM:SS
     console.log('Target date:', targetDate, 'Current time:', currentTime);
+
+    const hasSchedule = await hasScheduleForClassDate(classDoc._id, targetDate);
+    if (!hasSchedule) {
+      return res.status(400).json({ error: 'Lớp không có lịch học trong ngày đã chọn' });
+    }
     
     // Tìm báo cáo của học sinh trong ngày đã chọn
     console.log('Looking for report for student:', student_id, 'on date:', targetDate);
@@ -263,6 +317,15 @@ const updateComment = async (req, res) => {
         console.log('Không có quyền cập nhật nhận xét - teacher_checkin_id:', report.teacher_checkin_id, 'teacher_id:', teacher_id);
         return res.status(403).json({ error: 'Bạn không có quyền cập nhật nhận xét báo cáo này' });
       }
+
+      const classDoc = await getTeacherClassForStudent(report.student_id, teacher_id);
+      if (!classDoc) {
+        return res.status(403).json({ error: 'Học sinh không thuộc lớp mà bạn phụ trách' });
+      }
+      const hasSchedule = await hasScheduleForClassDate(classDoc._id, report.report_date);
+      if (!hasSchedule) {
+        return res.status(400).json({ error: 'Lớp không có lịch học trong ngày này nên không thể nhận xét' });
+      }
       // Cập nhật nhận xét
       report.comments = comments;
       const updated = await report.save();
@@ -278,6 +341,15 @@ const updateComment = async (req, res) => {
       // Tính ngày bắt đầu và kết thúc theo múi giờ Việt Nam
       const todayStart = new Date(todayStr + 'T00:00:00+07:00');
       const todayEnd = new Date(todayStr + 'T23:59:59+07:00');
+
+      const classDoc = await getTeacherClassForStudent(student._id, teacher_id);
+      if (!classDoc) {
+        return res.status(403).json({ error: 'Học sinh không thuộc lớp mà bạn phụ trách' });
+      }
+      const hasSchedule = await hasScheduleForClassDate(classDoc._id, todayStart);
+      if (!hasSchedule) {
+        return res.status(400).json({ error: 'Lớp không có lịch học hôm nay nên không thể nhận xét' });
+      }
       let reportToday = await DailyReport.findOne({
         student_id: student._id,
         report_date: {

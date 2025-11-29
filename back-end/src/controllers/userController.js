@@ -298,6 +298,20 @@ const getUserById = async (req, res) => {
 // POST /api/users - Tạo user mới
 const createUser = async (req, res) => {
   const session = await mongoose.startSession();
+  let sessionEnded = false;
+  const endSessionIfNeeded = async () => {
+    if (!sessionEnded) {
+      sessionEnded = true;
+      await session.endSession();
+    }
+  };
+
+  const isStandaloneTransactionError = (error) => (
+    error?.code === 20 ||
+    error?.codeName === 'IllegalOperation' ||
+    /Transaction numbers are only allowed/i.test(error?.message || '')
+  );
+
   try {
     const {
       full_name,
@@ -383,7 +397,28 @@ const createUser = async (req, res) => {
     const password_hash = await bcrypt.hash(password, saltRounds);
 
     let savedUser;
-    await session.withTransaction(async () => {
+    const rollbackCreatedDocs = async (tracker = {}) => {
+      const ops = [];
+      if (tracker.parentStudentId) {
+        ops.push(ParentStudent.findByIdAndDelete(tracker.parentStudentId));
+      }
+      if (tracker.parentId) {
+        ops.push(Parent.findByIdAndDelete(tracker.parentId));
+      }
+      if (tracker.teacherId) {
+        ops.push(Teacher.findByIdAndDelete(tracker.teacherId));
+      }
+      if (tracker.healthCareStaffId) {
+        ops.push(HealthCareStaff.findByIdAndDelete(tracker.healthCareStaffId));
+      }
+      if (tracker.userId) {
+        ops.push(User.findByIdAndDelete(tracker.userId));
+      }
+      await Promise.all(ops);
+    };
+
+    const createUserRecords = async (sessionArg, tracker) => {
+      const createOptions = sessionArg ? { session: sessionArg } : undefined;
       const createdUsers = await User.create([{
         full_name,
         username,
@@ -395,22 +430,56 @@ const createUser = async (req, res) => {
         status: 1,
         school_id: assignedSchoolId,
         address
-      }], { session });
+      }], createOptions);
       savedUser = createdUsers[0];
+      if (tracker) {
+        tracker.userId = savedUser._id;
+      }
 
       if (role === 'teacher') {
-        await Teacher.create([{ ...teacherProfileData, user_id: savedUser._id }], { session });
+        const teacherDocs = await Teacher.create([{ ...teacherProfileData, user_id: savedUser._id }], createOptions);
+        if (tracker) {
+          tracker.teacherId = teacherDocs[0]._id;
+        }
       } else if (role === 'health_care_staff') {
-        await HealthCareStaff.create([{ ...healthProfileData, user_id: savedUser._id }], { session });
+        const healthDocs = await HealthCareStaff.create([{ ...healthProfileData, user_id: savedUser._id }], createOptions);
+        if (tracker) {
+          tracker.healthCareStaffId = healthDocs[0]._id;
+        }
       } else if (role === 'parent') {
-        const parentDocs = await Parent.create([{ user_id: savedUser._id }], { session });
-        await ParentStudent.create([{
+        const parentDocs = await Parent.create([{ user_id: savedUser._id }], createOptions);
+        const parentStudentDocs = await ParentStudent.create([{
           parent_id: parentDocs[0]._id,
           student_id: parentProfileData.student_id,
           relationship: parentProfileData.relationship
-        }], { session });
+        }], createOptions);
+
+        if (tracker) {
+          tracker.parentId = parentDocs[0]._id;
+          tracker.parentStudentId = parentStudentDocs[0]._id;
+        }
       }
-    });
+    };
+
+    try {
+      await session.withTransaction(async () => {
+        await createUserRecords(session);
+      });
+    } catch (transactionError) {
+      if (isStandaloneTransactionError(transactionError)) {
+        console.warn('MongoDB standalone detected, retrying user creation without transaction.');
+        await endSessionIfNeeded();
+        const tracker = {};
+        try {
+          await createUserRecords(null, tracker);
+        } catch (fallbackError) {
+          await rollbackCreatedDocs(tracker);
+          throw fallbackError;
+        }
+      } else {
+        throw transactionError;
+      }
+    }
 
     const userResponse = savedUser.toObject();
     delete userResponse.password_hash;
@@ -486,7 +555,7 @@ const createUser = async (req, res) => {
       error: error.message
     });
   } finally {
-    session.endSession();
+    await endSessionIfNeeded();
   }
 };
 

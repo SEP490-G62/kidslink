@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
-const { listDishes, createDish, updateDish, deleteDish, listClassAges, listClassAgeMeals, listMeals, listWeekDays, assignDishesToClassAgeMeal, getAssignedDishes, getWeeklyAssignedDishes, getStaffProfile, updateStaffProfile } = require('../controllers/nutritionController');
+const { listDishes, createDish, updateDish, deleteDish, listClassAges, listClassAgeMeals, listMeals, listWeekDays, assignDishesToClassAgeMeal, getAssignedDishes, getWeeklyAssignedDishes, getStaffProfile, updateStaffProfile, changeStaffPassword } = require('../controllers/nutritionController');
 
 // Áp dụng xác thực và phân quyền cho toàn bộ route
 router.use(authenticate, authorize(['nutrition_staff']));
@@ -35,5 +35,6 @@ router.get('/class-age-meals/weekly-dishes', getWeeklyAssignedDishes);
 // Thông tin cá nhân Nutrition Staff
 router.get('/profile', getStaffProfile);
 router.put('/profile', updateStaffProfile);
+router.put('/change-password', changeStaffPassword);
 
 module.exports = router;

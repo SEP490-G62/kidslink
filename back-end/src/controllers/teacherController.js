@@ -2,6 +2,17 @@ const mongoose = require('mongoose');
 const { Class, Teacher, StudentClass, Student, DailyReport, Calendar, User } = require('../models');
 const cloudinary = require('../utils/cloudinary');
 
+const getDateRange = (dateInput) => {
+  const start = new Date(dateInput);
+  if (Number.isNaN(start.getTime())) {
+    return null;
+  }
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+};
+
 // --- Helper để lấy teacher từ request (có thể bỏ qua tạm khi test) ---
 async function getTeacherByReqUser(req) {
   // Tạm thời hardcode một teacher ID để test
@@ -155,14 +166,17 @@ async function getStudentsAttendanceByDate(req, res) {
     const mappings = await StudentClass.find({ class_id: classId });
     const studentIds = mappings.map((m) => m.student_id);
 
-    const start = new Date(date);
-    if (Number.isNaN(start.getTime())) return res.status(400).json({ error: 'Ngày không hợp lệ' });
-    const end = new Date(start);
-    end.setHours(23, 59, 59, 999);
+    const range = getDateRange(date);
+    if (!range) return res.status(400).json({ error: 'Ngày không hợp lệ' });
+
+    const hasSchedule = await Calendar.exists({
+      class_id: classId,
+      date: { $gte: range.start, $lte: range.end }
+    });
 
     const reports = await DailyReport.find({
       student_id: { $in: studentIds },
-      report_date: { $gte: start, $lte: end }
+      report_date: { $gte: range.start, $lte: range.end }
     })
       .populate('student_id')
       .populate('teacher_checkin_id')
@@ -220,7 +234,14 @@ async function getStudentsAttendanceByDate(req, res) {
       school: cls.school_id || null
     };
 
-    return res.json({ class_id: classId, date: start.toISOString().split('T')[0], class_info, statistics, students });
+    return res.json({ 
+      class_id: classId, 
+      date: range.start.toISOString().split('T')[0], 
+      class_info, 
+      statistics, 
+      students,
+      has_schedule: !!hasSchedule
+    });
   } catch (err) {
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
@@ -304,6 +325,90 @@ async function getTeacherLatestClassCalendar(req, res) {
 
 module.exports.getTeacherLatestClassCalendar = getTeacherLatestClassCalendar;
 
+// GET /teacher/teaching-calendar
+// Lấy lịch dạy của giáo viên (tất cả các lớp mà giáo viên dạy)
+async function getTeacherTeachingCalendar(req, res) {
+  try {
+    const teacher = await getTeacherByReqUser(req);
+    if (!teacher) {
+      return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
+    }
+
+    // Lấy tất cả các lớp mà giáo viên dạy (teacher_id hoặc teacher_id2)
+    const classes = await Class.find({
+      $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+    })
+      .sort({ academic_year: -1 })
+      .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } })
+      .populate({ path: 'teacher_id2', model: Teacher, populate: { path: 'user_id', model: 'User' } });
+
+    if (!classes || classes.length === 0) {
+      return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
+    }
+
+    // Lấy tất cả calendars mà giáo viên dạy (theo teacher_id trong calendar)
+    const calendars = await Calendar.find({ teacher_id: teacher._id })
+      .populate('weekday_id')
+      .populate('slot_id')
+      .populate('activity_id')
+      .populate({ path: 'class_id', model: Class, select: 'class_name academic_year' })
+      .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } });
+
+    // Tạo map để nhóm theo lớp
+    const classesMap = new Map();
+    classes.forEach(cls => {
+      classesMap.set(cls._id.toString(), {
+        id: cls._id,
+        name: cls.class_name,
+        academicYear: cls.academic_year
+      });
+    });
+
+    // Nhóm calendars theo ngày và lớp
+    const calendarsByDate = new Map();
+    calendars.forEach(cal => {
+      const dateStr = new Date(cal.date).toISOString().split('T')[0];
+      if (!calendarsByDate.has(dateStr)) {
+        calendarsByDate.set(dateStr, []);
+      }
+      calendarsByDate.get(dateStr).push(cal);
+    });
+
+    // Format kết quả
+    const result = {
+      classes: Array.from(classesMap.values()),
+      calendars: Array.from(calendarsByDate.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([dateStr, cals]) => ({
+          date: dateStr,
+          slots: cals.map(c => ({
+            id: c._id,
+            classId: c.class_id?._id,
+            className: c.class_id?.class_name || 'Lớp không xác định',
+            slotName: c.slot_id?.slot_name || '',
+            startTime: c.slot_id?.start_time || '',
+            endTime: c.slot_id?.end_time || '',
+            activity: c.activity_id ? {
+              id: c.activity_id._id,
+              name: c.activity_id.activity_name || c.activity_id.name || 'Hoạt động',
+              description: c.activity_id.description,
+              require_outdoor: typeof c.activity_id.require_outdoor === 'number' ? c.activity_id.require_outdoor : 0
+            } : null,
+            teacher: c.teacher_id ? {
+              id: c.teacher_id._id,
+              fullName: c.teacher_id.user_id?.full_name || c.teacher_id.full_name || 'Giáo viên'
+            } : null
+          }))
+        }))
+    };
+
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+}
+
+module.exports.getTeacherTeachingCalendar = getTeacherTeachingCalendar;
 
 // GET /teacher/profile
 async function getMyProfile(req, res) {

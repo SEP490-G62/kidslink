@@ -37,7 +37,9 @@ import {
   TableRow,
   Paper,
   CircularProgress,
-  Alert
+  Alert,
+  Tabs,
+  Tab
 } from '@mui/material';
 import ArgonBox from 'components/ArgonBox';
 import ArgonTypography from 'components/ArgonTypography';
@@ -53,10 +55,12 @@ const TeacherSchedule = () => {
   // Đồng bộ cách chọn tuần như trang Parent: dùng offset tuần
   const [selectedWeek, setSelectedWeek] = useState(0); // 0: tuần hiện tại
   const [calendarData, setCalendarData] = useState(null);
+  const [teachingCalendarData, setTeachingCalendarData] = useState(null);
   const [timeSlotsApi, setTimeSlotsApi] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [viewMode, setViewMode] = useState('class'); // 'class' hoặc 'teaching'
 
   useEffect(() => {
     let mounted = true;
@@ -64,12 +68,16 @@ const TeacherSchedule = () => {
       try {
         setLoading(true);
         setError('');
-        const [calendarRes, slotsRes] = await Promise.all([
+        const [classCalendarRes, teachingCalendarRes, slotsRes] = await Promise.all([
           apiService.get('/teachers/class-calendar'),
+          apiService.get('/teachers/teaching-calendar').catch(() => null), // Có thể không có dữ liệu
           apiService.get('/teachers/class-calendar/slots')
         ]);
         if (mounted) {
-          setCalendarData(calendarRes);
+          setCalendarData(classCalendarRes);
+          if (teachingCalendarRes) {
+            setTeachingCalendarData(teachingCalendarRes);
+          }
           // Xử lý response slots - có thể là { data: [...] } hoặc trực tiếp array
           let slotsArray = [];
           if (Array.isArray(slotsRes)) {
@@ -118,13 +126,35 @@ const TeacherSchedule = () => {
     return `${year}-${month}-${day}`;
   };
 
-  // Danh sách năm +/- 2 năm quanh năm hiện tại
+  // Danh sách năm trong phạm vi năm học
   const years = useMemo(() => {
-    const currentYear = new Date().getFullYear();
+    if (!calendarData?.class?.academicYear) {
+      // Fallback: nếu không có năm học, dùng năm hiện tại +/- 1
+      const currentYear = new Date().getFullYear();
+      return [currentYear - 1, currentYear, currentYear + 1];
+    }
+    
+    // Parse academicYear (có thể là "2024-2025" hoặc chỉ "2024")
+    const academicYear = calendarData.class.academicYear;
+    let startYear, endYear;
+    
+    if (academicYear.includes('-')) {
+      // Format: "2024-2025"
+      const parts = academicYear.split('-');
+      startYear = parseInt(parts[0], 10);
+      endYear = parseInt(parts[1], 10);
+    } else {
+      // Format: chỉ một năm
+      startYear = parseInt(academicYear, 10);
+      endYear = startYear;
+    }
+    
+    // Tạo danh sách năm từ năm bắt đầu đến năm kết thúc
     const arr = [];
-    for (let y = currentYear - 2; y <= currentYear + 2; y++) arr.push(y);
-    return arr;
-  }, []);
+    for (let y = startYear; y <= endYear; y++) arr.push(y);
+    
+    return arr.length > 0 ? arr : [new Date().getFullYear()];
+  }, [calendarData]);
 
   // Tính tuần đầu (offset) của một năm so với tuần hiện tại
   const getFirstWeekOfYear = (year) => {
@@ -165,8 +195,9 @@ const TeacherSchedule = () => {
     return arr;
   }, [selectedWeek]);
 
-  // Map slot theo ngày (giống parent)
+  // Map slot theo ngày cho lịch lớp chủ nhiệm
   const slotsByDay = useMemo(() => {
+    if (viewMode === 'teaching') return new Map();
     if (!calendarData || !calendarData.calendars) return new Map();
     const map = new Map();
     weekDays.forEach(day => {
@@ -182,10 +213,30 @@ const TeacherSchedule = () => {
       }
     });
     return map;
-  }, [calendarData, weekDays]);
+  }, [calendarData, weekDays, viewMode]);
+
+  // Map slot theo ngày cho lịch dạy (tất cả các lớp)
+  const teachingSlotsByDay = useMemo(() => {
+    if (viewMode === 'class') return new Map();
+    if (!teachingCalendarData || !teachingCalendarData.calendars) return new Map();
+    const map = new Map();
+    weekDays.forEach(day => {
+      const calendarOfDay = teachingCalendarData.calendars.find(c => {
+        const calDateStr = c.date;
+        return calDateStr === day.iso;
+      });
+      if (calendarOfDay && Array.isArray(calendarOfDay.slots) && calendarOfDay.slots.length > 0) {
+        const sorted = [...calendarOfDay.slots].sort((a,b) => (a.startTime||'00:00').localeCompare(b.startTime||'00:00'));
+        map.set(day.iso, sorted);
+      }
+    });
+    return map;
+  }, [teachingCalendarData, weekDays, viewMode]);
 
   // Danh sách khung giờ từ API hoặc từ dữ liệu
   const timeSlots = useMemo(() => {
+    const currentSlotsByDay = viewMode === 'teaching' ? teachingSlotsByDay : slotsByDay;
+    
     if (Array.isArray(timeSlotsApi) && timeSlotsApi.length > 0) {
       const list = timeSlotsApi.map(s => ({
         label: `${s.startTime || '00:00'} - ${s.endTime || '00:00'}`,
@@ -197,7 +248,7 @@ const TeacherSchedule = () => {
     }
     const labelToNames = new Map();
     weekDays.forEach(d => {
-      const slots = slotsByDay.get(d.iso) || [];
+      const slots = currentSlotsByDay.get(d.iso) || [];
       slots.forEach(s => {
         const label = `${s.startTime || '00:00'} - ${s.endTime || '00:00'}`;
         const name = s.slotName || '';
@@ -207,7 +258,7 @@ const TeacherSchedule = () => {
     });
     const labels = Array.from(labelToNames.keys()).sort((a,b)=>a.localeCompare(b));
     return labels.map(label => ({ label, name: (labelToNames.get(label)||[])[0] || '' }));
-  }, [timeSlotsApi, slotsByDay, weekDays]);
+  }, [timeSlotsApi, slotsByDay, teachingSlotsByDay, weekDays, viewMode]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -269,16 +320,46 @@ const TeacherSchedule = () => {
                 Lịch Học Hàng Tuần
               </ArgonTypography>
               <ArgonTypography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                {calendarData?.class?.name ? (
-                  <>
-                    <strong>{calendarData.class.name}</strong> • {calendarData.class.academicYear}
-                  </>
+                {viewMode === 'class' ? (
+                  calendarData?.class?.name ? (
+                    <>
+                      <strong>{calendarData.class.name}</strong> • {calendarData.class.academicYear}
+                    </>
+                  ) : (
+                    'Xem lịch học và hoạt động của lớp chủ nhiệm'
+                  )
                 ) : (
-                  'Xem lịch học và hoạt động của lớp'
+                  teachingCalendarData?.classes?.length > 0 ? (
+                    `Lịch dạy của tôi (${teachingCalendarData.classes.length} lớp)`
+                  ) : (
+                    'Xem lịch dạy của tôi (tất cả các lớp)'
+                  )
                 )}
               </ArgonTypography>
             </ArgonBox>
           </ArgonBox>
+        </ArgonBox>
+
+        {/* Tabs để chuyển đổi giữa lịch lớp chủ nhiệm và lịch dạy */}
+        <ArgonBox mb={3}>
+          <Tabs
+            value={viewMode}
+            onChange={(e, newValue) => setViewMode(newValue)}
+            sx={{
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                minHeight: 48
+              },
+              '& .Mui-selected': {
+                color: '#667eea'
+              }
+            }}
+          >
+            <Tab label="Lịch lớp chủ nhiệm" value="class" />
+            <Tab label="Lịch dạy của tôi" value="teaching" />
+          </Tabs>
         </ArgonBox>
 
         {/* Controls */}
@@ -473,8 +554,10 @@ const TeacherSchedule = () => {
                           </TableCell>
                         {/* Các cột ngày cho khung giờ này */}
                         {weekDays.map(day => {
-                          const slots = slotsByDay.get(day.iso) || [];
-                          const slot = slots.find(s => `${s.startTime || '00:00'} - ${s.endTime || '00:00'}` === ts.label);
+                          const currentSlotsByDay = viewMode === 'teaching' ? teachingSlotsByDay : slotsByDay;
+                          const slots = currentSlotsByDay.get(day.iso) || [];
+                          // Với lịch dạy, có thể có nhiều slot cùng khung giờ (nhiều lớp)
+                          const matchingSlots = slots.filter(s => `${s.startTime || '00:00'} - ${s.endTime || '00:00'}` === ts.label);
                           return (
                             <TableCell 
                               key={`cell-${day.iso}-${ts.label}`}
@@ -483,48 +566,81 @@ const TeacherSchedule = () => {
                                 backgroundColor: day.isToday ? '#f8fbff' : '#fff',
                                 verticalAlign: 'top',
                                 transition: 'background-color 120ms ease',
+                                height: viewMode === 'teaching' && matchingSlots.length > 1 ? 'auto' : 110,
                                 '&:hover': { backgroundColor: '#f6f7fb' }
                               }}
                             >
-                              {slot ? (
-                                <Card sx={{ borderRadius: 2, boxShadow: '0 4px 12px rgba(25,118,210,0.08)', backgroundColor: '#fff', border: '1px solid #e9ecef', overflow: 'hidden', position: 'relative' }}>
-                                  {slot.activity?.require_outdoor === 1 && (
-                                    <Box sx={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'linear-gradient(180deg, #2e7d32, #81c784)' }} />
-                                  )}
-                                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                                    <ArgonBox sx={{ flex: 1, minWidth: 0 }}>
-                                      <ArgonTypography variant="body2" fontWeight="bold" sx={{ mb: 0.75, color: '#1976d2', fontSize: '0.98rem', lineHeight: 1.4 }}>
-                                        {slot.activity?.name || slot.slotName || 'Hoạt động'}
-                                      </ArgonTypography>
-                                      <ArgonBox display="flex" alignItems="center" gap={1} mb={0.5}>
-                                        <Chip label={`${slot.startTime || ''}-${slot.endTime || ''}`} size="small" sx={{ height: 20, fontSize: '0.7rem', backgroundColor: '#e3f2fd', color: '#1976d2', fontWeight: 600 }} />
-                                        {slot.slotName && (
-                                          <Chip label={slot.slotName} size="small" sx={{ height: 20, fontSize: '0.7rem', backgroundColor: '#f1f3f5', color: '#495057', fontWeight: 600 }} />
-                                        )}
-                                      </ArgonBox>
-                                      {slot.teacher && (
-                                        <ArgonBox display="flex" alignItems="center" mt={0.5}>
-                                          <ArgonTypography variant="caption" sx={{ fontSize: '0.75rem', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                            Giáo viên: {slot.teacher.fullName || 'Chưa xác định'}
+                              {matchingSlots.length > 0 ? (
+                                <ArgonBox sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                  {matchingSlots.map((slot, idx) => (
+                                    <Card 
+                                      key={idx}
+                                      sx={{ 
+                                        borderRadius: 2, 
+                                        boxShadow: '0 4px 12px rgba(25,118,210,0.08)', 
+                                        backgroundColor: '#fff', 
+                                        border: '1px solid #e9ecef', 
+                                        overflow: 'hidden',
+                                        minHeight: 100,
+                                        height: viewMode === 'teaching' && matchingSlots.length > 1 ? 'auto' : '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column'
+                                      }}
+                                    >
+                                      <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 }, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                        <ArgonBox sx={{ flex: 1, minWidth: 0 }}>
+                                          {viewMode === 'teaching' && slot.className && (
+                                            <Chip
+                                              label={slot.className}
+                                              size="small"
+                                              sx={{
+                                                mb: 1,
+                                                height: 22,
+                                                fontSize: '0.75rem',
+                                                backgroundColor: '#e3f2fd',
+                                                color: '#1976d2',
+                                                fontWeight: 600
+                                              }}
+                                            />
+                                          )}
+                                          <ArgonTypography 
+                                            variant="body1" 
+                                            fontWeight="bold" 
+                                            sx={{ 
+                                              mb: 1.5, 
+                                              color: '#1976d2', 
+                                              fontSize: '1.05rem', 
+                                              lineHeight: 1.5,
+                                              minHeight: 48,
+                                              display: '-webkit-box',
+                                              WebkitLineClamp: 2,
+                                              WebkitBoxOrient: 'vertical',
+                                              overflow: 'hidden',
+                                              letterSpacing: '0.01em'
+                                            }}
+                                          >
+                                            {slot.activity?.name || slot.slotName || 'Hoạt động'}
                                           </ArgonTypography>
+                                          <ArgonBox display="flex" alignItems="center" mt="auto">
+                                            <ArgonTypography 
+                                              variant="body2" 
+                                              sx={{ 
+                                                fontSize: '0.875rem', 
+                                                color: '#495057',
+                                                fontWeight: 500,
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
+                                              }}
+                                            >
+                                              {slot.teacher?.fullName || 'Chưa xác định'}
+                                            </ArgonTypography>
+                                          </ArgonBox>
                                         </ArgonBox>
-                                      )}
-                                      {slot.activity?.require_outdoor === 1 && (
-                                        <Chip
-                                          label="Ngoài trời"
-                                          size="small"
-                                          sx={{
-                                            height: 18,
-                                            fontSize: '0.65rem',
-                                            backgroundColor: '#e8f5e9',
-                                            color: '#2e7d32',
-                                            mt: 0.5
-                                          }}
-                                        />
-                                      )}
-                                    </ArgonBox>
-                                  </CardContent>
-                                </Card>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </ArgonBox>
                               ) : (
                                 <ArgonBox display="flex" alignItems="center" justifyContent="center" sx={{ py: 2, color: '#adb5bd', fontSize: '0.8rem' }}>
                                   —

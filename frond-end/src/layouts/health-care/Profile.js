@@ -5,6 +5,7 @@
 */
 
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 
 // @mui material components
 import Grid from "@mui/material/Grid";
@@ -22,6 +23,16 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
+import InputAdornment from "@mui/material/InputAdornment";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Box from "@mui/material/Box";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -34,6 +45,63 @@ import Footer from "examples/Footer";
 
 // Services
 import healthService from "services/healthService";
+
+const INFO_COLORS = {
+  main: "#1976d2",
+  dark: "#1565c0",
+  light: "#63a4ff",
+  surface: "#e3f2fd",
+  border: "#bbdefb",
+  shadow: "rgba(25,118,210,0.25)",
+};
+
+const FormSectionCard = ({ icon, title, subtitle, children }) => (
+  <Paper
+    sx={{
+      p: 3,
+      borderRadius: 3,
+      border: `1px solid ${INFO_COLORS.border}`,
+      background: "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(227,242,253,0.98) 100%)",
+      boxShadow: "0 12px 30px rgba(25,118,210,0.08)",
+    }}
+  >
+    <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          borderRadius: "50%",
+          backgroundColor: INFO_COLORS.surface,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: INFO_COLORS.dark,
+        }}
+      >
+        {icon}
+      </Box>
+      <Box>
+        <ArgonTypography variant="subtitle1" fontWeight="bold" color="dark">
+          {title}
+        </ArgonTypography>
+        {subtitle && (
+          <ArgonTypography variant="caption" color="text" fontWeight="regular">
+            {subtitle}
+          </ArgonTypography>
+        )}
+      </Box>
+    </Stack>
+    <Divider sx={{ mb: 2 }} />
+    {children}
+  </Paper>
+);
+
+FormSectionCard.propTypes = {
+  icon: PropTypes.node.isRequired,
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
+  children: PropTypes.node.isRequired,
+};
 
 function HealthCareProfile() {
   const [loading, setLoading] = useState(true);
@@ -66,8 +134,14 @@ function HealthCareProfile() {
     note: ""
   });
   const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
     newPassword: "",
     confirmPassword: ""
+  });
+  const [showPassword, setShowPassword] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
   });
   const [activeForm, setActiveForm] = useState(null); // null, "profile", or "password"
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -159,40 +233,76 @@ function HealthCareProfile() {
     });
   };
 
+  const getPasswordValidationError = (password) => {
+    if (password.length < 8 || password.length > 16) {
+      return "Mật khẩu phải có từ 8-16 ký tự";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 chữ hoa";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 chữ thường";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 số";
+    }
+    if (!/[!@#$%^&*(),.?\":{}|<>]/.test(password)) {
+      return "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)";
+    }
+    return null;
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPassword((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  };
+
   const handleChangePassword = async () => {
-    // Validation
-    if (!passwordData.newPassword || !passwordData.confirmPassword) {
-      setAlert({ open: true, message: "Vui lòng điền đầy đủ thông tin mật khẩu mới", severity: "error" });
-      return;
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setAlert({ open: true, message: "Vui lòng nhập đầy đủ mật khẩu cũ và mật khẩu mới", severity: "error" });
+      return false;
     }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setAlert({ open: true, message: "Mật khẩu mới không khớp", severity: "error" });
-      return;
+      return false;
     }
 
-    if (passwordData.newPassword.length < 6) {
-      setAlert({ open: true, message: "Mật khẩu phải có ít nhất 6 ký tự", severity: "error" });
-      return;
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      setAlert({ open: true, message: "Mật khẩu mới phải khác mật khẩu hiện tại", severity: "error" });
+      return false;
+    }
+
+    const passwordError = getPasswordValidationError(passwordData.newPassword);
+    if (passwordError) {
+      setAlert({ open: true, message: passwordError, severity: "error" });
+      return false;
     }
 
     try {
       setSaving(true);
-      const result = await healthService.updateStaffProfile({
-        password: passwordData.newPassword
+      const result = await healthService.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.confirmPassword,
       });
       if (result && result.success) {
-        setAlert({ open: true, message: "Đổi mật khẩu thành công", severity: "success" });
-        // Clear password fields
+        setAlert({ open: true, message: result.data?.message || "Đổi mật khẩu thành công", severity: "success" });
         setPasswordData({
+          currentPassword: "",
           newPassword: "",
-          confirmPassword: ""
+          confirmPassword: "",
         });
-      } else {
-        setAlert({ open: true, message: result?.error || "Không thể đổi mật khẩu", severity: "error" });
+        closeForms();
+        return true;
       }
+      setAlert({ open: true, message: result?.error || "Không thể đổi mật khẩu", severity: "error" });
+      return false;
     } catch (error) {
-      setAlert({ open: true, message: "Có lỗi xảy ra khi đổi mật khẩu", severity: "error" });
+      setAlert({ open: true, message: error.message || "Có lỗi xảy ra khi đổi mật khẩu", severity: "error" });
+      return false;
     } finally {
       setSaving(false);
     }
@@ -244,11 +354,6 @@ function HealthCareProfile() {
 
   const handleSaveAndClose = async () => {
     await handleSave();
-    closeForms();
-  };
-
-  const handlePasswordAndClose = async () => {
-    await handleChangePassword();
     closeForms();
   };
 
@@ -305,21 +410,21 @@ function HealthCareProfile() {
                   </ArgonTypography>
                     
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-single-02" style={{ color: '#5e72e4', fontSize: '16px' }} />
+                      <i className="ni ni-single-02" style={{ color: INFO_COLORS.main, fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Username: <span style={{ fontWeight: 'bold' }}>{profileData.user.username}</span>
                   </ArgonTypography>
                 </ArgonBox>
 
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-email-83" style={{ color: '#5e72e4', fontSize: '16px' }} />
+                      <i className="ni ni-email-83" style={{ color: INFO_COLORS.main, fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Email: <span style={{ fontWeight: 'bold' }}>{profileData.user.email || '—'}</span>
                   </ArgonTypography>
                     </ArgonBox>
                     
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-mobile-button" style={{ color: '#5e72e4', fontSize: '16px' }} />
+                      <i className="ni ni-mobile-button" style={{ color: INFO_COLORS.main, fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         SĐT: <span style={{ fontWeight: 'bold' }}>{profileData.user.phone_number || '—'}</span>
                   </ArgonTypography>
@@ -327,28 +432,28 @@ function HealthCareProfile() {
 
                     {/* Staff detail */}
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-hat-3" style={{ color: '#5e72e4', fontSize: '16px' }} />
+                      <i className="ni ni-hat-3" style={{ color: INFO_COLORS.main, fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Chuyên môn: <span style={{ fontWeight: 'bold' }}>{profileData.staff?.qualification || '—'}</span>
                   </ArgonTypography>
                     </ArgonBox>
 
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-bulb-61" style={{ color: '#5e72e4', fontSize: '16px' }} />
+                      <i className="ni ni-bulb-61" style={{ color: INFO_COLORS.main, fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Ngành nghề: <span style={{ fontWeight: 'bold' }}>{profileData.staff?.major || '—'}</span>
                   </ArgonTypography>
                     </ArgonBox>
 
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
-                      <i className="ni ni-chart-bar-32" style={{ color: '#5e72e4', fontSize: '16px' }} />
+                      <i className="ni ni-chart-bar-32" style={{ color: INFO_COLORS.main, fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Năm kinh nghiệm: <span style={{ fontWeight: 'bold' }}>{profileData.staff?.experience_years || '—'}</span>
                   </ArgonTypography>
                     </ArgonBox>
 
                     <ArgonBox display="flex" alignItems="center" gap={1.5}>
-                      <i className="ni ni-notification-70" style={{ color: '#5e72e4', fontSize: '16px' }} />
+                      <i className="ni ni-notification-70" style={{ color: INFO_COLORS.main, fontSize: '16px' }} />
                       <ArgonTypography variant="body2" color="text" fontWeight="regular">
                         Ghi chú: <span style={{ fontWeight: 'bold' }}>{profileData.staff?.note || '—'}</span>
                   </ArgonTypography>
@@ -360,7 +465,7 @@ function HealthCareProfile() {
                 <ArgonBox display="flex" gap={2} justifyContent="flex-end" mt={3}>
                   <Button 
                     variant="outlined" 
-                    color="warning"
+                    color="info"
                     onClick={openPasswordForm}
                     startIcon={<i className="ni ni-lock-circle-open" />}
                     sx={{ 
@@ -368,15 +473,15 @@ function HealthCareProfile() {
                       height: 44,
                       fontSize: '14px',
                       fontWeight: 'bold',
-                      borderWidth: '2px',
-                      color: '#ff9800',
-                      borderColor: '#ff9800',
+                      borderWidth: 2,
+                      color: INFO_COLORS.main,
+                      borderColor: INFO_COLORS.main,
                       '&:hover': {
-                        borderWidth: '2px',
-                        backgroundColor: 'rgba(255, 152, 0, 0.08)',
+                        borderWidth: 2,
+                        backgroundColor: `${INFO_COLORS.surface}`,
                         transform: 'translateY(-1px)',
-                        boxShadow: '0 4px 12px rgba(255, 152, 0, 0.3)',
-                        borderColor: '#f57c00'
+                        boxShadow: `0 4px 12px ${INFO_COLORS.shadow}`,
+                        borderColor: INFO_COLORS.dark
                       }
                     }}
                   >
@@ -384,7 +489,7 @@ function HealthCareProfile() {
                   </Button>
                   <Button 
                     variant="contained" 
-                    color="primary"
+                    color="info"
                     onClick={openProfileForm}
                     startIcon={<i className="ni ni-single-02" />}
                     sx={{ 
@@ -392,9 +497,12 @@ function HealthCareProfile() {
                       height: 44,
                       fontSize: '14px',
                       fontWeight: 'bold',
+                      backgroundColor: INFO_COLORS.main,
+                      boxShadow: `0 6px 16px ${INFO_COLORS.shadow}`,
                       '&:hover': {
+                        backgroundColor: INFO_COLORS.dark,
                         transform: 'translateY(-1px)',
-                        boxShadow: '0 6px 16px rgba(94, 114, 228, 0.4)'
+                        boxShadow: `0 8px 18px ${INFO_COLORS.shadow}`
                       }
                     }}
                   >
@@ -418,7 +526,7 @@ function HealthCareProfile() {
           }}
         >
           <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
             color: 'white',
             py: 2.5
           }}>
@@ -431,52 +539,55 @@ function HealthCareProfile() {
               </IconButton>
             </ArgonBox>
           </DialogTitle>
-          <DialogContent>
-            <ArgonBox sx={{ mt: 2 }}>
-              {/* Avatar - Hiển thị ở đầu, có thể click để upload */}
-              <ArgonBox display="flex" flexDirection="column" alignItems="center" mb={3}>
-                <ArgonTypography variant="body2" fontWeight="bold" mb={2}>
-                  Ảnh đại diện
-                </ArgonTypography>
-                <input
-                  type="file"
-                  id="avatar-upload-health"
-                  hidden
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                />
-                <label htmlFor="avatar-upload-health" style={{ cursor: 'pointer' }}>
-                  <Avatar
-                    src={avatarPreview || formData.avatar_url}
-                    alt="Avatar"
-                    sx={{ 
-                      width: 120, 
-                      height: 120, 
-                      border: '2px solid #e0e0e0',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'scale(1.05)',
-                        borderColor: '#5e72e4',
-                        boxShadow: '0 4px 12px rgba(94, 114, 228, 0.3)'
-                      }
-                    }}
+          <DialogContent sx={{ p: 3 }}>
+            <Stack spacing={3}>
+              <FormSectionCard
+                icon={<PhotoCameraIcon />}
+                title="Ảnh đại diện"
+                subtitle="Ảnh sẽ hiển thị cho phụ huynh và giáo viên"
+              >
+                <ArgonBox display="flex" flexDirection="column" alignItems="center">
+                  <input
+                    type="file"
+                    id="avatar-upload-health"
+                    hidden
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
                   />
-                </label>
-                <ArgonTypography variant="body2" color="text" mt={1}>
-                  Click để thay đổi ảnh
-                </ArgonTypography>
-              </ArgonBox>
+                  <label htmlFor="avatar-upload-health" style={{ cursor: "pointer" }}>
+                    <Avatar
+                      src={avatarPreview || formData.avatar_url}
+                      alt="Avatar"
+                      sx={{
+                        width: 120,
+                        height: 120,
+                        border: "2px solid #e0e0e0",
+                        cursor: "pointer",
+                        transition: "all 0.3s ease",
+                        "&:hover": {
+                          transform: "scale(1.05)",
+                          borderColor: INFO_COLORS.main,
+                          boxShadow: "0 4px 12px rgba(25,118,210,0.25)",
+                        },
+                      }}
+                    />
+                  </label>
+                  <ArgonTypography variant="body2" color="text" mt={1}>
+                    Nhấp để chọn ảnh mới (JPG, PNG)
+                  </ArgonTypography>
+                </ArgonBox>
+              </FormSectionCard>
 
-              {/* Personal Information Section */}
-              <ArgonBox>
+              <FormSectionCard
+                icon={<InfoOutlinedIcon />}
+                title="Thông tin cá nhân"
+                subtitle="Cập nhật thông tin liên hệ của bạn"
+              >
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Họ và tên
-                      </ArgonTypography>
-                    </ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                      Họ và tên
+                    </ArgonTypography>
                     <TextField
                       fullWidth
                       value={formData.full_name}
@@ -484,48 +595,44 @@ function HealthCareProfile() {
                       variant="outlined"
                       placeholder="Nhập họ và tên"
                       sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#f8f9fa",
+                          "&:hover fieldset": {
+                            borderColor: "info.main",
                           },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
+                          "&.Mui-focused fieldset": {
+                            borderColor: "info.main",
+                            borderWidth: 2,
                           },
                         },
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Username
-                      </ArgonTypography>
-                    </ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                      Username
+                    </ArgonTypography>
                     <TextField
                       fullWidth
                       value={formData.username}
                       variant="outlined"
                       disabled
                       sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f0f0f0',
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#f0f0f0",
                         },
                       }}
                     />
-                    <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: 'block' }}>
+                    <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: "block" }}>
                       Username không thể thay đổi
                     </ArgonTypography>
                   </Grid>
-                  
+
                   <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Email
-                      </ArgonTypography>
-                    </ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                      Email
+                    </ArgonTypography>
                     <TextField
                       fullWidth
                       value={formData.email}
@@ -534,26 +641,24 @@ function HealthCareProfile() {
                       type="email"
                       placeholder="Nhập email"
                       sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#f8f9fa",
+                          "&:hover fieldset": {
+                            borderColor: "info.main",
                           },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
+                          "&.Mui-focused fieldset": {
+                            borderColor: "info.main",
+                            borderWidth: 2,
                           },
                         },
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Số điện thoại
-                      </ArgonTypography>
-                    </ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                      Số điện thoại
+                    </ArgonTypography>
                     <TextField
                       fullWidth
                       value={formData.phone_number}
@@ -561,27 +666,32 @@ function HealthCareProfile() {
                       variant="outlined"
                       placeholder="Nhập số điện thoại"
                       sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#f8f9fa",
+                          "&:hover fieldset": {
+                            borderColor: "info.main",
                           },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
+                          "&.Mui-focused fieldset": {
+                            borderColor: "info.main",
+                            borderWidth: 2,
                           },
                         },
                       }}
                     />
                   </Grid>
+                </Grid>
+              </FormSectionCard>
 
-                  {/* Staff specific fields */}
+              <FormSectionCard
+                icon={<LocalHospitalIcon />}
+                title="Thông tin chuyên môn"
+                subtitle="Chia sẻ kinh nghiệm để phụ huynh yên tâm hơn"
+              >
+                <Grid container spacing={2}>
                   <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Chuyên môn
-                      </ArgonTypography>
-                    </ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                      Chuyên môn
+                    </ArgonTypography>
                     <TextField
                       fullWidth
                       value={formData.qualification}
@@ -589,14 +699,14 @@ function HealthCareProfile() {
                       variant="outlined"
                       placeholder="Nhập chuyên môn"
                       sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#f8f9fa",
+                          "&:hover fieldset": {
+                            borderColor: "info.main",
                           },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
+                          "&.Mui-focused fieldset": {
+                            borderColor: "info.main",
+                            borderWidth: 2,
                           },
                         },
                       }}
@@ -604,11 +714,9 @@ function HealthCareProfile() {
                   </Grid>
 
                   <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Ngành nghề
-                      </ArgonTypography>
-                    </ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                      Ngành nghề
+                    </ArgonTypography>
                     <TextField
                       fullWidth
                       value={formData.major}
@@ -616,14 +724,14 @@ function HealthCareProfile() {
                       variant="outlined"
                       placeholder="Nhập ngành nghề"
                       sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#f8f9fa",
+                          "&:hover fieldset": {
+                            borderColor: "info.main",
                           },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
+                          "&.Mui-focused fieldset": {
+                            borderColor: "info.main",
+                            borderWidth: 2,
                           },
                         },
                       }}
@@ -631,11 +739,9 @@ function HealthCareProfile() {
                   </Grid>
 
                   <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Năm kinh nghiệm
-                      </ArgonTypography>
-                    </ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                      Năm kinh nghiệm
+                    </ArgonTypography>
                     <TextField
                       fullWidth
                       value={formData.experience_years}
@@ -644,14 +750,14 @@ function HealthCareProfile() {
                       type="number"
                       placeholder="Nhập số năm kinh nghiệm"
                       sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#f8f9fa",
+                          "&:hover fieldset": {
+                            borderColor: "info.main",
                           },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
+                          "&.Mui-focused fieldset": {
+                            borderColor: "info.main",
+                            borderWidth: 2,
                           },
                         },
                       }}
@@ -659,11 +765,9 @@ function HealthCareProfile() {
                   </Grid>
 
                   <Grid item xs={12}>
-                    <ArgonBox mb={1}>
-                      <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                        Ghi chú
-                      </ArgonTypography>
-                    </ArgonBox>
+                    <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                      Ghi chú
+                    </ArgonTypography>
                     <TextField
                       fullWidth
                       value={formData.note}
@@ -673,22 +777,22 @@ function HealthCareProfile() {
                       rows={3}
                       placeholder="Nhập ghi chú"
                       sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: '#f8f9fa',
-                          '&:hover fieldset': {
-                            borderColor: '#5e72e4',
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#f8f9fa",
+                          "&:hover fieldset": {
+                            borderColor: "info.main",
                           },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#5e72e4',
-                            borderWidth: '2px',
+                          "&.Mui-focused fieldset": {
+                            borderColor: "info.main",
+                            borderWidth: 2,
                           },
                         },
                       }}
                     />
                   </Grid>
                 </Grid>
-              </ArgonBox>
-            </ArgonBox>
+              </FormSectionCard>
+            </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
             <Button
@@ -710,7 +814,7 @@ function HealthCareProfile() {
             <Button 
               onClick={handleSaveAndClose}
               variant="contained"
-              color="primary"
+              color="info"
               disabled={saving}
               sx={{
                 borderRadius: 2,
@@ -718,12 +822,12 @@ function HealthCareProfile() {
                 py: 1,
                 textTransform: 'none',
                 fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
                 boxShadow: 3,
                 color: 'white !important',
                 '&:hover': {
                   boxShadow: 5,
-                  background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                  background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
                   color: 'white !important'
                 },
                 '&:disabled': { background: '#ccc', color: 'white !important' }
@@ -745,7 +849,7 @@ function HealthCareProfile() {
           }}
         >
           <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
             color: 'white',
             py: 2.5
           }}>
@@ -758,72 +862,125 @@ function HealthCareProfile() {
               </IconButton>
             </ArgonBox>
           </DialogTitle>
-          <DialogContent>
-            <ArgonBox sx={{ mt: 2 }}>
-              {/* Password Section */}
+          <DialogContent sx={{ p: 3 }}>
+            <FormSectionCard
+              icon={<LockOutlinedIcon />}
+              title="Đổi mật khẩu"
+              subtitle="Nhập mật khẩu hiện tại và tạo mật khẩu mới an toàn"
+            >
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-                  <ArgonBox mb={1}>
-                    <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                      Mật khẩu mới
-                    </ArgonTypography>
-                  </ArgonBox>
-                    <TextField
-                      fullWidth
-                    name="newPassword"
-                    value={passwordData.newPassword}
+                  <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                    Mật khẩu hiện tại
+                  </ArgonTypography>
+                  <TextField
+                    fullWidth
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
-                      variant="outlined"
-                    type="password"
-                    placeholder="Nhập mật khẩu mới"
+                    variant="outlined"
+                    type={showPassword.currentPassword ? "text" : "password"}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => togglePasswordVisibility("currentPassword")} edge="end">
+                            {showPassword.currentPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    placeholder="Nhập mật khẩu hiện tại"
                     sx={{
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: '#f8f9fa',
-                        '&:hover fieldset': {
-                          borderColor: '#5e72e4',
+                      "& .MuiOutlinedInput-root": {
+                        backgroundColor: "#f8f9fa",
+                        "&:hover fieldset": {
+                          borderColor: "info.main",
                         },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#5e72e4',
-                          borderWidth: '2px',
+                        "&.Mui-focused fieldset": {
+                          borderColor: "info.main",
+                          borderWidth: 2,
                         },
                       },
                     }}
                   />
-                  <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: 'block' }}>
-                    Tối thiểu 6 ký tự
+                </Grid>
+
+                <Grid item xs={12}>
+                  <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                    Mật khẩu mới
                   </ArgonTypography>
-                  </Grid>
-                
-                  <Grid item xs={12}>
-                  <ArgonBox mb={1}>
-                    <ArgonTypography variant="body2" fontWeight="medium" color="dark">
-                      Xác nhận mật khẩu mới
-                    </ArgonTypography>
-                  </ArgonBox>
-                    <TextField
-                      fullWidth
-                    name="confirmPassword"
-                    value={passwordData.confirmPassword}
+                  <TextField
+                    fullWidth
+                    name="newPassword"
+                    value={passwordData.newPassword}
                     onChange={handlePasswordChange}
-                      variant="outlined"
-                    type="password"
-                    placeholder="Nhập lại mật khẩu mới"
+                    variant="outlined"
+                    type={showPassword.newPassword ? "text" : "password"}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => togglePasswordVisibility("newPassword")} edge="end">
+                            {showPassword.newPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    placeholder="Nhập mật khẩu mới"
                     sx={{
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: '#f8f9fa',
-                        '&:hover fieldset': {
-                          borderColor: '#5e72e4',
+                      "& .MuiOutlinedInput-root": {
+                        backgroundColor: "#f8f9fa",
+                        "&:hover fieldset": {
+                          borderColor: "info.main",
                         },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#5e72e4',
-                          borderWidth: '2px',
+                        "&.Mui-focused fieldset": {
+                          borderColor: "info.main",
+                          borderWidth: 2,
                         },
                       },
                     }}
-                    />
-                  </Grid>
+                  />
+                  <ArgonTypography variant="caption" color="text" sx={{ mt: 0.5, display: "block" }}>
+                    8-16 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
+                  </ArgonTypography>
                 </Grid>
-            </ArgonBox>
+
+                <Grid item xs={12}>
+                  <ArgonTypography variant="body2" fontWeight="bold" color="#424242" mb={1}>
+                    Xác nhận mật khẩu mới
+                  </ArgonTypography>
+                  <TextField
+                    fullWidth
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    variant="outlined"
+                    type={showPassword.confirmPassword ? "text" : "password"}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => togglePasswordVisibility("confirmPassword")} edge="end">
+                            {showPassword.confirmPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    placeholder="Nhập lại mật khẩu mới"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        backgroundColor: "#f8f9fa",
+                        "&:hover fieldset": {
+                          borderColor: "info.main",
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "info.main",
+                          borderWidth: 2,
+                        },
+                      },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </FormSectionCard>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
             <Button
@@ -843,9 +1000,9 @@ function HealthCareProfile() {
                     Hủy
                   </Button>
             <Button 
-              onClick={handlePasswordAndClose}
+              onClick={handleChangePassword}
               variant="contained" 
-              color="primary"
+              color="info"
               disabled={saving}
               sx={{
                 borderRadius: 2,
@@ -853,12 +1010,12 @@ function HealthCareProfile() {
                 py: 1,
                 textTransform: 'none',
                 fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
                 boxShadow: 3,
                 color: 'white !important',
                 '&:hover': {
                   boxShadow: 5,
-                  background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                  background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
                   color: 'white !important'
                 },
                 '&:disabled': { background: '#ccc', color: 'white !important' }
