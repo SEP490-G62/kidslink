@@ -11,98 +11,13 @@ const getUserSchoolId = async (req) => {
 };
 
 // --- Meal CRUD ---
-// Lấy danh sách bữa ăn (Meal) theo school_id
+// Lấy danh sách bữa ăn (Meal) dùng chung cho mọi trường
 exports.listMeals = async (req, res) => {
   try {
-    const schoolId = await getUserSchoolId(req);
-    if (!schoolId) {
-      return res.status(403).json({ error: 'Không tìm thấy school_id của user' });
-    }
-    const meals = await Meal.find({ school_id: schoolId }).sort({ meal: 1 });
+    const meals = await Meal.find().sort({ meal: 1 });
     res.json({ count: meals.length, meals });
   } catch (err) {
     res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
-  }
-};
-
-// Tạo mới bữa ăn (Meal)
-exports.createMeal = async (req, res) => {
-  try {
-    const schoolId = await getUserSchoolId(req);
-    if (!schoolId) {
-      return res.status(403).json({ error: 'Không tìm thấy school_id của user' });
-    }
-    const { meal } = req.body || {};
-    if (!meal || !meal.trim()) {
-      return res.status(400).json({ error: 'Thiếu tên bữa ăn (meal)' });
-    }
-    const created = await Meal.create({ meal: meal.trim(), school_id: schoolId });
-    return res.status(201).json(created);
-  } catch (err) {
-    if (err.code === 11000) {
-      return res.status(409).json({ error: 'Bữa ăn này đã tồn tại trong trường học của bạn' });
-    }
-    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
-  }
-};
-
-// Cập nhật bữa ăn (Meal)
-exports.updateMeal = async (req, res) => {
-  try {
-    const schoolId = await getUserSchoolId(req);
-    if (!schoolId) {
-      return res.status(403).json({ error: 'Không tìm thấy school_id của user' });
-    }
-    const { id } = req.params;
-    const { meal } = req.body || {};
-    if (!meal || !meal.trim()) {
-      return res.status(400).json({ error: 'Thiếu tên bữa ăn (meal)' });
-    }
-    const existing = await Meal.findOne({ _id: id, school_id: schoolId });
-    if (!existing) {
-      return res.status(404).json({ error: 'Không tìm thấy bữa ăn hoặc không có quyền truy cập' });
-    }
-    const updated = await Meal.findByIdAndUpdate(
-      id,
-      { $set: { meal: meal.trim() } },
-      { new: true }
-    );
-    return res.json(updated);
-  } catch (err) {
-    if (err.name === 'CastError') {
-      return res.status(400).json({ error: 'ID không đúng định dạng ObjectId' });
-    }
-    if (err.code === 11000) {
-      return res.status(409).json({ error: 'Bữa ăn này đã tồn tại trong trường học của bạn' });
-    }
-    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
-  }
-};
-
-// Xoá bữa ăn (Meal)
-exports.deleteMeal = async (req, res) => {
-  try {
-    const schoolId = await getUserSchoolId(req);
-    if (!schoolId) {
-      return res.status(403).json({ error: 'Không tìm thấy school_id của user' });
-    }
-    const { id } = req.params;
-    const existing = await Meal.findOne({ _id: id, school_id: schoolId });
-    if (!existing) {
-      return res.status(404).json({ error: 'Không tìm thấy bữa ăn hoặc không có quyền truy cập' });
-    }
-    // Kiểm tra xem có Dish nào đang sử dụng Meal này không
-    const dishCount = await Dish.countDocuments({ meal_type: id, school_id: schoolId });
-    if (dishCount > 0) {
-      return res.status(400).json({ error: `Không thể xóa bữa ăn này vì có ${dishCount} món ăn đang sử dụng` });
-    }
-    await Meal.findByIdAndDelete(id);
-    return res.status(204).json({});
-  } catch (err) {
-    if (err.name === 'CastError') {
-      return res.status(400).json({ error: 'ID không đúng định dạng ObjectId' });
-    }
-    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
 };
 
@@ -134,10 +49,10 @@ exports.createDish = async (req, res) => {
     if (!dish_name || !description || !meal_type) {
       return res.status(400).json({ error: 'Thiếu dish_name, description hoặc meal_type' });
     }
-    // Validate meal_type tồn tại và cùng school_id
-    const meal = await Meal.findOne({ _id: meal_type, school_id: schoolId });
+    // Validate meal_type tồn tại
+    const meal = await Meal.findById(meal_type);
     if (!meal) {
-      return res.status(400).json({ error: 'meal_type không hợp lệ hoặc không thuộc trường học của bạn' });
+      return res.status(400).json({ error: 'meal_type không hợp lệ' });
     }
     const created = await Dish.create({ dish_name, description, meal_type, school_id: schoolId });
     const populated = await Dish.findById(created._id).populate('meal_type');
@@ -169,9 +84,9 @@ exports.updateDish = async (req, res) => {
     }
     // Validate meal_type nếu có cập nhật
     if (meal_type) {
-      const meal = await Meal.findOne({ _id: meal_type, school_id: schoolId });
+      const meal = await Meal.findById(meal_type);
       if (!meal) {
-        return res.status(400).json({ error: 'meal_type không hợp lệ hoặc không thuộc trường học của bạn' });
+        return res.status(400).json({ error: 'meal_type không hợp lệ' });
       }
     }
     const updateData = {};
@@ -241,10 +156,7 @@ exports.listClassAgeMeals = async (req, res) => {
         path: 'class_age_id',
         match: { school_id: schoolId }
       })
-      .populate({
-        path: 'meal_id',
-        match: { school_id: schoolId }
-      })
+      .populate('meal_id')
       .populate('weekday_id')
       .sort({ date: -1 });
     
@@ -284,12 +196,12 @@ exports.assignDishesToClassAgeMeal = async (req, res) => {
     // Validate refs existence và cùng school_id
     const [classAge, meal, weekdayExists] = await Promise.all([
       ClassAge.findOne({ _id: class_age_id, school_id: schoolId }),
-      Meal.findOne({ _id: meal_id, school_id: schoolId }),
+      Meal.findById(meal_id),
       WeekDay.exists({ _id: weekday_id })
     ]);
 
     if (!classAge || !meal || !weekdayExists) {
-      return res.status(400).json({ error: 'Tham chiếu không hợp lệ hoặc không thuộc trường học của bạn' });
+      return res.status(400).json({ error: 'Tham chiếu không hợp lệ' });
     }
 
     // Validate tất cả dish_ids cùng school_id
@@ -360,14 +272,14 @@ exports.getAssignedDishes = async (req, res) => {
       return res.status(400).json({ error: 'Thiếu tham số yêu cầu' });
     }
     
-    // Validate class_age_id và meal_id cùng school_id
+    // Validate class_age_id thuộc school_id và meal tồn tại
     const [classAge, meal] = await Promise.all([
       ClassAge.findOne({ _id: class_age_id, school_id: schoolId }),
-      Meal.findOne({ _id: meal_id, school_id: schoolId })
+      Meal.findById(meal_id)
     ]);
     
     if (!classAge || !meal) {
-      return res.status(400).json({ error: 'Tham chiếu không hợp lệ hoặc không thuộc trường học của bạn' });
+      return res.status(400).json({ error: 'Tham chiếu không hợp lệ' });
     }
     
     const normalizedDate = new Date(date);
@@ -442,10 +354,7 @@ exports.getWeeklyAssignedDishes = async (req, res) => {
         path: 'class_age_id',
         match: { school_id: schoolId }
       })
-      .populate({
-        path: 'meal_id',
-        match: { school_id: schoolId }
-      })
+      .populate('meal_id')
       .populate('weekday_id');
 
     // Filter out null values from populate
