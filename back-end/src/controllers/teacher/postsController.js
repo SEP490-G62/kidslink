@@ -65,14 +65,15 @@ const createPost = async (req, res) => {
       
       targetClassId = class_id;
     } else {
-      // Nếu không có class_id, lấy lớp đầu tiên mà giáo viên phụ trách
+      // Nếu không có class_id, lấy lớp có năm học mới nhất mà giáo viên phụ trách
       const teacherClass = await Class.findOne({
         $or: [
           { teacher_id: teacher._id },
           { teacher_id2: teacher._id }
         ],
         school_id: schoolId
-      });
+      })
+      .sort({ academic_year: -1 });
       
       if (!teacherClass) {
         return res.status(400).json({

@@ -16,6 +16,10 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -35,6 +39,16 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [classes, setClasses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [loadingClasses, setLoadingClasses] = useState(false);
+
+  // Fetch classes when modal opens
+  React.useEffect(() => {
+    if (open && !isEditMode) {
+      fetchClasses();
+    }
+  }, [open, isEditMode]);
 
   // Update state when post changes (for editing)
   React.useEffect(() => {
@@ -43,13 +57,62 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
       const postImages = post.images || [];
       setImages(postImages);
       setImagePreviews(postImages);
+      if (post.class_id) {
+        setSelectedClass(post.class_id._id || post.class_id);
+      }
     } else {
       setContent("");
       setImages([]);
       setImagePreviews([]);
+      setSelectedClass("");
     }
     setError("");
   }, [post]);
+
+  const fetchClasses = async () => {
+    setLoadingClasses(true);
+    try {
+      const result = await teacherService.getTeacherClasses();
+      if (result.success && result.data && Array.isArray(result.data) && result.data.length > 0) {
+        // Backend trả về mảng các object: [{ academic_year: "2024-2025", classes: [...] }, ...]
+        // Đã được sort theo academic_year giảm dần (năm học mới nhất ở đầu)
+        // Mỗi năm học đã được group tất cả lớp vào mảng classes
+        
+        // Lấy năm học mới nhất (phần tử đầu tiên sau khi sort)
+        const newestYearData = result.data[0];
+        
+        if (newestYearData && newestYearData.academic_year && newestYearData.classes) {
+          // Lấy tất cả các lớp của năm học mới nhất
+          // Backend đã group tất cả lớp của cùng năm học vào mảng classes
+          const allClassesForNewestYear = Array.isArray(newestYearData.classes) 
+            ? newestYearData.classes 
+            : [];
+          
+          if (allClassesForNewestYear.length > 0) {
+            // Set tất cả lớp của năm học mới nhất
+            setClasses(allClassesForNewestYear);
+            // Tự động chọn lớp đầu tiên nếu chưa có lớp nào được chọn
+            setSelectedClass(prev => prev || allClassesForNewestYear[0]._id);
+          } else {
+            setClasses([]);
+            setSelectedClass("");
+          }
+        } else {
+          setClasses([]);
+          setSelectedClass("");
+        }
+      } else {
+        setClasses([]);
+        setSelectedClass("");
+      }
+    } catch (err) {
+      console.error('Error fetching classes:', err);
+      setClasses([]);
+      setSelectedClass("");
+    } finally {
+      setLoadingClasses(false);
+    }
+  };
 
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
@@ -100,8 +163,8 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
           setError(result.error || "Có lỗi xảy ra khi cập nhật bài viết");
         }
       } else {
-        // Teacher không cần selectedChild, backend sẽ tự động lấy lớp của giáo viên
-        const result = await teacherService.createPost(content, images);
+        // Gửi class_id nếu đã chọn, nếu không backend sẽ tự động lấy lớp của giáo viên
+        const result = await teacherService.createPost(content, images, selectedClass || null);
         if (result.success) {
           onPostCreated(result.data);
           handleCloseModal();
@@ -121,6 +184,7 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
     setImages([]);
     setImagePreviews([]);
     setError("");
+    setSelectedClass("");
     onClose();
   };
 
@@ -170,7 +234,7 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
               <ArgonTypography variant="body2" color="text.secondary">
                 {isEditMode 
                   ? "Cập nhật nội dung và hình ảnh của bài viết" 
-                  : "Chia sẻ điều gì đó với cộng đồng"
+                  : "Đăng bài cho lớp "
                 }
               </ArgonTypography>
             </ArgonBox>
@@ -227,6 +291,53 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
               },
             }}
           >
+            {/* Class Selection - Only show when creating new post */}
+            {!isEditMode && (
+              <ArgonBox mb={2}>
+                <ArgonTypography variant="body2" fontWeight="bold" mb={1}>
+                  Chọn lớp
+                </ArgonTypography>
+                <FormControl fullWidth>
+                  {/* <InputLabel id="class-select-label">Chọn lớp học</InputLabel> */}
+                  <Select
+                    labelId="class-select-label"
+                    id="class-select"
+                    value={selectedClass}
+                    // label="Chọn lớp học"
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                    disabled={loadingClasses}
+                    sx={{
+                      borderRadius: 2,
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0, 0, 0, 0.23)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'primary.main',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'primary.main',
+                      },
+                    }}
+                  >
+                    {loadingClasses ? (
+                      <MenuItem disabled>
+                        <CircularProgress size={20} />
+                        <span style={{ marginLeft: 8 }}>Đang tải...</span>
+                      </MenuItem>
+                    ) : classes.length === 0 ? (
+                      <MenuItem disabled>Không có lớp nào</MenuItem>
+                    ) : (
+                      classes.map((cls) => (
+                        <MenuItem key={cls._id} value={cls._id}>
+                          {cls.class_name} {cls.class_age_id?.age_name ? `(${cls.class_age_id.age_name})` : ''}
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+              </ArgonBox>
+            )}
+
             {/* Content */}
             <ArgonBox mb={2}>
               <ArgonTypography variant="body2" fontWeight="bold" mb={1}>
@@ -238,7 +349,7 @@ function CreatePostModal({ open, onClose, onPostCreated, post = null }) {
                 rows={8}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder={isEditMode ? "Cập nhật nội dung bài viết..." : "Chia sẻ điều gì đó với cộng đồng..."}
+                placeholder={isEditMode ? "Cập nhật nội dung bài viết..." : "Đăng bài cho lớp ..."}
                 error={!!error}
                 helperText={error || (isEditMode ? "Chỉnh sửa nội dung bài viết của bạn" : "Viết nội dung bài viết mới")}
                 sx={{ 
