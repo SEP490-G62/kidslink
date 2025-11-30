@@ -337,29 +337,6 @@ class TeacherService {
   async changePassword(currentPassword, newPassword) {
     return apiService.put('/users/change-password', { currentPassword, newPassword }, true);
   }
-
-  /**
-   * Lấy danh sách lớp của giáo viên
-   * @returns {Promise<Object>} - Kết quả API call
-   */
-  async getTeacherClasses() {
-    try {
-      const response = await apiService.get('/teachers/class');
-      // Backend trả về { teacher_id: ..., data: [...] }
-      // response.data là mảng các object { academic_year: ..., classes: [...] }
-      return {
-        success: true,
-        data: response.data || (response && Array.isArray(response) ? response : [])
-      };
-    } catch (error) {
-      console.error('TeacherService.getTeacherClasses Error:', error);
-      return {
-        success: false,
-        error: error.message || 'Có lỗi xảy ra khi lấy danh sách lớp',
-        data: []
-      };
-    }
-  }
 }
 
 const teacherService = new TeacherService();
