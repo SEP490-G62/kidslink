@@ -219,7 +219,7 @@ function CreatePostModal({ open, onClose, onPostCreated, onSuccess, post = null,
               <ArgonTypography variant="body2" color="text.secondary">
                 {isEditMode 
                   ? "Cập nhật nội dung và hình ảnh của bài viết" 
-                  : "Chia sẻ điều gì đó với cộng đồng"
+                  : "Đăng bài cho trường..."
                 }
               </ArgonTypography>
             </ArgonBox>
@@ -315,7 +315,7 @@ function CreatePostModal({ open, onClose, onPostCreated, onSuccess, post = null,
                 rows={8}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder={isEditMode ? "Cập nhật nội dung bài viết..." : "Chia sẻ điều gì đó với cộng đồng..."}
+                placeholder={isEditMode ? "Cập nhật nội dung bài viết..." : "Đăng bài cho trường..."}
                 error={!!error}
                 helperText={error || (isEditMode ? "Chỉnh sửa nội dung bài viết của bạn" : "Viết nội dung bài viết mới")}
                 sx={{ 
