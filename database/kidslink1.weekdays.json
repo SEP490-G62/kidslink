@@ -57,4 +57,30 @@
   "updatedAt": {
     "$date": "2025-10-29T16:16:08.792Z"
   }
+},
+{
+  "_id": {
+    "$oid": "692d103cec9d244336dc6826"
+  },
+  "day_of_week": "Saturday",
+  "createdAt": {
+    "$date": "2025-12-01T03:49:16.733Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-01T03:49:16.733Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "692d103cec9d244336dc6828"
+  },
+  "day_of_week": "Sunday",
+  "createdAt": {
+    "$date": "2025-12-01T03:49:16.740Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-01T03:49:16.740Z"
+  },
+  "__v": 0
 }]

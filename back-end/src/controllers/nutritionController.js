@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { Dish, ClassAge, ClassAgeMeal, Meal, WeekDay, DishesClassAgeMeal, User } = require('../models');
+const { Dish, ClassAge, ClassAgeMeal, Meal, WeekDay, DishesClassAgeMeal, User, Class, StudentClass, Student } = require('../models');
 
 // Helper function để lấy school_id từ user
 const getUserSchoolId = async (req) => {
@@ -8,6 +8,20 @@ const getUserSchoolId = async (req) => {
   if (!userId) return null;
   const user = await User.findById(userId).select('school_id');
   return user?.school_id || null;
+};
+
+const normalizeStudent = (studentDoc = {}) => {
+  if (!studentDoc) return null;
+  return {
+    _id: studentDoc._id,
+    full_name: studentDoc.full_name,
+    avatar_url: studentDoc.avatar_url,
+    dob: studentDoc.dob,
+    gender: studentDoc.gender,
+    allergy: studentDoc.allergy || '',
+    status: studentDoc.status,
+    school_id: studentDoc.school_id
+  };
 };
 
 // --- Meal CRUD ---
@@ -176,6 +190,139 @@ exports.listWeekDays = async (req, res) => {
     res.json({ count: days.length, weekDays: days });
   } catch (err) {
     res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+// Danh sách lớp theo school + classAge (giúp nutrition staff xem học sinh)
+exports.listClassesForNutrition = async (req, res) => {
+  try {
+    const schoolId = await getUserSchoolId(req);
+    if (!schoolId) {
+      return res.status(403).json({ error: 'Không tìm thấy school_id của user' });
+    }
+    const { class_age_id } = req.query || {};
+    const filter = { school_id: schoolId };
+    if (class_age_id) {
+      filter.class_age_id = class_age_id;
+    }
+    const classes = await Class.find(filter)
+      .populate('class_age_id')
+      .sort({ class_name: 1 });
+    return res.json({ count: classes.length, classes });
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+// Danh sách học sinh theo lớp (kèm thông tin dị ứng)
+exports.getStudentsByClass = async (req, res) => {
+  try {
+    const schoolId = await getUserSchoolId(req);
+    if (!schoolId) {
+      return res.status(403).json({ error: 'Không tìm thấy school_id của user' });
+    }
+    const { classId } = req.params || {};
+    if (!classId) {
+      return res.status(400).json({ error: 'Thiếu classId' });
+    }
+    const clazz = await Class.findOne({ _id: classId, school_id: schoolId })
+      .populate('class_age_id');
+    if (!clazz) {
+      return res.status(404).json({ error: 'Không tìm thấy lớp học' });
+    }
+    const mappings = await StudentClass.find({ class_id: classId })
+      .populate({
+        path: 'student_id',
+        match: { school_id: schoolId }
+      });
+    const students = mappings
+      .map((mapping) => normalizeStudent(mapping.student_id))
+      .filter(Boolean);
+    const studentsWithAllergy = students.filter((student) => student.allergy?.trim()).length;
+    return res.json({
+      class: clazz,
+      totalStudents: students.length,
+      studentsWithAllergy,
+      students
+    });
+  } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(400).json({ error: 'classId không hợp lệ' });
+    }
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
+  }
+};
+
+// Danh sách học sinh theo ClassAge (gom theo từng class)
+exports.getStudentsByClassAge = async (req, res) => {
+  try {
+    const schoolId = await getUserSchoolId(req);
+    if (!schoolId) {
+      return res.status(403).json({ error: 'Không tìm thấy school_id của user' });
+    }
+    const { classAgeId } = req.params || {};
+    if (!classAgeId) {
+      return res.status(400).json({ error: 'Thiếu classAgeId' });
+    }
+    const classAge = await ClassAge.findById(classAgeId);
+    if (!classAge) {
+      return res.status(404).json({ error: 'Không tìm thấy ClassAge' });
+    }
+    const classes = await Class.find({ school_id: schoolId, class_age_id: classAgeId })
+      .sort({ class_name: 1 });
+    if (!classes.length) {
+      return res.json({
+        classAge,
+        totalClasses: 0,
+        totalStudents: 0,
+        studentsWithAllergy: 0,
+        classes: []
+      });
+    }
+    const classIds = classes.map((clazz) => clazz._id);
+    const mappings = await StudentClass.find({ class_id: { $in: classIds } })
+      .populate({
+        path: 'student_id',
+        match: { school_id: schoolId }
+      })
+      .populate('class_id');
+    const groupedStudents = {};
+    mappings.forEach((mapping) => {
+      if (!mapping.student_id || !mapping.class_id) return;
+      const key = String(mapping.class_id._id);
+      if (!groupedStudents[key]) {
+        groupedStudents[key] = [];
+      }
+      const normalized = normalizeStudent(mapping.student_id);
+      if (normalized) {
+        groupedStudents[key].push(normalized);
+      }
+    });
+    const classResponses = classes.map((clazz) => {
+      const students = groupedStudents[String(clazz._id)] || [];
+      const studentsWithAllergy = students.filter((student) => student.allergy?.trim()).length;
+      return {
+        _id: clazz._id,
+        class_name: clazz.class_name,
+        totalStudents: students.length,
+        studentsWithAllergy,
+        students
+      };
+    });
+    const totalStudents = classResponses.reduce((sum, item) => sum + item.totalStudents, 0);
+    const studentsWithAllergy = classResponses.reduce((sum, item) => sum + item.studentsWithAllergy, 0);
+    return res.json({
+      classAge,
+      totalClasses: classResponses.length,
+      totalStudents,
+      studentsWithAllergy,
+      classes: classResponses
+    });
+  } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(400).json({ error: 'classAgeId không hợp lệ' });
+    }
+    return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
 };
 

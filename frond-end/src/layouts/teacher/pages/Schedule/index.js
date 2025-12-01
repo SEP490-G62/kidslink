@@ -68,16 +68,25 @@ const TeacherSchedule = () => {
       try {
         setLoading(true);
         setError('');
+        const classCalendarPromise = apiService.get('/teachers/class-calendar').catch((err) => {
+          if (err?.response?.status === 404) return null;
+          throw err;
+        });
+        const teachingCalendarPromise = apiService.get('/teachers/teaching-calendar').catch((err) => {
+          if (err?.response?.status === 404) return null;
+          throw err;
+        });
+        const slotsPromise = apiService.get('/teachers/class-calendar/slots');
+
         const [classCalendarRes, teachingCalendarRes, slotsRes] = await Promise.all([
-          apiService.get('/teachers/class-calendar'),
-          apiService.get('/teachers/teaching-calendar').catch(() => null), // Có thể không có dữ liệu
-          apiService.get('/teachers/class-calendar/slots')
+          classCalendarPromise,
+          teachingCalendarPromise,
+          slotsPromise
         ]);
         if (mounted) {
           setCalendarData(classCalendarRes);
-          if (teachingCalendarRes) {
-            setTeachingCalendarData(teachingCalendarRes);
-          }
+          setTeachingCalendarData(teachingCalendarRes);
+
           // Xử lý response slots - có thể là { data: [...] } hoặc trực tiếp array
           let slotsArray = [];
           if (Array.isArray(slotsRes)) {
@@ -88,6 +97,11 @@ const TeacherSchedule = () => {
             slotsArray = slotsRes.data.data;
           }
           setTimeSlotsApi(slotsArray);
+
+          // Nếu không có lớp chủ nhiệm nhưng có lịch dạy -> chuyển sang chế độ "teaching"
+          if (!classCalendarRes && teachingCalendarRes) {
+            setViewMode('teaching');
+          }
         }
       } catch (e) {
         console.error('TeacherSchedule load error:', e);

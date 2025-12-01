@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
-const { listDishes, createDish, updateDish, deleteDish, listClassAges, listClassAgeMeals, listMeals, listWeekDays, assignDishesToClassAgeMeal, getAssignedDishes, getWeeklyAssignedDishes, getStaffProfile, updateStaffProfile, changeStaffPassword } = require('../controllers/nutritionController');
+const { listDishes, createDish, updateDish, deleteDish, listClassAges, listClassAgeMeals, listMeals, listWeekDays, listClassesForNutrition, getStudentsByClass, getStudentsByClassAge, assignDishesToClassAgeMeal, getAssignedDishes, getWeeklyAssignedDishes, getStaffProfile, updateStaffProfile, changeStaffPassword } = require('../controllers/nutritionController');
 
 // Áp dụng xác thực và phân quyền cho toàn bộ route
 router.use(authenticate, authorize(['nutrition_staff']));
@@ -14,6 +14,11 @@ router.delete('/dishes/:id', deleteDish);
 
 // Danh sách nhóm tuổi
 router.get('/class-ages', listClassAges);
+
+// Danh sách lớp và học sinh để kiểm tra dị ứng
+router.get('/classes', listClassesForNutrition);
+router.get('/classes/:classId/students', getStudentsByClass);
+router.get('/class-ages/:classAgeId/students', getStudentsByClassAge);
 
 // Danh sách lịch thực đơn theo nhóm tuổi (hỗ trợ query filter)
 // GET /nutrition/class-age-meals?class_age_id=...&meal_id=...&date=YYYY-MM-DD

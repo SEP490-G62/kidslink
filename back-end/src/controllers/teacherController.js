@@ -272,7 +272,10 @@ async function getTeacherLatestClassCalendar(req, res) {
       .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } });
 
     if (!latestClass) {
-      return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
+      return res.json({
+        class: null,
+        calendars: []
+      });
     }
 
     // Lấy calendars của lớp và populate dữ liệu liên quan
@@ -334,18 +337,6 @@ async function getTeacherTeachingCalendar(req, res) {
       return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
     }
 
-    // Lấy tất cả các lớp mà giáo viên dạy (teacher_id hoặc teacher_id2)
-    const classes = await Class.find({
-      $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
-    })
-      .sort({ academic_year: -1 })
-      .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } })
-      .populate({ path: 'teacher_id2', model: Teacher, populate: { path: 'user_id', model: 'User' } });
-
-    if (!classes || classes.length === 0) {
-      return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
-    }
-
     // Lấy tất cả calendars mà giáo viên dạy (theo teacher_id trong calendar)
     const calendars = await Calendar.find({ teacher_id: teacher._id })
       .populate('weekday_id')
@@ -354,14 +345,35 @@ async function getTeacherTeachingCalendar(req, res) {
       .populate({ path: 'class_id', model: Class, select: 'class_name academic_year' })
       .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } });
 
-    // Tạo map để nhóm theo lớp
-    const classesMap = new Map();
-    classes.forEach(cls => {
-      classesMap.set(cls._id.toString(), {
-        id: cls._id,
-        name: cls.class_name,
-        academicYear: cls.academic_year
+    // Nếu giáo viên chưa có lịch dạy nào, trả về rỗng
+    if (!calendars || calendars.length === 0) {
+      // Tuy nhiên vẫn trả về các lớp giáo viên phụ trách (nếu có) để UI hiển thị danh sách
+      const classes = await Class.find({
+        $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+      })
+        .sort({ academic_year: -1 })
+        .select('class_name academic_year');
+
+      return res.json({
+        classes: classes.map(cls => ({
+          id: cls._id,
+          name: cls.class_name,
+          academicYear: cls.academic_year
+        })),
+        calendars: []
       });
+    }
+
+    // Tạo map để nhóm theo lớp (bao gồm cả các lớp không phải GVCN nhưng giáo viên có tiết dạy)
+    const classesMap = new Map();
+    calendars.forEach(cal => {
+      if (cal.class_id) {
+        classesMap.set(cal.class_id._id.toString(), {
+          id: cal.class_id._id,
+          name: cal.class_id.class_name,
+          academicYear: cal.class_id.academic_year
+        });
+      }
     });
 
     // Nhóm calendars theo ngày và lớp
