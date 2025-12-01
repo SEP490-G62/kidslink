@@ -326,9 +326,9 @@ exports.getWeeklyAssignedDishes = async (req, res) => {
     const mealIds = meal_ids ? meal_ids.split(',').filter(id => id.trim()) : null;
     const weekdayIds = weekday_ids ? weekday_ids.split(',').filter(id => id.trim()) : null;
 
-    // Build date range for the week (Monday to Friday)
+    // Build date range for the week (Monday to Sunday - 7 days)
     const dates = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       const date = new Date(weekStartDate);
       date.setDate(date.getDate() + i);
       dates.push(date);

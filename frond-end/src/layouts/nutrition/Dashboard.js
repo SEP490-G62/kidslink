@@ -219,8 +219,8 @@ export default function NutritionDashboard() {
       let totalSlots = 0;
       let filledSlots = 0;
       
-      // Chỉ kiểm tra các ngày trong tuần (Thứ 2 - Thứ 6, index 0-4)
-      for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+      // Kiểm tra tất cả các ngày trong tuần (Thứ 2 - Chủ nhật, index 0-6)
+      for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
         const weekday = weekDaysOptions[dayIndex];
         if (!weekday) continue;
         
@@ -372,7 +372,6 @@ export default function NutritionDashboard() {
                       </TableCell>
                       {weekDaysOptions.map((wd, idx) => {
                         const date = getDateForWeekday(idx);
-                        const isWeekend = idx >= 5;
                         return (
                           <TableCell 
                             key={wd.id} 
@@ -383,7 +382,7 @@ export default function NutritionDashboard() {
                               py: 1.5,
                               borderLeft: idx > 0 ? '1px solid #e0e0e0' : 'none',
                               width: '220px',
-                              backgroundColor: isWeekend ? '#fafafa' : '#f5f5f5'
+                              backgroundColor: '#f5f5f5'
                             }}
                           >
                             <ArgonTypography variant="body2" fontWeight="bold" color="dark" noWrap>
@@ -449,7 +448,6 @@ export default function NutritionDashboard() {
                               </TableCell>
                             )}
                             {weekDaysOptions.map((wd, dayIndex) => {
-                              const isWeekend = dayIndex >= 5;
                               const dishes = getDishesForSlot(classAge._id, meal._id, wd.id);
                               
                               return (
@@ -461,19 +459,12 @@ export default function NutritionDashboard() {
                                     borderLeft: dayIndex > 0 ? '1px solid #e0e0e0' : 'none',
                                     verticalAlign: 'top',
                                     width: '220px',
-                                    backgroundColor: isWeekend ? '#f5f5f5' : (classAgeIndex % 2 === 0 ? '#fff' : '#fafafa'),
+                                    backgroundColor: classAgeIndex % 2 === 0 ? '#fff' : '#fafafa',
                                     overflow: 'visible',
                                     height: '100%'
                                   }}
                                 >
-                                  {isWeekend ? (
-                                    <ArgonBox textAlign="center" py={2}>
-                                      <ArgonTypography variant="caption" color="text.secondary">
-                                        Nghỉ
-                                      </ArgonTypography>
-                                    </ArgonBox>
-                                  ) : (
-                                    <ArgonBox 
+                                  <ArgonBox 
                                       sx={{
                                         border: `2px solid ${mealColor}`,
                                         borderRadius: 1.5,
@@ -574,7 +565,6 @@ export default function NutritionDashboard() {
                                         </ArgonBox>
                                       )}
                                     </ArgonBox>
-                                  )}
                                 </TableCell>
                               );
                             })}

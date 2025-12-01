@@ -1149,7 +1149,6 @@ export default function NutritionDishList() {
                           <TableRow key={meal._id}>
                             {weekDaysOptions.map((wd, dayIndex) => {
                               const date = getDateForWeekdayTable(dayIndex);
-                              const isWeekend = dayIndex >= 5; // T7 (index 5) and CN (index 6)
                               const cellWidth = weekDaysOptions.length > 0 ? `${100 / weekDaysOptions.length}%` : 'auto';
                               const key = `${meal._id}-${wd.id}`;
                               const slotData = weeklyMealSelection[key] || { dishes: [] };
@@ -1170,14 +1169,7 @@ export default function NutritionDishList() {
                                     height: '100%'
                                   }}
                                 >
-                                  {isWeekend ? (
-                                    <ArgonBox textAlign="center" py={4}>
-                                      <ArgonTypography variant="body2" color="text.secondary">
-                                        Không có thực đơn
-                                      </ArgonTypography>
-                                    </ArgonBox>
-                                  ) : (
-                                    <ArgonBox 
+                                  <ArgonBox 
                                       sx={{
                                         border: `2px solid ${mealColor}`,
                                         borderRadius: 2,
@@ -1288,7 +1280,6 @@ export default function NutritionDishList() {
                                         </ArgonBox>
                                       )}
                                     </ArgonBox>
-                                  )}
                                 </TableCell>
                               );
                             })}
