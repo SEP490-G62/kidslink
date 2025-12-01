@@ -20,6 +20,12 @@ const conversationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Class',
     required: true
+  },
+  // Phân biệt nhóm chat lớp (group) với các conversation khác (ví dụ: 1-1 parent–teacher)
+  is_class_group: {
+    type: Boolean,
+    default: false,
+    index: true
   }
 }, {
   timestamps: true

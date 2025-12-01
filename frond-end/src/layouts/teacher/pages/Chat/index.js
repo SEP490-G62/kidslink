@@ -84,6 +84,7 @@ const TeacherChat = () => {
   const [classIdInput, setClassIdInput] = useState('');
   const [titleInput, setTitleInput] = useState('');
   const [creatingGroup, setCreatingGroup] = useState(false);
+  // Kiểm tra xem đã có nhóm chat lớp nào (conversation gắn với class_id) chưa
   const hasClassGroup = useMemo(() => (conversations || []).some(c => !!c.class_id), [conversations]);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState(null);
@@ -956,6 +957,7 @@ const TeacherChat = () => {
                             setCreatingGroup(false);
                           }
                         }}
+                        disabled={creatingGroup}
                       >
                         {creatingGroup ? 'Đang tạo...' : 'Tạo nhóm lớp'}
                       </ArgonButton>

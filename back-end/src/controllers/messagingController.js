@@ -22,10 +22,11 @@ exports.createConversation = async (req, res) => {
       return res.status(404).json({ error: 'Lớp học không tồn tại' });
     }
 
-    // Tạo conversation
+    // Tạo conversation (không phải nhóm lớp)
     const conversation = new Conversation({
       title: title || `${classExists.class_name} - Chat`,
       class_id: class_id,
+      is_class_group: false,
       create_at: new Date(),
       last_message_at: new Date()
     });
@@ -517,6 +518,7 @@ exports.createDirectConversationWithTeacher = async (req, res) => {
     const conversation = new Conversation({
       title,
       class_id: clazz._id,
+      is_class_group: false,
       create_at: new Date(),
       last_message_at: new Date()
     });
@@ -625,17 +627,16 @@ exports.createClassChatGroup = async (req, res) => {
       return res.status(404).json({ error: 'Lớp học không tồn tại hoặc bạn không có quyền truy cập' });
     }
 
-    // Kiểm tra lớp đã có nhóm chat chưa
-    const existingConversation = await Conversation.findOne({ class_id });
+    // Kiểm tra lớp đã có nhóm chat chưa (chỉ xét các conversation là nhóm lớp)
+    const existingConversation = await Conversation.findOne({ class_id, is_class_group: true });
     if (existingConversation) {
-      // Nếu đã có, kiểm tra user đã tham gia chưa
+      // Nếu đã có, chỉ đảm bảo giáo viên hiện tại là thành viên (không đồng bộ lại toàn bộ phụ huynh)
       const existingParticipant = await ConversationParticipant.findOne({
         conversation_id: existingConversation._id,
         user_id
       });
 
       if (!existingParticipant) {
-        // Nếu chưa tham gia, thêm vào
         await ConversationParticipant.create({
           user_id,
           conversation_id: existingConversation._id
@@ -643,16 +644,25 @@ exports.createClassChatGroup = async (req, res) => {
       }
 
       await existingConversation.populate('class_id', 'class_name');
+
+      const participantsCountExisting = await ConversationParticipant.countDocuments({
+        conversation_id: existingConversation._id
+      });
+
       return res.status(200).json({
         message: 'Lớp học đã có nhóm chat. Bạn đã được thêm vào nhóm.',
-        conversation: existingConversation
+        conversation: {
+          ...existingConversation.toObject(),
+          participants_count: participantsCountExisting
+        }
       });
     }
 
-    // Tạo conversation mới
+    // Tạo conversation mới (nhóm chat lớp)
     const conversation = new Conversation({
       title: title || `Nhóm chat - ${classExists.class_name}`,
       class_id: class_id,
+      is_class_group: true,
       create_at: new Date(),
       last_message_at: new Date()
     });
