@@ -13,7 +13,7 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 // react-router components
 import { Link, useLocation } from "react-router-dom";
@@ -65,13 +65,61 @@ function DashboardNavbar({ absolute, light }) {
   const [children, setChildren] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
 
-  // Get current route for breadcrumbs
+  // Get current route for breadcrumbs with custom names for health-care
   const getCurrentRoute = () => {
     const pathname = location.pathname;
     if (pathname === "/") return { route: ["parent"], title: "dashboard", icon: "dashboard" };
     
     const routes = pathname.split("/").filter(Boolean);
     const title = routes[routes.length - 1] || "dashboard";
+    
+    // Custom breadcrumb for health-care routes
+    if (routes[0] === "health-care") {
+      const customRoutes = ["health-care"];
+      const state = location.state || {};
+      
+      // Pattern: /health-care/classes/:classId/students
+      if (routes[1] === "classes" && routes.length >= 3) {
+        // Use class name from state or keep ID
+        if (state.classInfo?.class_name) {
+          customRoutes.push(state.classInfo.class_name);
+        } else {
+          customRoutes.push(routes[2]); // classId
+        }
+        // Add "students" if present
+        if (routes[3] === "students") {
+          customRoutes.push("students");
+        }
+      }
+      // Pattern: /health-care/students/:studentId/records or /health-care/students/:studentId/notices
+      else if (routes[1] === "students" && routes.length >= 3) {
+        // Add class name if available (from state)
+        if (state.classInfo?.class_name) {
+          customRoutes.push(state.classInfo.class_name);
+        }
+        // Use student name from state or keep ID
+        if (state.student?.full_name) {
+          customRoutes.push(state.student.full_name);
+        } else {
+          customRoutes.push(routes[2]); // studentId
+        }
+        // Add records/notices
+        if (routes[3] === "records" || routes[3] === "notices") {
+          customRoutes.push(routes[3]);
+        }
+      }
+      // Pattern: /health-care (home page)
+      else if (routes.length === 1) {
+        // Just health-care, no additional routes
+      }
+      
+      return {
+        route: customRoutes,
+        title,
+        icon: "home"
+      };
+    }
+    
     return {
       route: routes,
       title,
@@ -79,7 +127,7 @@ function DashboardNavbar({ absolute, light }) {
     };
   };
 
-  const { route, title, icon } = getCurrentRoute();
+  const { route, title, icon } = useMemo(() => getCurrentRoute(), [location.pathname, location.state]);
 
   // Fetch children when user is logged in
   useEffect(() => {

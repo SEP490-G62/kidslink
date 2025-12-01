@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -97,6 +97,7 @@ const INFO_COLORS = {
 export default function StudentRecords() {
   const { studentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -104,6 +105,8 @@ export default function StudentRecords() {
   const [payload, setPayload] = useState({ checkup_date: '', height_cm: '', weight_kg: '', note: '' });
   const [edit, setEdit] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  const [studentInfo, setStudentInfo] = useState(location.state?.student || null);
+  const [classInfo, setClassInfo] = useState(location.state?.classInfo || null);
 
   const load = async () => {
     try {
@@ -126,6 +129,30 @@ export default function StudentRecords() {
   };
 
   useEffect(() => { load(); }, [studentId]);
+
+  useEffect(() => {
+    if (location.state?.student && !studentInfo) {
+      setStudentInfo(location.state.student);
+    }
+    if (location.state?.classInfo && !classInfo) {
+      setClassInfo(location.state.classInfo);
+    }
+  }, [classInfo, location.state, studentInfo]);
+
+  useEffect(() => {
+    if (!studentInfo && records.length > 0) {
+      setStudentInfo(records[0].student_id || null);
+    }
+  }, [records, studentInfo]);
+
+  // Memoized values - must be before any early returns
+  const studentName = useMemo(() => studentInfo?.full_name || "Học sinh", [studentInfo]);
+  const classDisplayName = useMemo(() => {
+    if (classInfo?.class_name) {
+      return `Lớp ${classInfo.class_name}`;
+    }
+    return null;
+  }, [classInfo]);
 
   const openCreate = () => {
     setEdit(null);
@@ -265,16 +292,12 @@ export default function StudentRecords() {
               <Box>
                 <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
                   <MedicalServicesIcon color="success" />
-                  <ArgonTypography
-                    variant="h5"
-                    fontWeight="bold"
-                    letterSpacing={0.2}
-                  >
-                    Sổ sức khỏe học sinh
+                  <ArgonTypography variant="h5" fontWeight="bold" letterSpacing={0.2}>
+                    Sổ sức khỏe - {studentName}
                   </ArgonTypography>
                 </Stack>
                 <ArgonTypography variant="body2" color="text" mt={0.5}>
-                  Theo dõi định kỳ chiều cao, cân nặng và ghi chú chăm sóc sức khỏe
+                  {classDisplayName || "Theo dõi định kỳ chiều cao, cân nặng và ghi chú chăm sóc sức khỏe"}
                 </ArgonTypography>
               </Box>
               <Stack
@@ -287,6 +310,12 @@ export default function StudentRecords() {
                   color="success"
                   variant="outlined"
                   label={`${records.length} lần khám`}
+                  sx={{ fontWeight: 600 }}
+                />
+                <Chip
+                  color="primary"
+                  variant="outlined"
+                  label={studentName}
                   sx={{ fontWeight: 600 }}
                 />
                 <Stack direction="row" spacing={1}>
@@ -324,7 +353,7 @@ export default function StudentRecords() {
         <Card>
           <CardContent>
             <ArgonTypography variant="h6" fontWeight="bold" mb={3}>
-              Danh sách ghi nhận sức khỏe ({records.length} lần khám)
+              Danh sách ghi nhận sức khỏe - {studentName} ({records.length} lần khám)
             </ArgonTypography>
 
             {records.length === 0 ? (

@@ -43,6 +43,7 @@ import sidenavLogoLabel from "examples/Sidenav/styles/sidenav";
 import { useArgonController, setMiniSidenav } from "context";
 import io from "socket.io-client";
 import messagingService from "services/messagingService";
+import parentService from "services/parentService";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useArgonController();
@@ -52,6 +53,10 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const itemName = pathname.split("/").slice(1)[0];
   const [unreadTotal, setUnreadTotal] = useState(() => {
     const saved = localStorage.getItem("kidslink:unread_total");
+    return saved ? parseInt(saved, 10) || 0 : 0;
+  });
+  const [unpaidFeesCount, setUnpaidFeesCount] = useState(() => {
+    const saved = localStorage.getItem("kidslink:unpaid_fees_count");
     return saved ? parseInt(saved, 10) || 0 : 0;
   });
   const socketRef = useRef(null);
@@ -83,6 +88,13 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     );
   }, []);
 
+  const broadcastUnpaidFees = useCallback((count) => {
+    localStorage.setItem("kidslink:unpaid_fees_count", String(count));
+    window.dispatchEvent(
+      new CustomEvent("kidslink:unpaid_fees_count", { detail: { count } })
+    );
+  }, []);
+
   const refreshUnread = useCallback(async () => {
     try {
       const res = await messagingService.getUnreadCount();
@@ -106,6 +118,24 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     }
   }, [broadcastUnread]);
 
+  const refreshUnpaidFees = useCallback(async () => {
+    try {
+      const res = await parentService.getUnpaidFeesCount();
+      if (res?.success && res.data) {
+        const count = res.data.unpaid_count || 0;
+        setUnpaidFeesCount(count);
+        broadcastUnpaidFees(count);
+      } else {
+        setUnpaidFeesCount(0);
+        broadcastUnpaidFees(0);
+      }
+    } catch (error) {
+      console.error("Parent Sidenav refreshUnpaidFees error:", error);
+      setUnpaidFeesCount(0);
+      broadcastUnpaidFees(0);
+    }
+  }, [broadcastUnpaidFees]);
+
   useEffect(() => {
     const handler = (e) => {
       if (e && e.detail && typeof e.detail.total !== "undefined") {
@@ -117,8 +147,27 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   }, []);
 
   useEffect(() => {
+    const handler = (e) => {
+      if (e && e.detail && typeof e.detail.count !== "undefined") {
+        setUnpaidFeesCount(e.detail.count || 0);
+      }
+    };
+    window.addEventListener("kidslink:unpaid_fees_count", handler);
+    return () => window.removeEventListener("kidslink:unpaid_fees_count", handler);
+  }, []);
+
+  useEffect(() => {
     refreshUnread();
-  }, [refreshUnread]);
+    refreshUnpaidFees();
+  }, [refreshUnread, refreshUnpaidFees]);
+
+  useEffect(() => {
+    const handler = () => {
+      refreshUnpaidFees();
+    };
+    window.addEventListener("kidslink:refresh_unpaid_fees", handler);
+    return () => window.removeEventListener("kidslink:refresh_unpaid_fees", handler);
+  }, [refreshUnpaidFees]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -192,7 +241,10 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name}
               icon={icon}
               active={key === itemName}
-              badgeCount={route === "/parent/chat" && unreadTotal > 0 ? unreadTotal : 0}
+              badgeCount={
+                route === "/parent/chat" && unreadTotal > 0 ? unreadTotal :
+                route === "/parent/fee-payment" && unpaidFeesCount > 0 ? unpaidFeesCount : 0
+              }
             />
           </Link>
         );
@@ -203,7 +255,10 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name} 
               icon={icon} 
               active={key === itemName}
-              badgeCount={route === "/parent/chat" && unreadTotal > 0 ? unreadTotal : 0}
+              badgeCount={
+                route === "/parent/chat" && unreadTotal > 0 ? unreadTotal :
+                route === "/parent/fee-payment" && unpaidFeesCount > 0 ? unpaidFeesCount : 0
+              }
             />
           </NavLink>
         );

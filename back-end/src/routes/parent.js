@@ -22,6 +22,8 @@ const {
   checkPayOSPaymentStatus
 } = require('../controllers/parentController');
 
+const { getUnpaidFeesCount } = require('../controllers/parent/feeController');
+
 const { getMyPosts } = require('../controllers/parent/postsController');
 
 const {
@@ -94,6 +96,7 @@ router.get('/complaints', getMyComplaints);
 router.get('/complaints/:complaintId', getComplaintById);
 
 router.get('/fees', getStudentFees);
+router.get('/fees/unpaid-count', getUnpaidFeesCount);
 router.post('/fees/payos', createPayOSPaymentRequest);
 router.post('/fees/payos/status', checkPayOSPaymentStatus);
 

@@ -180,7 +180,11 @@ export default function ClassesList() {
                   {filteredClasses.map((cls) => (
                     <Grid key={cls._id} item xs={12} sm={6} md={4} lg={3}>
                       <Card
-                        onClick={() => navigate(`/health-care/classes/${cls._id}/students`)}
+                        onClick={() =>
+                          navigate(`/health-care/classes/${cls._id}/students`, {
+                            state: { classInfo: cls },
+                          })
+                        }
                         sx={{
                           p: 2.5,
                           borderRadius: 3,

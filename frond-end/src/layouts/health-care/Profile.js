@@ -406,7 +406,7 @@ function HealthCareProfile() {
                       {profileData.user.full_name}
                   </ArgonTypography>
                     <ArgonTypography variant="body2" color="text" mb={2}>
-                      Health Care Staff
+                      Nhân viên y tế
                   </ArgonTypography>
                     
                     <ArgonBox display="flex" alignItems="center" gap={1.5} mb={1}>
