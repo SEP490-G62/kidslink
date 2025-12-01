@@ -30,6 +30,20 @@ import ArgonTypography from "components/ArgonTypography";
 // Services
 import teacherService from "services/teacherService";
 
+// Helper function to convert role to Vietnamese
+const getRoleLabel = (role) => {
+  switch (role) {
+    case 'parent':
+      return 'Phụ huynh';
+    case 'teacher':
+      return 'Cô giáo';
+    case 'school_admin':
+      return 'Quản trị viên';
+    default:
+      return '';
+  }
+};
+
 function CommentItem({ 
   comment, 
   depth = 0, 
@@ -247,29 +261,43 @@ function CommentItem({
             }}
           >
             <ArgonBox display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
-              <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
-                {comment.user_id?.full_name}
-              </ArgonTypography>
+              <ArgonBox display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
+                  {comment.user_id?.full_name}
+                </ArgonTypography>
+                {comment.user_id?.role && (
+                  <ArgonTypography variant="caption" color="text.secondary" fontSize="11px">
+                    ({getRoleLabel(comment.user_id.role)})
+                  </ArgonTypography>
+                )}
+              </ArgonBox>
               {/* Hiển thị tên người được reply (giống Facebook) */}
               {comment.parent_comment_id && comment.parent_comment_id.user_id && (
                 <>
                   <ArgonTypography variant="caption" color="text.secondary" fontSize="12px">
                     Trả lời
                   </ArgonTypography>
-                  <ArgonTypography 
-                    variant="caption" 
-                    fontWeight="bold" 
-                    color="info" 
-                    fontSize="12px"
-                    sx={{ 
-                      '&:hover': { 
-                        textDecoration: 'underline',
-                        cursor: 'pointer'
-                      } 
-                    }}
-                  >
-                    @{comment.parent_comment_id.user_id.full_name}
-                  </ArgonTypography>
+                  <ArgonBox display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                    <ArgonTypography 
+                      variant="caption" 
+                      fontWeight="bold" 
+                      color="info" 
+                      fontSize="12px"
+                      sx={{ 
+                        '&:hover': { 
+                          textDecoration: 'underline',
+                          cursor: 'pointer'
+                        } 
+                      }}
+                    >
+                      @{comment.parent_comment_id.user_id.full_name}
+                    </ArgonTypography>
+                    {comment.parent_comment_id.user_id.role && (
+                      <ArgonTypography variant="caption" color="text.secondary" fontSize="11px">
+                        ({getRoleLabel(comment.parent_comment_id.user_id.role)})
+                      </ArgonTypography>
+                    )}
+                  </ArgonBox>
                 </>
               )}
             </ArgonBox>
