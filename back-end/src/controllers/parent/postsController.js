@@ -367,10 +367,16 @@ const updatePost = async (req, res) => {
       const currentImages = await PostImage.find({ post_id: postId });
       const currentImageUrls = currentImages.map(img => img.image_url).sort();
       const newImageUrls = images.filter(img => img.startsWith('http')).sort();
+      const hasNewBase64Images = images.some(img => !img.startsWith('http'));
       
-      // So sánh số lượng và URL để phát hiện thay đổi
-      if (currentImageUrls.length !== newImageUrls.length ||
-          !currentImageUrls.every((url, idx) => url === newImageUrls[idx])) {
+      // Phát hiện thay đổi nếu:
+      // 1. Số lượng ảnh thay đổi
+      // 2. Có ảnh base64 mới (ảnh mới được upload)
+      // 3. URL của ảnh cũ thay đổi
+      if (currentImageUrls.length !== images.length ||
+          hasNewBase64Images ||
+          (currentImageUrls.length > 0 && newImageUrls.length > 0 && 
+           !currentImageUrls.every((url, idx) => url === newImageUrls[idx]))) {
         hasChanges = true;
       }
       
