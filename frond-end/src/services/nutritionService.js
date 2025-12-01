@@ -29,6 +29,20 @@ class NutritionService {
     return await apiService.get('/nutrition/weekdays');
   }
 
+  async getClasses(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const url = query ? `/nutrition/classes?${query}` : '/nutrition/classes';
+    return await apiService.get(url);
+  }
+
+  async getStudentsByClass(classId) {
+    return await apiService.get(`/nutrition/classes/${classId}/students`);
+  }
+
+  async getStudentsByClassAge(classAgeId) {
+    return await apiService.get(`/nutrition/class-ages/${classAgeId}/students`);
+  }
+
   async getClassAgeMeals(params = {}) {
     const query = new URLSearchParams(params).toString();
     const url = query ? `/nutrition/class-age-meals?${query}` : '/nutrition/class-age-meals';

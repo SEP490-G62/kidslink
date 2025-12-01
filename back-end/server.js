@@ -52,12 +52,20 @@ app.use(cors({
   credentials: true,
 }));
 
-// Rate limiting
+// Rate limiting - áp dụng cho tất cả routes trừ health check và static files
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 phút
-  max: 100, // giới hạn 100 requests per windowMs
-  message: 'Quá nhiều requests từ IP này, vui lòng thử lại sau.'
+  max: 300, // tăng lên 300 requests per windowMs để tránh lỗi trong quá trình phát triển
+  message: 'Quá nhiều requests từ IP này, vui lòng thử lại sau.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skip: (req) => {
+    // Bỏ qua rate limiting cho health check và static files
+    return req.path === '/health' || req.path.startsWith('/uploads/');
+  }
 });
+
+// Áp dụng rate limiting cho tất cả routes
 app.use(limiter);
 
 // Logging

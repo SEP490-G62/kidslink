@@ -1,0 +1,183 @@
+[
+  {
+    "activity_name": "Đón trẻ",
+    "description": "Thời gian đón trẻ vào buổi sáng, kiểm tra sức khỏe và trao đổi với phụ huynh",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Thể dục buổi sáng",
+    "description": "Tập thể dục buổi sáng giúp trẻ khởi động cơ thể, tăng cường sức khỏe",
+    "require_outdoor": 1,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Hoạt động góc",
+    "description": "Trẻ tham gia các hoạt động tại các góc chơi như góc xây dựng, góc nghệ thuật, góc đọc sách",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Giờ học chính",
+    "description": "Thời gian học tập các môn học chính như toán, tiếng Việt, khám phá khoa học",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Giờ ăn sáng",
+    "description": "Thời gian ăn sáng, giáo viên hướng dẫn trẻ cách ăn uống lành mạnh",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Hoạt động ngoài trời",
+    "description": "Vui chơi và vận động ngoài trời, khám phá thiên nhiên, chơi các trò chơi vận động",
+    "require_outdoor": 1,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Giờ ăn trưa",
+    "description": "Thời gian ăn trưa, giáo viên hướng dẫn trẻ ăn uống đúng cách và vệ sinh",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Giờ ngủ trưa",
+    "description": "Thời gian nghỉ ngơi, ngủ trưa để trẻ phục hồi năng lượng",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Giờ ăn xế",
+    "description": "Thời gian ăn xế, bổ sung năng lượng cho buổi chiều",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Hoạt động nghệ thuật",
+    "description": "Vẽ tranh, tô màu, làm thủ công, phát triển khả năng sáng tạo và thẩm mỹ",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Âm nhạc và vận động",
+    "description": "Hát, múa, chơi nhạc cụ, phát triển khả năng cảm thụ âm nhạc và vận động",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Đọc sách và kể chuyện",
+    "description": "Nghe kể chuyện, đọc sách, phát triển ngôn ngữ và trí tưởng tượng",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Vệ sinh cá nhân",
+    "description": "Rửa tay, đánh răng, vệ sinh cá nhân trước và sau các hoạt động",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Trả trẻ",
+    "description": "Thời gian trả trẻ, trao đổi với phụ huynh về hoạt động trong ngày",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Hoạt động tự do",
+    "description": "Thời gian trẻ tự do chơi và khám phá theo sở thích",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "activity_name": "Đón trẻ",
+    "description": "Thời gian đón trẻ vào buổi sáng, kiểm tra sức khỏe và trao đổi với phụ huynh",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Thể dục buổi sáng",
+    "description": "Tập thể dục buổi sáng giúp trẻ khởi động cơ thể, tăng cường sức khỏe",
+    "require_outdoor": 1,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Hoạt động góc",
+    "description": "Trẻ tham gia các hoạt động tại các góc chơi như góc xây dựng, góc nghệ thuật, góc đọc sách",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Giờ học chính",
+    "description": "Thời gian học tập các môn học chính như toán, tiếng Việt, khám phá khoa học",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Giờ ăn sáng",
+    "description": "Thời gian ăn sáng, giáo viên hướng dẫn trẻ cách ăn uống lành mạnh",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Hoạt động ngoài trời",
+    "description": "Vui chơi và vận động ngoài trời, khám phá thiên nhiên, chơi các trò chơi vận động",
+    "require_outdoor": 1,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Giờ ăn trưa",
+    "description": "Thời gian ăn trưa, giáo viên hướng dẫn trẻ ăn uống đúng cách và vệ sinh",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Giờ ngủ trưa",
+    "description": "Thời gian nghỉ ngơi, ngủ trưa để trẻ phục hồi năng lượng",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Giờ ăn xế",
+    "description": "Thời gian ăn xế, bổ sung năng lượng cho buổi chiều",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Hoạt động nghệ thuật",
+    "description": "Vẽ tranh, tô màu, làm thủ công, phát triển khả năng sáng tạo và thẩm mỹ",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Âm nhạc và vận động",
+    "description": "Hát, múa, chơi nhạc cụ, phát triển khả năng cảm thụ âm nhạc và vận động",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Đọc sách và kể chuyện",
+    "description": "Nghe kể chuyện, đọc sách, phát triển ngôn ngữ và trí tưởng tượng",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Vệ sinh cá nhân",
+    "description": "Rửa tay, đánh răng, vệ sinh cá nhân trước và sau các hoạt động",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Trả trẻ",
+    "description": "Thời gian trả trẻ, trao đổi với phụ huynh về hoạt động trong ngày",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "activity_name": "Hoạt động tự do",
+    "description": "Thời gian trẻ tự do chơi và khám phá theo sở thích",
+    "require_outdoor": 0,
+    "school_id": "{{school_id_2}}"
+  }
+]
+

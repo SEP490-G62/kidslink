@@ -62,6 +62,12 @@ class ApiService {
         throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       }
       
+      // Handle rate limit errors (429)
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After') || '15';
+        throw new Error(`Quá nhiều requests. Vui lòng đợi ${retryAfter} phút trước khi thử lại.`);
+      }
+      
       console.error('API Error Response:', {
         status: response.status,
         statusText: response.statusText,
