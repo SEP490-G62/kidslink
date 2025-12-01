@@ -251,6 +251,22 @@ function ChildInformation() {
     return d.toLocaleDateString('vi-VN');
   };
 
+  const parseRecordDate = (date) => {
+    if (!date) return 0;
+    if (typeof date === 'string' && date.includes('/')) {
+      const [day, month, year] = date.split('/').map((part) => Number(part));
+      if (!Number.isNaN(day) && !Number.isNaN(month) && !Number.isNaN(year)) {
+        return new Date(year, month - 1, day).getTime();
+      }
+    }
+    const timestamp = Date.parse(date);
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  };
+
+  const sortedHealthRecords = [...healthRecords].sort(
+    (a, b) => parseRecordDate(b.date) - parseRecordDate(a.date)
+  );
+
   const SECTION_HEIGHT = 660;
 
   return (
@@ -725,7 +741,7 @@ function ChildInformation() {
                   Lịch sử sức khỏe
                 </ArgonTypography>
 
-                {healthRecords.length === 0 ? (
+                {sortedHealthRecords.length === 0 ? (
                   <ArgonBox textAlign="center" py={4}>
                     <ArgonTypography variant="body2" color="text">
                       Chưa có hồ sơ sức khỏe
@@ -734,7 +750,7 @@ function ChildInformation() {
                 ) : (
                   <>
                     <List>
-                      {healthRecords.map((record, index) => (
+                      {sortedHealthRecords.map((record, index) => (
                         <ListItem key={record._id || index} sx={{ px: 0 }}>
                           <ListItemIcon>
                             <i 
@@ -759,7 +775,8 @@ function ChildInformation() {
                                   )}
                                 </ArgonBox>
                                 <ArgonTypography variant="caption" color="text">
-                                  {record.date} {record.time && `- ${record.time}`}
+                                  {record.date}
+                                   {/* {record.time && `- ${record.time}`} */}
                                 </ArgonTypography>
                               </ArgonBox>
                             }
