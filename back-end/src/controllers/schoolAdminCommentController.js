@@ -157,7 +157,10 @@ const updateComment = async (req, res) => {
 const getLikes = async (req, res) => {
   try {
     const { postId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
     const PostLike = require('../models/PostLike');
+
+    const skip = (page - 1) * limit;
 
     const likes = await PostLike.find({ post_id: postId })
       .populate({
@@ -165,13 +168,21 @@ const getLikes = async (req, res) => {
         select: 'full_name avatar_url role'
       })
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
       .lean();
+
+    const totalLikes = await PostLike.countDocuments({ post_id: postId });
 
     return res.json({
       success: true,
       data: {
         likes,
-        total: likes.length
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalLikes / limit),
+          totalLikes
+        }
       }
     });
   } catch (error) {
