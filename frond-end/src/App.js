@@ -48,30 +48,40 @@ import brandDark from "assets/images/kll3.png";
 import "assets/css/nucleo-icons.css";
 import "assets/css/nucleo-svg.css";
 
+const CLASS_DEPENDENT_TEACHER_ROUTE_KEYS = new Set([
+  "teacher-daily-report",
+  "teacher-attendance",
+  "teacher-chat",
+]);
+
+const teacherRoutesWithoutLatestYearFeatures = teacherRoutes.filter(
+  (route) => !CLASS_DEPENDENT_TEACHER_ROUTE_KEYS.has(route.key)
+);
+
 export default function App() {
   const [controller, dispatch] = useArgonController();
   const { miniSidenav, direction, layout, sidenavColor, darkSidenav, darkMode } =
     controller;
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const [rtlCache, setRtlCache] = useState(null);
+  const [teacherNavRoutes, setTeacherNavRoutes] = useState(teacherRoutes);
   const { pathname } = useLocation();
-
-  const userRole = (() => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        return JSON.parse(storedUser)?.role || null;
-      }
-    } catch (e) {
-      return null;
+  const isTeacherPath = pathname.startsWith("/teacher");
+  const isParentPath = pathname.startsWith("/parent");
+  const isHealthCareStaffPath = pathname.startsWith("/health-care");
+  const isNutritionStaffPath = pathname.startsWith("/nutrition");
+  const isSchoolAdminPath = pathname.startsWith("/school-admin");
+  const isAdminPath = pathname.startsWith("/admin");
+  // Determine role from localStorage to support role-based sidenav
+  let userRole = null;
+  try {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      userRole = JSON.parse(storedUser)?.role || null;
     }
-    return null;
-  })();
-
-  const [teacherRouteVisibility, setTeacherRouteVisibility] = useState(() => ({
-    hideAcademicRoutes: false,
-    checked: userRole !== "teacher",
-  }));
+  } catch (e) {
+    userRole = null;
+  }
 
   // Cache for the rtl
   useMemo(() => {
@@ -132,6 +142,50 @@ export default function App() {
     })();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const determineTeacherRoutes = async () => {
+      if (userRole !== "teacher") {
+        if (!cancelled) {
+          setTeacherNavRoutes(teacherRoutes);
+        }
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        if (!cancelled) {
+          setTeacherNavRoutes(teacherRoutes);
+        }
+        return;
+      }
+
+      try {
+        const response = await apiService.get("/teachers/class");
+        const hasLatestAcademicYearClass = response?.metadata?.has_latest_academic_year_class;
+        if (!cancelled) {
+          setTeacherNavRoutes(
+            hasLatestAcademicYearClass === false
+              ? teacherRoutesWithoutLatestYearFeatures
+              : teacherRoutes
+          );
+        }
+      } catch (error) {
+        console.error("Không thể kiểm tra quyền teacher:", error);
+        if (!cancelled) {
+          setTeacherNavRoutes(teacherRoutes);
+        }
+      }
+    };
+
+    determineTeacherRoutes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userRole]);
+
   const getRoutes = (allRoutes) =>
     allRoutes.map((route) => {
       if (route.collapse) {
@@ -147,18 +201,11 @@ export default function App() {
       return null;
     });
 
-  const isTeacherPath = pathname.startsWith("/teacher");
-  const isParentPath = pathname.startsWith("/parent");
-  const isHealthCareStaffPath = pathname.startsWith("/health-care");
-  const isNutritionStaffPath = pathname.startsWith("/nutrition");
-  const isSchoolAdminPath = pathname.startsWith("/school-admin");
-  const isAdminPath = pathname.startsWith("/admin");
-  
   // Nếu role là admin, luôn dùng adminRoutes
   const activeRoutes = userRole === "admin"
     ? adminRoutes
     : isTeacherPath
-    ? teacherRoutes
+    ? teacherNavRoutes
     : isParentPath
     ? parentRoutes
     : isHealthCareStaffPath
@@ -171,78 +218,10 @@ export default function App() {
     ? adminRoutes
     : routes;
 
-  // Các route luôn phải chứa cả public routes (sign-in, landing, v.v.)
-  const routerRoutes = mergeRoutes(routes, activeRoutes);
-
   // Ensure sidenav is not in mini overlay mode on desktop
   useEffect(() => {
     setMiniSidenav(dispatch, window.innerWidth < 1200 ? true : false);
   }, [dispatch]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function evaluateTeacherMenu() {
-      if (userRole !== "teacher") {
-        if (!cancelled) {
-          setTeacherRouteVisibility({ hideAcademicRoutes: false, checked: true });
-        }
-        return;
-      }
-
-      if (!cancelled) {
-        setTeacherRouteVisibility((prev) => ({ ...prev, checked: false }));
-      }
-
-      const token = localStorage.getItem("token");
-      if (!token) {
-        if (!cancelled) {
-          setTeacherRouteVisibility({ hideAcademicRoutes: false, checked: true });
-        }
-        return;
-      }
-
-      try {
-        const response = await apiService.get("/teachers/class");
-        const groups = Array.isArray(response?.data) ? response.data : [];
-        const currentYear = getCurrentAcademicYear();
-        const hasCurrentYearClass = groups.some(
-          (group) =>
-            group?.academic_year === currentYear &&
-            Array.isArray(group.classes) &&
-            group.classes.length > 0
-        );
-        if (!cancelled) {
-          setTeacherRouteVisibility({
-            hideAcademicRoutes: !hasCurrentYearClass,
-            checked: true,
-          });
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setTeacherRouteVisibility({ hideAcademicRoutes: false, checked: true });
-        }
-      }
-    }
-
-    evaluateTeacherMenu();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [userRole]);
-
-  const sidenavRoutes = useMemo(() => {
-    if (
-      userRole === "teacher" &&
-      isTeacherPath &&
-      teacherRouteVisibility.checked &&
-      teacherRouteVisibility.hideAcademicRoutes
-    ) {
-      return filterRoutesByKeys(activeRoutes, TEACHER_MENU_RESTRICTED_KEYS);
-    }
-    return activeRoutes;
-  }, [activeRoutes, isTeacherPath, teacherRouteVisibility, userRole]);
 
   // Keep root "/" as public Landing regardless of role
   const SidenavComponent = isParentPath ? ParentSidenav : Sidenav;
@@ -261,7 +240,7 @@ export default function App() {
                   color={sidenavColor}
                   brand={darkSidenav || darkMode ? brand : brandDark}
                   brandName="KidsLink"
-                  routes={sidenavRoutes}
+                  routes={activeRoutes}
                   onMouseEnter={handleOnMouseEnter}
                   onMouseLeave={handleOnMouseLeave}
                 />
@@ -270,7 +249,7 @@ export default function App() {
             )}
             {layout === "vr" && null}
             <Routes>
-              {getRoutes(routerRoutes)}
+              {getRoutes(activeRoutes)}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </ThemeProvider>
@@ -284,7 +263,7 @@ export default function App() {
                 color={sidenavColor}
                 brand={darkSidenav || darkMode ? brand : brandDark}
                 brandName="KidsLink"
-                routes={sidenavRoutes}
+                routes={activeRoutes}
                 onMouseEnter={handleOnMouseEnter}
                 onMouseLeave={handleOnMouseLeave}
               />
@@ -293,84 +272,11 @@ export default function App() {
           )}
           {layout === "vr" && null}
           <Routes>
-            {getRoutes(routerRoutes)}
+            {getRoutes(activeRoutes)}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </ThemeProvider>
       )}
     </AuthProvider>
-  );
-}
-
-const TEACHER_MENU_RESTRICTED_KEYS = new Set([
-  "teacher-daily-report",
-  "teacher-attendance",
-  "teacher-chat",
-]);
-
-function getCurrentAcademicYear(date = new Date()) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const startYear = month >= 7 ? year : year - 1;
-  return `${startYear}-${startYear + 1}`;
-}
-
-function filterRoutesByKeys(routes, keysToHide) {
-  if (!Array.isArray(routes) || keysToHide.size === 0) {
-    return routes;
-  }
-
-  return routes
-    .map((route) => {
-      if (Array.isArray(route.collapse)) {
-        return {
-          ...route,
-          collapse: filterRoutesByKeys(route.collapse, keysToHide),
-        };
-      }
-      return route;
-    })
-    .filter((route) => {
-      if (route.type === "route" && keysToHide.has(route.key)) {
-        return false;
-      }
-
-      if (Array.isArray(route.collapse)) {
-        return route.collapse.length > 0 || route.type !== "collapse";
-      }
-
-      return true;
-    });
-}
-
-function mergeRoutes(base, extra) {
-  if (base === extra) {
-    return base;
-  }
-
-  const seen = new Set();
-
-  const addRoute = (acc, route) => {
-    if (route.route) {
-      if (seen.has(route.route)) {
-        return acc;
-      }
-      seen.add(route.route);
-    }
-
-    if (Array.isArray(route.collapse)) {
-      acc.push({
-        ...route,
-        collapse: route.collapse.map((child) => ({ ...child })),
-      });
-    } else {
-      acc.push(route);
-    }
-
-    return acc;
-  };
-
-  return [...base].reduce(addRoute, []).concat(
-    Array.isArray(extra) ? extra.reduce(addRoute, []) : []
   );
 }

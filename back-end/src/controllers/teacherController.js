@@ -50,6 +50,9 @@ async function getTeacherClasses(req, res) {
       return res.status(404).json({ error: 'Không tìm thấy giáo viên' });
     }
 
+    const teacherUser = await User.findById(teacher.user_id).select('school_id');
+    const schoolId = teacherUser?.school_id || null;
+
     const classes = await Class.find({
       $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
     })
@@ -68,7 +71,33 @@ async function getTeacherClasses(req, res) {
       .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
       .map((year) => ({ academic_year: year, classes: grouped[year] }));
 
-    return res.json({ teacher_id: teacher._id, data: result });
+    let latestAcademicYear = null;
+    let hasLatestAcademicYearClass = false;
+    if (schoolId) {
+      const academicYears = await Class.distinct('academic_year', { school_id: schoolId });
+      if (Array.isArray(academicYears) && academicYears.length > 0) {
+        academicYears.sort((a, b) => (a > b ? -1 : a < b ? 1 : 0));
+        latestAcademicYear = academicYears[0];
+        if (latestAcademicYear) {
+          const match = await Class.exists({
+            school_id: schoolId,
+            academic_year: latestAcademicYear,
+            $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+          });
+          hasLatestAcademicYearClass = !!match;
+        }
+      }
+    }
+
+    return res.json({
+      teacher_id: teacher._id,
+      data: result,
+      metadata: {
+        latest_academic_year: latestAcademicYear,
+        has_latest_academic_year_class: hasLatestAcademicYearClass,
+        school_id: schoolId ? schoolId.toString() : null
+      }
+    });
   } catch (err) {
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
