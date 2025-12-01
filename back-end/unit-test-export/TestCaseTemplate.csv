@@ -1,0 +1,2 @@
+UTCID,Type,Precondition,Input1,Input2,Input3,Return,Exception,Log message,Result,Executed Date,Defect ID
+UTCID01,N,Precondition example,Input1 value,Input2 value,Input3 value,Expected return,Expected exception,Expected log message,P/F,Date,DFID001
