@@ -1,0 +1,74 @@
+@startuml Manage Slot Class Diagram
+
+class SchoolAdminCalendarRoutes {
+  + registerRoutes(router: ExpressRouter): void
+}
+
+class SlotController {
+  + getAllSlots(req: Request, res: Response): void
+  + createSlot(req: Request, res: Response): void
+  + updateSlot(req: Request, res: Response): void
+  + deleteSlot(req: Request, res: Response): void
+}
+
+class SlotModel {
+  - _id: ObjectId
+  - slot_name: String
+  - start_time: String
+  - end_time: String
+  - school_id: ObjectId
+  - createdAt: Date
+  - updatedAt: Date
+  + find(query: Object): Promise<Slot[]>
+  + findOne(query: Object): Promise<Slot>
+  + findById(id: ObjectId): Promise<Slot>
+  + create(data: Object): Promise<Slot>
+  + findByIdAndUpdate(id: ObjectId, data: Object): Promise<Slot>
+  + findByIdAndDelete(id: ObjectId): Promise<Slot>
+}
+
+class AuthMiddleware {
+  + authenticate(req, res, next): void
+  + authorize(allowedRoles: String[]): void
+}
+
+class ErrorHandlerMiddleware {
+  + handleError(err, req, res, next): void
+}
+
+class UserModel {
+  - _id: ObjectId
+  - school_id: ObjectId
+  + findById(id: ObjectId): Promise<User>
+}
+
+class CalendarModel {
+  - _id: ObjectId
+  - slot_id: ObjectId
+  + countDocuments(query: Object): Promise<Number>
+}
+
+' Relationships
+SchoolAdminCalendarRoutes --> SlotController : use
+SlotController --> SlotModel : find\nfindOne\ncreate\nupdate\ndelete
+SlotController --> AuthMiddleware : auth
+SlotController --> UserModel : find
+SlotController --> CalendarModel : countDocuments
+AuthMiddleware --> ErrorHandlerMiddleware : error
+
+note right of SlotController
+  - getAllSlots: Filter by school_id
+  - createSlot: Validate overlapping
+  - updateSlot: Check ownership
+  - deleteSlot: Check if used in Calendar
+end note
+
+note right of SlotModel
+  - slot_name: Required
+  - start_time: Required
+  - end_time: Required
+  - school_id: Required
+end note
+
+@enduml
+

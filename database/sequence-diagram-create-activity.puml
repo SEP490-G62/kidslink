@@ -1,0 +1,77 @@
+@startuml CreateActivitySequence
+actor "School Admin" as User
+participant "Client UI\n(ActivityModal.js)" as UI
+participant "Route\nPOST /activities" as Route
+participant "schoolAdminCalendarController" as Controller
+participant "User Model" as UserModel
+participant "Activity Model" as ActivityModel
+database "Database" as DB
+
+User -> UI: Click "Thêm môn học mới" form
+activate UI
+UI -> UI: resetForm()
+UI -> User: Display create form
+
+User -> UI: Enter name, description, requireOutdoor
+User -> UI: Click "Thêm mới" button
+UI -> UI: handleSubmit() validates form
+
+alt Validation failed
+    UI -> User: Display field errors
+    deactivate UI
+else Validation passed
+    UI -> UI: setLoading(true)
+    UI -> Route: POST /school-admin/calendar/activities (payload)
+    activate Route
+    
+    Route -> Controller: createActivity(req, res)
+    activate Controller
+    
+    Controller -> Controller: Validate required fields
+    alt Validation failed
+        Controller -> UI: res.status(400).json({message})
+        deactivate Controller
+        deactivate Route
+        UI -> UI: alert(error.message)
+        UI -> UI: setLoading(false)
+        deactivate UI
+    else Validation passed
+        Controller -> UserModel: findById(userId).select('school_id')
+        activate UserModel
+        UserModel -> DB: Query user
+        DB -> UserModel: user document
+        UserModel -> Controller: schoolId
+        deactivate UserModel
+        
+        Controller -> ActivityModel: create({activity_name, description, require_outdoor, school_id})
+        activate ActivityModel
+        ActivityModel -> DB: Insert new activity
+        DB -> ActivityModel: new activity document
+        ActivityModel -> Controller: newActivity
+        deactivate ActivityModel
+        
+        Controller -> UI: res.status(201).json({success: true, data: newActivity})
+        deactivate Controller
+        deactivate Route
+        
+        UI -> UI: resetForm()
+        UI -> UI: fetchActivities()
+        UI -> UI: setLoading(false)
+        UI -> User: Display success message
+        deactivate UI
+    end
+end
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+

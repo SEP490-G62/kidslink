@@ -1,0 +1,88 @@
+@startuml DeleteActivitySequence
+actor "School Admin" as User
+participant "Client UI\n(ActivityModal.js)" as UI
+participant "Route\nDELETE /activities/:activityId" as Route
+participant "schoolAdminCalendarController" as Controller
+participant "User Model" as UserModel
+participant "Activity Model" as ActivityModel
+database "Database" as DB
+
+User -> UI: Click "Delete" icon on activity
+activate UI
+UI -> User: Confirm deletion dialog
+
+alt User cancels
+    UI -> UI: Do nothing
+    deactivate UI
+else User confirms
+    UI -> UI: setLoading(true)
+    UI -> Route: DELETE /school-admin/calendar/activities/:activityId
+    activate Route
+    
+    Route -> Controller: deleteActivity(req, res)
+    activate Controller
+    
+    Controller -> UserModel: findById(userId).select('school_id')
+    activate UserModel
+    UserModel -> DB: Query user
+    DB -> UserModel: user document
+    UserModel -> Controller: schoolId
+    deactivate UserModel
+    
+    Controller -> ActivityModel: findById(activityId)
+    activate ActivityModel
+    ActivityModel -> DB: Query activity
+    DB -> ActivityModel: activity or null
+    ActivityModel -> Controller: activity
+    deactivate ActivityModel
+    
+    alt Activity not found
+        Controller -> UI: res.status(404).json({message: "Không tìm thấy hoạt động"})
+        deactivate Controller
+        deactivate Route
+        UI -> UI: alert("Không tìm thấy hoạt động")
+        UI -> UI: setLoading(false)
+        deactivate UI
+    else Activity found
+        Controller -> Controller: Check ownership (school_id match)
+        
+        alt Wrong ownership
+            Controller -> UI: res.status(403).json({message: "Không có quyền xóa"})
+            deactivate Controller
+            deactivate Route
+            UI -> UI: alert("Không có quyền xóa")
+            UI -> UI: setLoading(false)
+            deactivate UI
+        else Ownership valid
+            Controller -> ActivityModel: findByIdAndDelete(activityId)
+            activate ActivityModel
+            ActivityModel -> DB: Delete activity
+            DB -> ActivityModel: deleted activity
+            ActivityModel -> Controller: deletedActivity
+            deactivate ActivityModel
+            
+            Controller -> UI: res.json({success: true, message: "Đã xóa hoạt động"})
+            deactivate Controller
+            deactivate Route
+            
+            UI -> UI: fetchActivities()
+            UI -> UI: setLoading(false)
+            UI -> User: Display success message
+            deactivate UI
+        end
+    end
+end
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+

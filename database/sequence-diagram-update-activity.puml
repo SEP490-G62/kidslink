@@ -1,0 +1,106 @@
+@startuml UpdateActivitySequence
+actor "School Admin" as User
+participant "Client UI\n(ActivityModal.js)" as UI
+participant "Route\nPUT /activities/:activityId" as Route
+participant "schoolAdminCalendarController" as Controller
+participant "User Model" as UserModel
+participant "Activity Model" as ActivityModel
+database "Database" as DB
+
+User -> UI: Click "Edit" icon on activity
+activate UI
+UI -> UI: handleEdit(activity)
+UI -> UI: setEditingActivity(activity)
+UI -> UI: setFormData({name, description, requireOutdoor})
+UI -> User: Display edit form with activity data
+
+User -> UI: Modify name, description, requireOutdoor
+User -> UI: Click "Cập nhật" button
+UI -> UI: handleSubmit() validates form
+
+alt Validation failed
+    UI -> User: Display field errors
+    deactivate UI
+else Validation passed
+    UI -> UI: setLoading(true)
+    UI -> Route: PUT /school-admin/calendar/activities/:activityId (payload)
+    activate Route
+    
+    Route -> Controller: updateActivity(req, res)
+    activate Controller
+    
+    Controller -> Controller: Validate required fields
+    alt Validation failed
+        Controller -> UI: res.status(400).json({message})
+        deactivate Controller
+        deactivate Route
+        UI -> UI: alert(error.message)
+        UI -> UI: setLoading(false)
+        deactivate UI
+    else Validation passed
+        Controller -> UserModel: findById(userId).select('school_id')
+        activate UserModel
+        UserModel -> DB: Query user
+        DB -> UserModel: user document
+        UserModel -> Controller: schoolId
+        deactivate UserModel
+        
+        Controller -> ActivityModel: findById(activityId)
+        activate ActivityModel
+        ActivityModel -> DB: Query activity
+        DB -> ActivityModel: existing activity or null
+        ActivityModel -> Controller: existingActivity
+        deactivate ActivityModel
+        
+        alt Activity not found
+            Controller -> UI: res.status(404).json({message: "Không tìm thấy hoạt động"})
+            deactivate Controller
+            deactivate Route
+            UI -> UI: alert("Không tìm thấy hoạt động")
+            UI -> UI: setLoading(false)
+            deactivate UI
+        else Activity found
+            Controller -> Controller: Check ownership (school_id match)
+            
+            alt Wrong ownership
+                Controller -> UI: res.status(403).json({message: "Không có quyền sửa"})
+                deactivate Controller
+                deactivate Route
+                UI -> UI: alert("Không có quyền sửa")
+                UI -> UI: setLoading(false)
+                deactivate UI
+            else Ownership valid
+                Controller -> ActivityModel: findByIdAndUpdate(activityId, {activity_name, description, require_outdoor})
+                activate ActivityModel
+                ActivityModel -> DB: Update activity
+                DB -> ActivityModel: updated activity
+                ActivityModel -> Controller: updatedActivity
+                deactivate ActivityModel
+                
+                Controller -> UI: res.json({success: true, data: updatedActivity})
+                deactivate Controller
+                deactivate Route
+                
+                UI -> UI: resetForm()
+                UI -> UI: fetchActivities()
+                UI -> UI: setLoading(false)
+                UI -> User: Display success message
+                deactivate UI
+            end
+        end
+    end
+end
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+

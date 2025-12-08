@@ -1,0 +1,99 @@
+@startuml ViewChildrenListSequence
+actor "Teacher" as User
+participant "Client UI\n(Classes/index.js)" as UI
+participant "Route\nGET /teachers/class" as Route1
+participant "Route\nGET /teachers/class/students" as Route2
+participant "teacherController" as Controller
+participant "Teacher Model" as TeacherModel
+participant "User Model" as UserModel
+participant "Class Model" as ClassModel
+participant "StudentClass Model" as StudentClassModel
+participant "Student Model" as StudentModel
+database "Database" as DB
+
+== View Classes List ==
+User -> UI: Open Classes page
+activate UI
+UI -> UI: useEffect() triggers
+UI -> UI: setLoading(true)
+UI -> Route1: GET /teachers/class
+activate Route1
+Route1 -> Controller: getTeacherClasses(req, res)
+activate Controller
+
+Controller -> Controller: getTeacherByReqUser(req)
+Controller -> TeacherModel: findOne({ user_id })
+activate TeacherModel
+TeacherModel -> DB: Query teacher
+DB -> TeacherModel: teacher document
+TeacherModel -> Controller: teacher
+deactivate TeacherModel
+
+Controller -> UserModel: findById(teacher.user_id).select('school_id')
+activate UserModel
+UserModel -> DB: Query user
+DB -> UserModel: user document
+UserModel -> Controller: schoolId
+deactivate UserModel
+
+Controller -> ClassModel: find({teacher_id or teacher_id2}).populate('school_id', 'class_age_id')
+activate ClassModel
+ClassModel -> DB: Query classes
+DB -> ClassModel: classes array
+ClassModel -> Controller: classes
+deactivate ClassModel
+
+Controller -> Controller: Group classes by academic_year
+Controller -> Controller: Sort by academic_year desc
+Controller -> UI: res.json({teacher_id, data: groupedClasses})
+deactivate Controller
+deactivate Route1
+
+UI -> UI: setGroupedClasses(groups)
+UI -> UI: Select latest academic_year
+UI -> UI: Select first class of latest year
+
+== View Students List ==
+UI -> UI: fetchStudentsForClass(classId)
+UI -> Route2: GET /teachers/class/students?class_id=...
+activate Route2
+Route2 -> Controller: getClassStudents(req, res)
+activate Controller
+
+alt class_id not provided
+    Controller -> ClassModel: find({teacher_id}).sort({academic_year: -1}).limit(1)
+    activate ClassModel
+    ClassModel -> DB: Query latest class
+    DB -> ClassModel: latest class
+    ClassModel -> Controller: latestClass
+    deactivate ClassModel
+    Controller -> Controller: classId = latestClass._id
+end
+
+Controller -> ClassModel: findOne({_id: classId, teacher_id}).populate('school_id', 'class_age_id')
+activate ClassModel
+ClassModel -> DB: Query class
+DB -> ClassModel: class document
+ClassModel -> Controller: class
+deactivate ClassModel
+
+Controller -> StudentClassModel: find({class_id}).populate('student_id')
+activate StudentClassModel
+StudentClassModel -> DB: Query student-class mappings
+DB -> StudentClassModel: mappings array
+StudentClassModel -> Controller: mappings
+deactivate StudentClassModel
+
+Controller -> Controller: Map to students array
+Controller -> Controller: Build class_info object
+Controller -> UI: res.json({class_id, class_info, count, students})
+deactivate Controller
+deactivate Route2
+
+UI -> UI: setStudents(students)
+UI -> UI: setClassInfo(class_info)
+UI -> UI: setLoading(false)
+UI -> User: Display classes and students list
+deactivate UI
+
+@enduml
