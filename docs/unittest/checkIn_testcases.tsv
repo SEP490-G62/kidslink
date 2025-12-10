@@ -1,0 +1,49 @@
+Label			UTCID01	UTCID02	UTCID03	UTCID04	UTCID05	UTCID06	UTCID07	UTCID08	UTCID09
+Precondition			
+Can connect with server			O	O	O	O	O	O	O	O	O
+Requester authenticated (teacher)			O	O	O	O	O	O	O	O	O
+Requester is teacher			O	O	O	O	O	O	O	O	O
+Teacher has class assignment			O	O	O	O	O		O	O	O
+CONDITION - Input validation:			
+student_id provided			O	O	O	O	O	O	O	O	O
+Valid student_id format			O	O		O	O	O	O	O	O
+Invalid student_id format					O				
+CONDITION - Student:			
+Student exists			O	O	O		O	O	O	O	O
+Student not found								O			
+Student status active (status = 1)			O	O	O			O	O	O	O
+Student status inactive (status ≠ 1)							O		
+CONDITION - Teacher:			
+Teacher found (user_id maps to teacher)			O	O	O			O	O	O	O
+Teacher not found										O		
+CONDITION - Class:			
+Student in teacher's class			O	O	O				O	O	O
+Student not in teacher's class													O	
+CONDITION - Schedule:			
+Class has schedule for date			O	O	O				O	O		O
+Class no schedule for date														O
+CONDITION - Duplicate:			
+Student not checked in today			O	O	O				O	O		
+Student already checked in today														O														
+Return			
+true (checkin thành công)			O																
+false (checkin thất bại)					O	O	O	O	O	O	O	O
+Exception			
+201 created			O																
+400 bad request					O			O	O		O	O	O
+403 forbidden														O	
+404 not found							O	O					
+Log message			
+Checkin thành công			O																
+student_id là bắt buộc					O								
+student_id không hợp lệ						O							
+Không tìm thấy học sinh							O			
+Chỉ có thể thao tác với học sinh đang hoạt động							O		
+Không tìm thấy thông tin giáo viên									O		
+Học sinh không thuộc lớp mà bạn phụ trách										O	
+Lớp không có lịch học trong ngày đã chọn										O
+Học sinh đã được checkin hôm nay													O
+Type (N/A/B)			N	A	A	A	A	A	A	A	A
+Passed/Failed			P	P	P	P	P	P	P	P	P
+Executed Date			12/04	12/04	12/04	12/04	12/04	12/04	12/04	12/04	12/04
+Defect ID

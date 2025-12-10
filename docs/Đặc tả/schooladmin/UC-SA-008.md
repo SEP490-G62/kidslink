@@ -19,6 +19,7 @@
     1. Hệ thống báo lỗi và yêu cầu nhập lại.
 
 ## English
+- **Use Case Name:** Manage School Information
 - **Description:** School Admin views and updates school information, configures contact info, bank account, logo, etc.
 - **Primary Actor:** School Admin
 - **Secondary Actors:** System

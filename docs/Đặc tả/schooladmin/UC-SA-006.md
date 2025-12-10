@@ -1,10 +1,9 @@
 # UC-SA-006: Quản lý bài đăng/thông báo / Manage Posts and Announcements
 
-## Tiếng Việt
-- **Diễn giải:** School Admin tạo, chỉnh sửa, gửi bài đăng/thông báo đến phụ huynh và giáo viên.
+- **Diễn giải:** School Admin tạo, chỉnh sửa, bình luận, thích và gửi bài đăng/thông báo đến phụ huynh và giáo viên.
 - **Diễn viên chính:** School Admin
 - **Diễn viên phụ:** Phụ huynh, Giáo viên, Hệ thống
-- **Mô tả:** Quản lý các bài đăng, thông báo của trường gửi đến các đối tượng liên quan.
+- **Mô tả:** Quản lý, bình luận, thích các bài đăng, thông báo của trường gửi đến các đối tượng liên quan.
 - **Điều kiện tiên quyết:**
   - School Admin đã đăng nhập hệ thống.
 - **Kết quả sau cùng:**
@@ -18,11 +17,11 @@
     1. Hệ thống báo lỗi.
     2. School Admin bổ sung và gửi lại.
 
-## English
-- **Description:** School Admin creates, edits, and sends posts/announcements to parents and teachers.
+- **Use Case Name:** Manage Posts and Announcements
+- **Description:** School Admin creates, edits, comments, likes, and sends posts/announcements to parents and teachers.
 - **Primary Actor:** School Admin
 - **Secondary Actors:** Parent, Teacher, System
-- **Goal:** Manage school posts and announcements sent to relevant parties.
+- **Goal:** Manage, comment, and like school posts and announcements sent to relevant parties.
 - **Preconditions:**
   - School Admin is logged in.
 - **Postconditions:**
@@ -30,7 +29,8 @@
 - **Normal Flow:**
   1. School Admin accesses the post/announcement management function.
   2. Creates or edits content.
-  3. Sends the announcement to relevant parties.
+  3. Comments on and likes posts/announcements.
+  4. Sends the announcement to relevant parties.
 - **Alternative Flows:**
   - Missing announcement content:
     1. System notifies error.

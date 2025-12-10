@@ -10,7 +10,7 @@
 6. UC-SA-006: Quản lý bài đăng/thông báo / Manage Posts and Announcements
 7. UC-SA-007: Quản lý tài khoản người dùng / Manage User Accounts
 8. UC-SA-008: Quản lý thông tin trường học / Manage School Information
-Quản lí loại đơn
+9. UC-SA-009: Quản lý loại đơn / Manage Application Types
 Mỗi use case sẽ được đặc tả chi tiết trong thư mục `schooladmin`.
 
 Nếu bạn muốn liệt kê use case cho các vai trò khác, hãy yêu cầu thêm!

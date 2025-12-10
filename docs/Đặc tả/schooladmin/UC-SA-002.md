@@ -19,6 +19,7 @@
     2. School Admin chọn giáo viên khác hoặc điều chỉnh lại.
 
 ## English
+- **Use Case Name:** Manage Classes
 - **Description:** School Admin creates classes, assigns teachers, and transfers students between classes.
 - **Primary Actor:** School Admin
 - **Secondary Actors:** Teacher, System

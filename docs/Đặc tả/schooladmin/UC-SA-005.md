@@ -19,6 +19,7 @@
     2. School Admin xác nhận lại với phụ huynh.
 
 ## English
+- **Use Case Name:** Manage Complaints and Feedback
 - **Description:** School Admin receives, processes, and responds to complaints from parents.
 - **Primary Actor:** School Admin
 - **Secondary Actors:** Parent, System

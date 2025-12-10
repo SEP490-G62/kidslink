@@ -19,6 +19,7 @@
     2. School Admin điều chỉnh lại thông tin.
 
 ## English
+- **Use Case Name:** Manage User Accounts
 - **Description:** School Admin creates, edits, locks/unlocks teacher, parent, and student accounts.
 - **Primary Actor:** School Admin
 - **Secondary Actors:** Teacher, Parent, Student, System

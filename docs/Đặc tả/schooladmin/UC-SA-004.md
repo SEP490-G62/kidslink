@@ -19,6 +19,7 @@
     1. Hệ thống báo lỗi và yêu cầu nhập lại.
 
 ## English
+- **Use Case Name:** Manage Students
 - **Description:** School Admin manages student list, adds, edits, transfers, or deletes students.
 - **Primary Actor:** School Admin
 - **Secondary Actors:** Teacher, System

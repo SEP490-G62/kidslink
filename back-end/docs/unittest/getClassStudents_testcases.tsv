@@ -1,0 +1,46 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+teacher				O	O	O	O	O	O	O	O	O	O
+CONDITION - Input:				
+class_id provided				O		O	O	O	O	O	O	O	O
+class_id missing					O								
+class_id invalid format									O			
+CONDITION - Teacher:				
+Teacher exists				O	O		O	O	O	O	O	O	O
+Teacher not exists						O						
+Teacher has classes				O	O		O	O	O	O	O	O	O
+Teacher has no classes							O					
+CONDITION - Class:				
+Class exists and belongs to teacher				O		O	O	O	O	O	O	O	O
+Class belongs to other teacher								O			
+Teacher is primary (teacher_id)				O	O	O	O	O	O	O		O	O
+Teacher is secondary (teacher_id2)												O	O
+CONDITION - Students:				
+Class has students				O		O	O	O	O			O	O
+Class has no students									O		
+Students have allergy info													O	
+Students have gender info													O	O
+CONDITION - Population:				
+school_id populated															O
+class_age_id populated															O
+Return				
+TRUE				O	O		O	O	O	O	O	O	O
+FALSE						O	O		O		
+Exception				
+200				O	O		O	O	O	O	O	O	O
+403								O			
+404					O	O					
+Log message				
+Lấy danh sách học sinh của lớp thành công				O	O		O	O	O	O	O	O	O
+Không tìm thấy giáo viên						O						
+Giáo viên chưa có lớp học							O					
+Không có quyền truy cập lớp này								O			
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

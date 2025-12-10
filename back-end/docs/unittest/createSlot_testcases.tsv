@@ -1,0 +1,42 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08
+Condition				Precondition
+	Can connect with server				O	O	O	O	O	O	O	O
+	Requester authenticated				O	O	O	O	O	O	O	O
+	Requester has permission				O	O		O	O	O	O	O
+	School admin assigned				O	O			O	O	O	O
+	CONDITION - Requester role:				
+	school_admin				O	O	O	O	O	O	O	O
+	CONDITION - Input:				
+	slotName provided				O	O		O	O	O	O	O
+	startTime provided				O	O	O		O	O	O	O
+	endTime provided				O	O	O	O		O	O	O
+	slotName is empty				O
+	startTime missing					O
+	endTime missing						O
+	startTime >= endTime							O
+	CONDITION - Time overlap:				
+	Overlaps with existing slot (same school)								O
+	No overlap				O	O	O	O	O	O	O
+	Overlap with slot from different school									O
+	CONDITION - School:				
+	School admin has school_id				O	O	O	O	O	O	O	O
+	School admin no school_id				
+	Return				
+	TRUE				O	O				O	O
+	FALSE					O	O	O	O	O	O	O
+	Exception				
+	201				O			O	O	O	O	O
+	400					O	O	O	O	O
+	403						O
+	Log message				
+	Đã tạo khung giờ tiết học mới				O			O	O	O	O	O
+	Vui lòng cung cấp tên tiết học					O	O
+	Vui lòng cung cấp giờ bắt đầu và giờ kết thúc						O
+	Giờ bắt đầu phải nhỏ hơn giờ kết thúc							O
+	Khung giờ này bị trùng với một tiết học khác								O
+	Chỉ school_admin mới có quyền tạo slot					O
+	Result				
+	Type (N/A/B)				N	A	A	A	A	A	A	A
+	Passed/Failed				P	P	P	P	P	P	P	P
+	Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+	Defect ID

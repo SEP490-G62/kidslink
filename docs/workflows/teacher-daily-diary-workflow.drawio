@@ -1,0 +1,215 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36" version="29.2.1">
+  <diagram id="daily-diary-workflow" name="Daily Diary Workflow">
+    <mxGraphModel dx="1178" dy="562" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="teacher-lane" parent="1" style="swimlane;startSize=30;horizontal=1;fillColor=#E3F2FD;strokeColor=#333333;fontStyle=1;fontSize=13;" value="Teacher" vertex="1">
+          <mxGeometry height="180" width="1320" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="start" parent="teacher-lane" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Start" vertex="1">
+          <mxGeometry height="60" width="80" x="20" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="select-date" parent="teacher-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Select class&#xa;and date" vertex="1">
+          <mxGeometry height="50" width="100" x="140" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="select-student" parent="teacher-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Select a&#xa;student" vertex="1">
+          <mxGeometry height="50" width="100" x="410" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="write-diary" parent="teacher-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Write daily&#xa;diary/comment" vertex="1">
+          <mxGeometry height="50" width="100" x="630" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="click-save" parent="teacher-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Click Save" vertex="1">
+          <mxGeometry height="50" width="100" x="770" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="send-message" parent="teacher-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;dashed=1;" value="Send message&#xa;to parent (optional)" vertex="1">
+          <mxGeometry height="50" width="110" x="910" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="more-students" parent="teacher-lane" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#333333;fontSize=11;" value="More&#xa;students?" vertex="1">
+          <mxGeometry height="70" width="90" x="1130" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="end" parent="teacher-lane" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="End" vertex="1">
+          <mxGeometry height="60" width="70" x="1240" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="label-yes2" parent="teacher-lane" style="text;html=1;align=center;fontSize=10;fontColor=#2E7D32;" value="Yes" vertex="1">
+          <mxGeometry height="20" width="30" x="1140" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="label-no2" parent="teacher-lane" style="text;html=1;align=center;fontSize=10;fontColor=#C62828;" value="No" vertex="1">
+          <mxGeometry height="20" width="25" x="1210" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="system-lane" parent="1" style="swimlane;startSize=30;horizontal=1;fillColor=#FFF9C4;strokeColor=#333333;fontStyle=1;fontSize=13;" value="KidsLink" vertex="1">
+          <mxGeometry height="240" width="1320" x="40" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="load-students" parent="system-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Load student list" vertex="1">
+          <mxGeometry height="50" width="100" x="140" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="display-list" parent="system-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Display&#xa;student list" vertex="1">
+          <mxGeometry height="50" width="100" x="280" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="load-existing" parent="system-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Load existing&#xa;diary (if any)" vertex="1">
+          <mxGeometry height="50" width="100" x="490" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="validate-save" parent="system-lane" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#333333;fontSize=9;" value="Is today?&#xa;Has permission?&#xa;Has schedule?" vertex="1">
+          <mxGeometry height="80" width="100" x="660" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="has-report" parent="system-lane" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#333333;fontSize=10;" value="Report&#xa;exists?" vertex="1">
+          <mxGeometry height="70" width="80" x="800" y="165" as="geometry" />
+        </mxCell>
+        <mxCell id="update-report" parent="system-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Update&#xa;DailyReport" vertex="1">
+          <mxGeometry height="50" width="100" x="970" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="create-report" parent="system-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Create new&#xa;DailyReport" vertex="1">
+          <mxGeometry height="50" width="100" x="1010" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="error-msg" parent="system-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#333333;fontSize=11;" value="Show error" vertex="1">
+          <mxGeometry height="40" width="80" x="860" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="success-msg" parent="system-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#333333;fontSize=11;" value="Show success" vertex="1">
+          <mxGeometry height="40" width="90" x="1190" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="label-yes" parent="system-lane" style="text;html=1;align=center;fontSize=10;fontColor=#2E7D32;" value="Yes" vertex="1">
+          <mxGeometry height="20" width="30" x="760" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="label-no" parent="system-lane" style="text;html=1;align=center;fontSize=10;fontColor=#C62828;" value="No" vertex="1">
+          <mxGeometry height="20" width="25" x="710" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="label-exists-yes" parent="system-lane" style="text;html=1;align=center;fontSize=9;fontColor=#2E7D32;" value="Yes" vertex="1">
+          <mxGeometry height="15" width="25" x="835" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="label-exists-no" parent="system-lane" style="text;html=1;align=center;fontSize=9;fontColor=#C62828;" value="No" vertex="1">
+          <mxGeometry height="15" width="25" x="870" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="parent-lane" parent="1" style="swimlane;startSize=30;horizontal=1;fillColor=#E8F5E9;strokeColor=#333333;fontStyle=1;fontSize=13;" value="Parent" vertex="1">
+          <mxGeometry height="140" width="1320" x="40" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="view-diary" parent="parent-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="View diary&#xa;in app" vertex="1">
+          <mxGeometry height="50" width="100" x="910" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="receive-message" parent="parent-lane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=11;" value="Receive message&#xa;notification" vertex="1">
+          <mxGeometry height="50" width="110" x="1060" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow1" edge="1" parent="1" source="start" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="select-date">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow2" edge="1" parent="1" source="select-date" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="load-students">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow3" edge="1" parent="1" source="load-students" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="display-list">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow4" edge="1" parent="1" source="display-list" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="select-student">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow5" edge="1" parent="1" source="select-student" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.9;exitY=0.944;exitDx=0;exitDy=0;exitPerimeter=0;" target="load-existing">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="530" y="160" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow6" edge="1" parent="1" source="load-existing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="write-diary">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow7" edge="1" parent="1" source="write-diary" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="click-save">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow8" edge="1" parent="1" source="click-save" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="validate-save">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="860" y="260" />
+              <mxPoint x="640" y="260" />
+              <mxPoint x="640" y="420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow9" edge="1" parent="1" source="validate-save" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" target="error-msg">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="750" y="338" />
+              <mxPoint x="940" y="338" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow10" edge="1" parent="1" source="validate-save" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="has-report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow10b" edge="1" parent="1" source="has-report" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="update-report">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="880" y="370" />
+              <mxPoint x="1060" y="370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow10c" edge="1" parent="1" source="has-report" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="create-report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow11a" edge="1" parent="1" source="update-report" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="success-msg">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1080" y="345" />
+              <mxPoint x="1125" y="345" />
+              <mxPoint x="1125" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow11b" edge="1" parent="1" source="create-report" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="success-msg">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1275" y="420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow12" edge="1" parent="1" source="update-report" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" target="view-diary">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1030" y="345" />
+              <mxPoint x="980" y="345" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow12b" edge="1" parent="1" source="create-report" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" target="view-diary">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1000" y="405" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow13" edge="1" parent="1" source="success-msg" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="send-message">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1120" y="180" />
+              <mxPoint x="1005" y="180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow14" edge="1" parent="1" source="error-msg" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" target="write-diary">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="750" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow15" edge="1" parent="1" source="send-message" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="more-students">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow16" edge="1" parent="1" source="send-message" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="receive-message">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1160" y="140" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow17" edge="1" parent="1" source="more-students" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="select-student">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1215" y="80" />
+              <mxPoint x="500" y="80" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow18" edge="1" parent="1" source="more-students" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

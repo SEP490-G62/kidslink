@@ -28,6 +28,7 @@
     2. School Admin kiểm tra và xử lý lại.
 
 ## English
+- **Use Case Name:** Manage Tuition Fees
 - **Description:** School Admin creates, edits, deletes fees; configures fees for multiple classes; tracks, approves, and confirms tuition payments for each student.
 - **Primary Actor:** School Admin
 - **Secondary Actors:** Parent, System

@@ -1,0 +1,55 @@
+Label			USID01	USID02	USID03	USID04	USID05	USID06	USID07	USID08	USID09	USID10	USID11	USID12
+Precondition			
+Can connect with server			O	O	O	O	O	O	O	O	O	O	O	O
+Requester authenticated			O	O	O	O	O	O	O	O	O	O	O	O
+Requester has permission			O	O	O		O	O	O	O	O	O	O	O
+Student exists			O	O			O	O	O	O	O	O	O	O
+CONDITION - Requester role:			
+admin			O		O	O		O	O	O	O	O	O	O
+school_admin				O			O								
+CONDITION - Input:			
+full_name provided			O	O	O	O	O			O			O	O
+date_of_birth provided				O										
+gender provided			O										O	
+status provided										O	O	O
+class_id provided							O	O	O			
+Valid ID format			O	O		O	O	O	O	O	O	O	O	O
+CONDITION - Validation:			
+Student ID invalid					O								
+Student not found						O							
+School_admin - student different school							O						
+Class not found								O					
+Class different school									O				
+Student in another class same year										O			
+CONDITION - Update scope:			
+Update full_name			O	O	O	O	O						O	O
+Update gender			O										O	
+Update medical_condition											O	
+Update status										O	O	O
+Update class_id							O	O	O			
+Update multiple fields											O	O
+CONDITION - Class transfer:			
+Transfer to different academic year							O						
+Transfer within same year (blocked)										O	
+RETURN:			
+success: true			O	O				O				O	O	O
+success: false					O	O		O	O	O				
+data returned			O	O				O				O	O	O
+student updated			O	O				O				O	O	O
+Exception:			
+200			O	O				O				O	O	O
+400					O				O	O			
+403						O							
+404							O							
+Log message:			
+Cập nhật thành công			O	O				O				O	O	O
+student_id không hợp lệ					O								
+Không tìm thấy học sinh							O							
+Bạn không có quyền chỉnh sửa học sinh thuộc trường khác							O						
+Không tìm thấy lớp học								O					
+Không thể chuyển học sinh sang lớp thuộc trường khác									O				
+Học sinh đã có trong lớp khác trong năm học										O			
+Type (N/A/B)			N	N	A	A	A	A	A	A	A	N	N	N
+Passed/Failed			P	P	P	P	P	P	P	P	P	P	P	P
+Executed Date			12/06	12/06	12/06	12/06	12/06	12/06	12/06	12/06	12/06	12/06	12/06	12/06
+Defect ID

@@ -1,0 +1,43 @@
+Test Case ID	Test Case Description	Test Case Procedure	Expected Results	Pre-conditions
+Scenario A - Post Moderation and Approval Workflow				
+TC_ADMIN_01	School admin views all posts	1) Login as school_admin; 2) Open page "Bài viết" (/school-admin/posts); 3) Set bộ lọc "Trạng thái" = "Tất cả"; 4) Scroll/paginate list	List loads pending/approved/rejected; pagination OK; status badges đúng màu	School admin logged in; Posts exist
+TC_ADMIN_02	View pending posts only	1) Login; 2) Page "Bài viết"; 3) Bộ lọc "Trạng thái" = "Chờ duyệt"; 4) Verify only pending items	Only pending posts shown; badge "Chờ duyệt"; filter stays after refresh/pagination	Pending posts exist
+TC_ADMIN_03	Approve pending post	1) Login; 2) "Bài viết" filter = Chờ duyệt; 3) Open post detail; 4) Click nút "Duyệt" (Approve), confirm dialog; 5) Observe status = "Đã duyệt"	Status → Approved; toast "Duyệt thành công" (hoặc tương đương); post visible to all; creator gets notification	Pending post exists; Approval permission
+TC_ADMIN_04	Reject pending post	1) Login; 2) "Bài viết" filter = Chờ duyệt; 3) Open post; 4) Click nút "Từ chối" (Reject); nhập "Lý do từ chối"; Confirm; 5) Observe status	Status → Rejected; reason saved; toast "Từ chối thành công"; post hidden from public; creator notified with reason	Pending post exists; Approval permission
+TC_ADMIN_05	Create official post (approved)	1) Login; 2) Click "Tạo bài viết"; 3) Fill Title/Content/Images; set "Trạng thái" = "Đã duyệt" or "Đăng"; 4) Click "Đăng"/"Lưu"	Post created with status Approved; toast 201 success; appears immediately to users	School admin logged in
+TC_ADMIN_06	Update existing post	1) Login; 2) Open post; 3) Click "Chỉnh sửa"; 4) Update content; 5) Click "Lưu"	Post updated; toast 200; new content visible; edit timestamp recorded	Post exists
+TC_ADMIN_07	Delete inappropriate post	1) Login; 2) Select post; 3) Click "Xóa"; 4) Confirm popup	Post deleted; toast "Xóa thành công"; removed from list; comments/likes removed	Post exists
+TC_ADMIN_08	View post with images	1) Login; 2) Open post with attachments; 3) View image preview/slideshow	Images render correctly; zoom works; no load errors	Post with images exists
+Scenario B - Comment and Like Moderation				
+TC_ADMIN_09	View comments of a post	1) Login; 2) Open post detail; 3) Switch to tab "Bình luận"	Comments list loads with author names and timestamps	Post has comments
+TC_ADMIN_10	Delete violating comment	1) Login; 2) Open post; 3) On violating comment click "Xóa"; 4) Confirm	Comment removed; toast "Xóa thành công"; post updates; optional notify commenter	Violating comment exists
+TC_ADMIN_11	View list of likes	1) Login; 2) Open post; 3) Click like count/icon to open modal "Danh sách lượt thích"	Modal shows users who liked; like count matches	Post has likes
+TC_ADMIN_12	Disable comments for post	1) Login; 2) Open post; 3) Toggle "Cho phép bình luận" = Off; 4) Click "Lưu"	Comment form hidden/disabled; new comments blocked; old comments hidden per config	Post exists; Edit permission
+Scenario C - Complaint Management and Resolution				
+TC_ADMIN_13	View complaint statistics	1) Login; 2) Open "Dashboard Khiếu nại"; 3) Select date range (if any); 4) Observe stat cards	Stats show totals by status (Chờ duyệt/Đã duyệt/Đã từ chối) and by type; load OK	Complaint data exists
+TC_ADMIN_14	View complaint list	1) Login; 2) Open menu "Khiếu nại"; 3) Status filter = "Tất cả"; 4) View list & pagination	All complaints shown; filters and pagination work	Complaint data exists
+TC_ADMIN_15	View complaint detail	1) Login; 2) In list click a complaint row; 3) Detail page/drawer opens	Shows type, title, description, status, creator, student (if any), timestamps	Complaint exists
+TC_ADMIN_16	Approve and resolve complaint	1) Login; 2) Filter "Chờ duyệt"; 3) Open complaint; 4) Click "Duyệt"; 5) Enter "Nội dung xử lý"; 6) Confirm	Status → Approved; resolution saved; success toast; creator notified	Complaint pending; Approval permission
+TC_ADMIN_17	Reject complaint	1) Login; 2) Filter "Chờ duyệt"; 3) Open complaint; 4) Click "Từ chối"; 5) Enter "Lý do"; 6) Confirm	Status → Rejected; reason saved; creator notified	Complaint pending; Approval permission
+TC_ADMIN_18	Mark complaint in-progress	1) Login; 2) Open pending complaint; 3) Set Status = "Đang xử lý"; 4) Click "Lưu"	Status → In-progress; parent sees processing; admin sees status	Complaint pending
+TC_ADMIN_19	Add internal note	1) Login; 2) Open complaint; 3) Add text into "Ghi chú nội bộ"; 4) Click "Lưu"	Internal note stored for admins only; hidden from parent; toast 200	Complaint exists
+Scenario D - Complaint Type Management				
+TC_ADMIN_20	View complaint types	1) Login; 2) Go to Settings > "Loại khiếu nại"; 3) View table	List of types with descriptions loads	School admin logged in
+TC_ADMIN_21	Create new complaint type	1) Login; 2) At "Loại khiếu nại" click "Thêm"; 3) Enter "Tên", "Mô tả"; 4) Click "Lưu"	New type created; appears in list and complaint form	School admin logged in
+TC_ADMIN_22	Update complaint type	1) Login; 2) Select a type; 3) Click "Chỉnh sửa"; 4) Update "Mô tả"; 5) "Lưu"	Type updated; list and form reflect change	Type exists
+TC_ADMIN_23	Delete unused complaint type	1) Login; 2) Select type with no complaints; 3) Click "Xóa"; 4) Confirm	Type deleted; list refreshed; removed from form	Type has no linked complaints
+TC_ADMIN_24	Cannot delete type in use	1) Login; 2) Select type in use; 3) Click "Xóa"; 4) Observe error	Error message "Loại đang được sử dụng" (400); type not deleted	Type linked to complaints
+TC_ADMIN_25	Reorder complaint types	1) Login; 2) In "Loại khiếu nại" drag-drop order; 3) Click "Lưu thứ tự"	New order saved and shown in selection form	Multiple types exist
+Scenario E - School Information and Settings Management				
+TC_ADMIN_26	View school info	1) Login; 2) Go to "Cài đặt trường"; 3) View info card	Name, address, phone, email, logo displayed; load OK	School admin logged in
+TC_ADMIN_27	Update school info	1) Login; 2) In "Cài đặt trường" click "Chỉnh sửa"; 3) Update address/phone; 4) Click "Lưu"	Info updated; shown across app; success toast	School admin logged in
+TC_ADMIN_28	Upload school logo	1) Login; 2) In "Cài đặt trường" click "Tải logo"; 3) Select file; 4) Preview; 5) Click "Lưu"	Logo saved and shown in header; no format errors	School admin logged in; Valid image file
+TC_ADMIN_29	Update contact info	1) Login; 2) In "Cài đặt trường" update phone/email/website fields; 3) Click "Lưu"	Contact info updated; parents see new values	School admin logged in
+TC_ADMIN_30	View school statistics	1) Login; 2) Go to "Dashboard"; 3) Check stat cards	Cards show totals (students/classes/teachers/parents) and active users; load OK	School admin logged in
+Scenario F - Announcement and Notification Management				
+TC_ADMIN_31	Create school announcement	1) Login; 2) Go to "Thông báo"; 3) Click "Tạo thông báo"; 4) Enter Title/Content/Target Audience/Publish Date; 5) Click "Đăng"/"Gửi"	Announcement created (201 toast); visible to target audience; notifications sent	School admin logged in
+TC_ADMIN_32	Update announcement	1) Login; 2) Open announcement; 3) Click "Chỉnh sửa"; 4) Update content; 5) Click "Lưu"	Announcement updated; 200 toast; recipients get update notification (if enabled)	Announcement exists
+TC_ADMIN_33	Archive announcement	1) Login; 2) Select old announcement; 3) Click "Lưu trữ"; 4) Confirm	Status = archived; hidden from main list; viewable in archive	Announcement exists
+TC_ADMIN_34	Send bulk notifications	1) Login; 2) Go to "Thông báo" hoặc "Notifications"; 3) Enter message; 4) Select "Đối tượng"/Target Role; 5) Click "Gửi"	Notifications sent to all users of role; success status	School admin logged in
+Scenario G - Activity Logs and Audit Trail				
+TC_ADMIN_35	View activity logs	1) Login; 2) Open "Nhật ký" (Logs); 3) Set Filter = "Tất cả"; 4) Check pagination and content	Logs show timestamp, user, action, changes; pagination works	School admin logged in; Logs exist

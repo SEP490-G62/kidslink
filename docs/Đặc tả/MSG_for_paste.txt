@@ -1,0 +1,242 @@
+1	MSG-02	Warning	Form Validation	Trường này là bắt buộc.
+2	MSG-03	Error	Form Validation	Định dạng nhập không hợp lệ.
+3	MSG-04	Success	User Registration	Đăng ký thành công!
+4	MSG-05	Success	User Login	Đăng nhập thành công!
+5	MSG-06	Error	User Login	Tên đăng nhập hoặc mật khẩu không đúng.
+6	MSG-07	Error	User Login	Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.
+7	MSG-08	Error	User Login	Trường học đã bị vô hiệu hóa. Vui lòng liên hệ quản trị hệ thống.
+8	MSG-09	Error	Token Validation	Token không khả dụng.
+9	MSG-10	Error	Token Validation	Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.
+11	MSG-11	Error	Token Validation	Token không hợp lệ. Vui lòng đăng nhập lại.
+12	MSG-12	Success	Password Reset	Email đặt lại mật khẩu đã được gửi đến địa chỉ email của bạn.
+13	MSG-13	Error	Password Reset	Không tìm thấy email. Vui lòng kiểm tra và thử lại.
+14	MSG-14	Success	Password Change	Đổi mật khẩu thành công!
+15	MSG-15	Error	Password Change	Mật khẩu cũ không đúng.
+16	MSG-16	Error	Password Validation	Mật khẩu phải có 8-16 ký tự bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
+17	MSG-17	Error	Duplicate Data	Tên đăng nhập đã tồn tại. Vui lòng chọn tên đăng nhập khác.
+18	MSG-18	Error	Duplicate Data	Email đã tồn tại. Vui lòng sử dụng email khác.
+19	MSG-19	Error	Duplicate Data	Số điện thoại đã tồn tại. Vui lòng sử dụng số điện thoại khác.
+20	MSG-20	Error	Email Validation	Email không hợp lệ.
+21	MSG-21	Error	Phone Validation	Số điện thoại phải theo định dạng di động Việt Nam.
+22	MSG-22	Error	URL Validation	URL phải là địa chỉ http hoặc https hợp lệ.
+23	MSG-23	Success	Student Management	Tạo học sinh thành công!
+24	MSG-24	Success	Student Management	Cập nhật học sinh thành công!
+25	MSG-25	Success	Student Management	Xóa học sinh thành công!
+26	MSG-26	Error	Student Management	Không tìm thấy học sinh.
+27	MSG-27	Error	Student Management	Học sinh không thuộc trường của bạn.
+28	MSG-28	Error	Date Validation	Ngày sinh phải là ngày hợp lệ trong quá khứ.
+29	MSG-29	Error	Gender Validation	Giới tính phải là: nam, nữ hoặc khác.
+30	MSG-30	Success	Class Management	Tạo lớp học thành công!
+31	MSG-31	Success	Class Management	Cập nhật lớp học thành công!
+32	MSG-32	Success	Class Management	Xóa lớp học thành công!
+33	MSG-33	Error	Class Management	Không tìm thấy lớp học.
+34	MSG-34	Error	Class Management	Không thể xóa lớp có học sinh đang học.
+35	MSG-35	Error	Number Validation	Sĩ số tối đa phải là số dương.
+36	MSG-36	Success	Teacher Management	Tạo giáo viên thành công!
+37	MSG-37	Success	Teacher Management	Cập nhật giáo viên thành công!
+38	MSG-38	Success	Teacher Management	Xóa giáo viên thành công!
+39	MSG-39	Error	Teacher Management	Không tìm thấy giáo viên.
+40	MSG-40	Error	Teacher Profile	Thiếu thông tin hồ sơ giáo viên (trình độ, chuyên ngành, số năm kinh nghiệm).
+41	MSG-41	Error	Number Validation	Số năm kinh nghiệm phải là số không âm.
+42	MSG-42	Success	Parent Management	Tạo phụ huynh thành công!
+43	MSG-43	Error	Parent Management	Không tìm thấy phụ huynh.
+44	MSG-44	Error	Username Validation	Tên đăng nhập phải có ít nhất 4 ký tự.
+45	MSG-45	Error	Username Validation	Tên đăng nhập chỉ được chứa chữ, số, dấu chấm, gạch dưới và gạch ngang.
+46	MSG-46	Success	Daily Report	Tạo nhận xét hàng ngày thành công!
+47	MSG-47	Success	Daily Report	Cập nhật nhận xét hàng ngày thành công!
+48	MSG-48	Error	Daily Report	Không tìm thấy nhận xét hàng ngày.
+49	MSG-49	Error	Health Status Validation	Tình trạng sức khỏe phải là giá trị hợp lệ.
+50	MSG-50	Success	Calendar Management	Tạo sự kiện lịch thành công!
+51	MSG-51	Success	Calendar Management	Cập nhật sự kiện lịch thành công!
+52	MSG-52	Success	Calendar Management	Xóa sự kiện lịch thành công!
+53	MSG-53	Error	Calendar Management	Không tìm thấy sự kiện lịch.
+54	MSG-54	Success	Slot Management	Tạo tiết học thành công!
+55	MSG-55	Success	Slot Management	Cập nhật tiết học thành công!
+56	MSG-56	Success	Slot Management	Xóa tiết học thành công!
+57	MSG-57	Error	Slot Management	Không tìm thấy tiết học.
+58	MSG-58	Error	Time Validation	Giờ kết thúc phải sau giờ bắt đầu.
+59	MSG-59	Error	Time Validation	Định dạng giờ không hợp lệ. Sử dụng định dạng HH:MM.
+60	MSG-60	Success	Fee Management	Tạo khoản thu thành công!
+61	MSG-61	Success	Fee Management	Cập nhật khoản thu thành công!
+62	MSG-62	Error	Fee Management	Không tìm thấy khoản thu.
+63	MSG-63	Error	Amount Validation	Số tiền phải là số dương.
+64	MSG-64	Error	Fee Type Validation	Loại khoản thu không hợp lệ.
+65	MSG-65	Success	Payment Processing	Xử lý thanh toán thành công!
+66	MSG-66	Error	Payment Processing	Số tiền thanh toán không khớp với khoản thu.
+67	MSG-67	Error	Payment Processing	Phương thức thanh toán không hợp lệ.
+68	MSG-68	Success	Post Management	Tạo bài viết thành công!
+69	MSG-69	Success	Post Management	Cập nhật bài viết thành công!
+70	MSG-70	Success	Post Management	Xóa bài viết thành công!
+71	MSG-71	Error	Post Management	Không tìm thấy bài viết.
+72	MSG-72	Error	Post Validation	Tiêu đề bài viết không được để trống.
+73	MSG-73	Error	Post Validation	Nội dung bài viết không được để trống.
+74	MSG-74	Error	Authorization	Bạn chỉ có thể chỉnh sửa hoặc xóa bài viết của mình.
+75	MSG-75	Success	Comment Management	Tạo bình luận thành công!
+76	MSG-76	Success	Comment Management	Cập nhật bình luận thành công!
+77	MSG-77	Success	Comment Management	Xóa bình luận thành công!
+78	MSG-78	Error	Comment Management	Không tìm thấy bình luận.
+79	MSG-79	Error	Comment Validation	Nội dung bình luận không được để trống.
+80	MSG-80	Error	Authorization	Bạn chỉ có thể chỉnh sửa hoặc xóa bình luận của mình.
+81	MSG-81	Error	ObjectId Validation	ID bình luận cha không hợp lệ.
+82	MSG-82	Success	Like Management	Đã thích bài viết!
+83	MSG-83	Success	Like Management	Đã bỏ thích bài viết!
+84	MSG-84	Error	Like Management	Bạn đã thích bài viết này rồi.
+85	MSG-85	Error	Like Management	Bạn chưa thích bài viết này.
+86	MSG-86	Success	Complaint Management	Gửi đơn thành công!
+87	MSG-87	Success	Complaint Management	Cập nhật đơn thành công!
+88	MSG-88	Error	Complaint Management	Không tìm thấy đơn.
+89	MSG-89	Error	Complaint Validation	Mô tả không được để trống.
+90	MSG-90	Error	Complaint Type	Không tìm thấy loại đơn.
+91	MSG-91	Error	Status Validation	Trạng thái đơn không hợp lệ.
+92	MSG-92	Success	Complaint Type Management	Tạo loại đơn thành công!
+93	MSG-93	Success	Complaint Type Management	Cập nhật loại đơn thành công!
+94	MSG-94	Success	Complaint Type Management	Xóa loại đơn thành công!
+95	MSG-95	Error	Complaint Type Validation	Tên loại đơn không được để trống.
+96	MSG-96	Error	Complaint Type Validation	Phải chọn loại người dùng.
+97	MSG-97	Success	Health Care	Tạo hồ sơ sức khỏe thành công!
+98	MSG-98	Success	Health Care	Cập nhật hồ sơ sức khỏe thành công!
+99	MSG-99	Error	Health Care	Không tìm thấy hồ sơ sức khỏe.
+100	MSG-100	Error	Number Validation	Chiều cao phải là số dương.
+101	MSG-101	Error	Number Validation	Cân nặng phải là số dương.
+102	MSG-102	Success	Nutrition Management	Tạo thực đơn thành công!
+103	MSG-103	Success	Nutrition Management	Cập nhật thực đơn thành công!
+104	MSG-104	Error	Nutrition Management	Không tìm thấy thực đơn.
+105	MSG-105	Error	Nutrition Validation	Phải chọn ít nhất một món ăn.
+106	MSG-106	Error	Nutrition Validation	Không tìm thấy món ăn.
+107	MSG-107	Error	ObjectId Validation	ID độ tuổi lớp không hợp lệ.
+108	MSG-108	Success	Dish Management	Tạo món ăn thành công!
+109	MSG-109	Success	Dish Management	Cập nhật món ăn thành công!
+110	MSG-110	Success	Dish Management	Xóa món ăn thành công!
+111	MSG-111	Error	Dish Management	Không tìm thấy món ăn.
+112	MSG-112	Success	Messaging	Gửi tin nhắn thành công!
+113	MSG-113	Error	Messaging	Không tìm thấy cuộc trò chuyện.
+114	MSG-114	Error	Messaging	Nội dung tin nhắn không được để trống.
+115	MSG-115	Error	Authorization	Bạn không phải thành viên của cuộc trò chuyện này.
+116	MSG-116	Success	Messaging	Đã đánh dấu tin nhắn là đã đọc.
+117	MSG-117	Error	Messaging	Không tìm thấy tin nhắn.
+118	MSG-118	Error	ObjectId Validation	Định dạng ObjectId không hợp lệ.
+119	MSG-119	Error	Authorization	Bạn không có quyền truy cập.
+120	MSG-120	Error	Authorization	Quản trị viên trường chưa được gán vào trường.
+121	MSG-121	Error	School Validation	Không tìm thấy trường học.
+122	MSG-122	Error	School Validation	ID trường học không hợp lệ.
+123	MSG-123	Error	Authorization	Người dùng không thuộc trường của bạn.
+124	MSG-124	Error	Authorization	Quản trị viên trường không thể quản lý vai trò người dùng này.
+125	MSG-125	Error	Role Validation	Vai trò không hợp lệ. Các vai trò cho phép: school_admin, teacher, parent, health_care_staff, nutrition_staff, admin.
+126	MSG-126	Success	Profile Update	Cập nhật hồ sơ thành công!
+127	MSG-127	Error	Profile Update	Không thể cập nhật hồ sơ. Vui lòng thử lại.
+128	MSG-128	Error	Database Error	Lỗi cơ sở dữ liệu. Vui lòng thử lại hoặc liên hệ hỗ trợ.
+129	MSG-129	Error	Server Error	Lỗi máy chủ. Vui lòng liên hệ hỗ trợ.
+130	MSG-130	Info	Session Expired	Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.
+131	MSG-131	Warning	Field Length Validation	Vượt quá độ dài tối đa {max_length} ký tự.
+132	MSG-132	Error	Array Validation	Định dạng mảng không hợp lệ.
+133	MSG-133	Error	Pickup Management	Không tìm thấy người đón.
+134	MSG-134	Success	Pickup Management	Thêm người đón thành công!
+135	MSG-135	Success	Pickup Management	Cập nhật người đón thành công!
+136	MSG-136	Success	Pickup Management	Xóa người đón thành công!
+137	MSG-137	Error	Relationship Validation	Loại quan hệ không hợp lệ. Phải là: bố, mẹ, người giám hộ hoặc khác.
+138	MSG-138	Success	School Management	Cập nhật thông tin trường thành công!
+139	MSG-139	Error	School Management	Không thể cập nhật thông tin trường.
+140	MSG-140	Error	File Upload	Tải file thất bại. Vui lòng thử lại.
+141	MSG-141	Error	File Validation	Định dạng file không hợp lệ.
+142	MSG-142	Error	File Validation	Kích thước file vượt quá giới hạn cho phép.
+143	MSG-143	Success	Image Upload	Tải ảnh thành công!
+144	MSG-144	Info	Loading	Đang tải dữ liệu...
+145	MSG-145	Success	Data Refresh	Làm mới dữ liệu thành công!
+146	MSG-146	Error	Network Error	Lỗi mạng. Vui lòng kiểm tra kết nối của bạn.
+147	MSG-147	Warning	Confirmation	Bạn có chắc muốn xóa mục này không?
+148	MSG-148	Warning	Confirmation	Bạn có chắc muốn thực hiện hành động này không?
+149	MSG-149	Success	Save Successful	Lưu thay đổi thành công!
+150	MSG-150	Error	Save Failed	Không thể lưu thay đổi. Vui lòng thử lại.
+151	MSG-151	Error	Form Validation	Tên đăng nhập là bắt buộc.
+152	MSG-152	Error	Form Validation	Mật khẩu là bắt buộc.
+153	MSG-153	Error	Form Validation	Mật khẩu phải có ít nhất 6 ký tự.
+154	MSG-154	Error	Login Failed	Đăng nhập thất bại.
+155	MSG-155	Error	Post Validation	Vui lòng nhập nội dung bài viết.
+156	MSG-156	Error	Post Management	Có lỗi xảy ra khi xóa bài viết.
+157	MSG-157	Error	Post Management	Lỗi không xác định.
+158	MSG-158	Error	Post Management	Có lỗi xảy ra khi lấy danh sách bài đăng.
+159	MSG-159	Error	Post Management	Có lỗi xảy ra khi lấy bài viết của bạn.
+160	MSG-160	Error	Like Management	Có lỗi xảy ra khi xử lý like.
+161	MSG-161	Error	Like Management	Có lỗi xảy ra khi lấy danh sách like.
+162	MSG-162	Error	Comment Management	Có lỗi xảy ra khi tạo comment.
+163	MSG-163	Error	Comment Management	Có lỗi xảy ra khi lấy danh sách comment.
+164	MSG-164	Error	Comment Management	Có lỗi xảy ra khi cập nhật comment.
+165	MSG-165	Error	Comment Management	Có lỗi xảy ra khi xóa comment.
+166	MSG-166	Error	Post Management	Có lỗi xảy ra khi tạo bài đăng.
+167	MSG-167	Error	Post Management	Có lỗi xảy ra khi cập nhật bài đăng.
+168	MSG-168	Error	Post Management	Có lỗi xảy ra. Vui lòng thử lại.
+169	MSG-169	Error	Complaint Management	Có lỗi xảy ra khi tải danh sách loại đơn.
+170	MSG-170	Error	Complaint Management	Có lỗi xảy ra khi tải danh sách đơn.
+171	MSG-171	Error	Complaint Management	Vui lòng chọn file ảnh.
+172	MSG-172	Error	Complaint Management	Vui lòng chọn loại đơn.
+173	MSG-173	Error	Complaint Management	Vui lòng nhập lý do hoặc nội dung.
+174	MSG-174	Error	Complaint Management	Có lỗi xảy ra khi gửi đơn.
+175	MSG-175	Error	Complaint Management	Có lỗi xảy ra khi lấy danh sách loại đơn.
+176	MSG-176	Error	Complaint Management	Có lỗi xảy ra khi lấy chi tiết đơn.
+177	MSG-177	Error	Validation	User ID không hợp lệ.
+178	MSG-178	Error	Parent Management	Có lỗi xảy ra khi lấy danh sách con.
+179	MSG-179	Error	Parent Management	Có lỗi xảy ra khi lấy thông tin cá nhân.
+180	MSG-180	Error	Parent Management	Có lỗi xảy ra khi cập nhật thông tin cá nhân.
+181	MSG-181	Error	Password Change	Có lỗi xảy ra khi đổi mật khẩu.
+182	MSG-182	Error	Student Management	Có lỗi xảy ra khi lấy thông tin học sinh.
+183	MSG-183	Error	Pickup Management	Có lỗi xảy ra khi thêm người đón.
+184	MSG-184	Error	Pickup Management	Có lỗi xảy ra khi cập nhật người đón.
+185	MSG-185	Error	Pickup Management	Có lỗi xảy ra khi xóa người đón.
+186	MSG-186	Error	Daily Report	Lỗi lấy daily reports.
+187	MSG-187	Error	Calendar Management	Lỗi lấy lịch lớp.
+188	MSG-188	Error	Nutrition Management	Lỗi lấy thực đơn tuần.
+189	MSG-189	Error	Fee Management	Có lỗi xảy ra khi lấy danh sách khoản thu.
+190	MSG-190	Error	Payment Processing	Có lỗi xảy ra khi tạo yêu cầu thanh toán.
+191	MSG-191	Error	Payment Processing	order_code không hợp lệ.
+192	MSG-192	Error	Messaging	Có lỗi xảy ra khi lấy danh sách cuộc trò chuyện.
+193	MSG-193	Error	Messaging	Có lỗi xảy ra khi lấy thông tin cuộc trò chuyện.
+194	MSG-194	Error	Messaging	Có lỗi xảy ra khi lấy danh sách tin nhắn.
+195	MSG-195	Error	Messaging	Có lỗi xảy ra khi gửi tin nhắn.
+196	MSG-196	Error	Messaging	Có lỗi xảy ra khi đánh dấu đã đọc.
+197	MSG-197	Error	Messaging	Có lỗi xảy ra khi lấy số lượng tin nhắn chưa đọc.
+198	MSG-198	Error	Messaging	Có lỗi xảy ra khi tạo nhóm chat cho lớp.
+199	MSG-199	Error	Messaging	Có lỗi xảy ra khi tạo trò chuyện.
+200	MSG-200	Error	Messaging	Có lỗi xảy ra khi lấy danh sách giáo viên.
+201	MSG-201	Error	Messaging	Có lỗi xảy ra khi lấy danh sách phụ huynh.
+202	MSG-202	Error	Health Care	Lỗi lấy danh sách lớp.
+203	MSG-203	Error	Health Care	Lỗi lấy học sinh theo lớp.
+204	MSG-204	Error	Health Care	Lỗi lấy hồ sơ sức khỏe.
+205	MSG-205	Error	Health Care	Lỗi tạo hồ sơ sức khỏe.
+206	MSG-206	Error	Health Care	Lỗi cập nhật sổ sức khỏe.
+207	MSG-207	Error	Health Care	Lỗi lấy thông báo y tế.
+208	MSG-208	Error	Health Care	Lỗi tạo thông báo y tế.
+209	MSG-209	Error	Health Care	Lỗi cập nhật thông báo y tế.
+210	MSG-210	Error	Health Care	Lỗi lấy profile.
+211	MSG-211	Error	Health Care	Lỗi cập nhật profile.
+212	MSG-212	Error	Health Care	Lỗi đổi mật khẩu.
+213	MSG-213	Error	Health Care	Lỗi xóa sổ sức khỏe.
+214	MSG-214	Error	Health Care	Lỗi xóa thông báo y tế.
+215	MSG-215	Success	Logout	Đăng xuất thành công.
+216	MSG-216	Error	Fee Management	Không tìm thấy thông tin hóa đơn.
+217	MSG-217	Error	Fee Management	Không tìm thấy phí nào phù hợp.
+218	MSG-218	Error	Fee Management	Không tìm thấy thông tin phí.
+219	MSG-219	Error	Form Validation	Phụ huynh cần có email để nhận thông tin.
+220	MSG-220	Error	Slot Management	Không tìm thấy thông tin lớp học.
+221	MSG-221	Error	Account Management	Bạn có chắc muốn kích hoạt tài khoản này không?
+222	MSG-222	Error	Account Management	Bạn có chắc muốn vô hiệu hóa tài khoản này không?
+223	MSG-223	Error	Account Management	Bạn có chắc muốn khóa tài khoản này không?
+224	MSG-224	Error	Account Management	Không thể khóa tài khoản.
+225	MSG-225	Error	Account Management	Không thể khôi phục tài khoản.
+226	MSG-226	Error	Attendance	Check in thành công cho {student_name}.
+227	MSG-227	Error	Attendance	Check out thành công cho {student_name}.
+228	MSG-228	Error	Attendance	Vui lòng kiểm tra lại thông tin lớp học.
+229	MSG-229	Error	Chat	Chưa đăng nhập.
+230	MSG-230	Error	Chat	Lỗi kết nối socket.
+231	MSG-231	Info	Daily Report	Vui lòng nhập nhận xét cho ít nhất một học sinh.
+232	MSG-232	Error	Daily Report	Có lỗi khi thực hiện nhận xét hàng loạt!
+233	MSG-233	Error	Daily Report	Lỗi khi cập nhật nhận xét!
+234	MSG-234	Error	Profile Update	Vui lòng nhập mật khẩu mới.
+235	MSG-235	Error	Profile Update	Vui lòng nhập mật khẩu hiện tại.
+236	MSG-236	Error	Profile Update	Vui lòng kiểm tra lại thông tin mật khẩu.
+237	MSG-237	Warning	Complaint Management	Vui lòng mô tả cụ thể thời gian, địa điểm hoặc các thông tin liên quan.
+238	MSG-238	Info	Complaint Management	Hỗ trợ JPG, PNG, GIF (tối đa 5MB).
+239	MSG-239	Info	Complaint Management	Nhà trường sẽ phản hồi trong mục "Danh sách đơn của tôi". Vui lòng kiểm tra thường xuyên để nhận thông báo mới.
+240	MSG-240	Info	Loading	Vui lòng chờ trong giây lát.
+241	MSG-241	Error	General Error	Có lỗi xảy ra.
+242	MSG-242	Info	Complaint Management	Không tìm thấy đơn nào cho bộ lọc.
+243	MSG-243	Error	Class Management	Không tìm thấy thông tin lớp học.

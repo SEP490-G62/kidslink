@@ -21,6 +21,7 @@
     2. School Admin bổ sung thông tin hoặc chọn lại lớp và lưu lại.
 
 ## English
+- **Use Case Name:** Manage Class Schedules
 - **Description:** School Admin creates, edits, or deletes class schedules for each class in the school.
 - **Primary Actor:** School Admin
 - **Secondary Actors:** Teacher, System

@@ -1,0 +1,50 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10	UTC11	UTC12	UTC13	UTC14	UTC15
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+school_admin				O	O	O	O	O		O	O	O	O	O	O	O	O	O
+admin									O					
+CONDITION - Input:				
+classId provided				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+startDate filter provided					O								
+endDate filter provided					O								
+CONDITION - Class:				
+Class exists				O	O	O		O	O	O	O	O	O	O	O	O	O	O
+Class not found							O						
+Class belongs to same school				O	O	O		O		O	O	O	O	O	O		O	O
+Class belongs to different school								O					
+CONDITION - School admin assignment:				
+School admin has school_id				O	O	O	O	O		O	O	O	O	O	O		O	O
+School admin missing school_id													O	
+CONDITION - Calendar data:				
+Has calendar entries				O	O	O		O	O	O	O	O	O	O	O		O	
+No calendar entries															O
+Multiple entries same day													O		
+Multiple entries different days				O		O		O	O	O	O	O	O	O		O	
+Calendar entries filtered by date					O								
+CONDITION - Response data:				
+Class info populated										O				O	O
+Teacher info populated											O			O	O
+TimeSlots returned												O		O	O	O
+Calendar entries with slot/activity/teacher													O		O	O
+Calendars sorted by date														O	O	O
+Return				
+TRUE				O	O	O		O	O	O	O	O	O	O	O		O	O
+FALSE							O	O					O		
+Exception				
+200				O	O	O		O	O	O	O	O	O	O	O		O	O
+400													O		
+403							O	O					
+404							O						
+Log message				
+Lấy lịch học của lớp thành công				O	O	O		O	O	O	O	O	O	O	O		O	O
+Không tìm thấy lớp học							O						
+Bạn không có quyền xem lớp thuộc trường khác								O					
+School admin chưa được gán trường học													O	
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A	A	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P	P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

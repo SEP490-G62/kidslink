@@ -1,0 +1,55 @@
+@startuml Attendance_Workflow
+!pragma layout smetana
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam rectangle {
+  BackgroundColor #E3F2FD
+  BorderColor #333333
+  FontSize 11
+}
+skinparam diamond {
+  BackgroundColor #FFF9C4
+  BorderColor #333333
+}
+
+rectangle "==Teacher" {
+  (Start: Access\nattendance page) as start
+  rectangle "Select class and\nattendance date" as select
+  rectangle "Mark status\nfor each student" as mark
+  start --> select
+}
+
+rectangle "==System" {
+  rectangle "Load student list\nfrom database" as load
+  rectangle "Display student\nlist with form" as display
+  rectangle "Validate\ndata?" as validate <<diamond>>
+  rectangle "Save attendance\nrecords to DB" as save
+  rectangle "Save\nsuccessful?" as checksave <<diamond>>
+  rectangle "Send notification\nto parents" as notify
+  rectangle "Show success\nmessage" as success
+  rectangle "Show error:\nInvalid data" as error1
+  rectangle "Show error:\nSave failed" as error2
+  
+  select --> load
+  load --> display
+  display --> mark
+  mark --> validate
+  validate --> save : yes
+  validate --> error1 : no
+  error1 --> mark
+  save --> checksave
+  checksave --> notify : yes
+  checksave --> error2 : no
+  error2 --> mark
+  notify --> success
+}
+
+rectangle "==Parent" {
+  rectangle "Receive absence\nnotification" as receive
+  (Finish) as end
+  
+  notify --> receive
+  receive --> end
+}
+
+@enduml
