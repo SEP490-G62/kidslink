@@ -1,0 +1,122 @@
+Test Case ID	Test Case Description	Test Case Procedure	Expected Results	Pre-conditions
+TC_ACAD_01	System admin creates new school	1. Login as admin [email: admin@test.com]
+2. Navigate to /admin/schools
+3. Click Create School
+4. Fill form [name, address, phone, email]
+5. Submit	School created successfully; Status 201; School saved in DB with unique ID; School status = active by default	System admin logged in
+TC_ACAD_02	Create school with duplicate name	1. Login as admin
+2. Attempt to create school with existing name
+3. Submit	System allows (names can be duplicate) or validation error if business rule requires unique names; Check business requirements	Admin logged in; School with same name exists
+TC_ACAD_03	School admin updates school information	1. Login as school_admin [email: schooladmin1@test.com]
+2. Navigate to /school-admin/school
+3. Update school info [address, phone]
+4. Save	School information updated; Status 200; Updated data saved in DB; Changes visible immediately	School admin logged in; Assigned to specific school
+TC_ACAD_04	School admin attempts to view other school's data	1. Login as schooladmin1 (School A)
+2. Attempt GET /school-admin/school/{school_B_id}
+3. Verify response	Access denied: Status 403 or returns null/empty; Data isolation maintained	Two schools exist; School admin assigned to School A
+TC_ACAD_05	School admin creates class age	1. Login as school_admin
+2. Navigate to class ages section
+3. POST /class-ages [name, age_from, age_to, school_id]
+4. Verify response	Class age created successfully; Status 201; Saved with school_id; Available for class creation	School admin logged in
+TC_ACAD_06	Create class with valid class age	1. Login as school_admin
+2. Navigate to /school-admin/classes
+3. Click Create Class
+4. Fill form [name, class_age_id, academic_year, capacity]
+5. Submit	Class created successfully; Status 201; Class linked to class age; Belongs to school_admin's school	School admin logged in; Class age exists
+TC_ACAD_07	Create class without required fields	1. Login as school_admin
+2. Attempt to create class without name
+3. Submit	Validation error: 'Class name is required'; Status 400; No class created	School admin logged in
+TC_ACAD_08	View list of classes for school	1. Login as school_admin
+2. GET /classes
+3. Verify response	Returns list of classes for school only; Status 200; Pagination works; Filters work (academic_year, class_age)	Classes exist for school
+TC_ACAD_09	School admin creates new student	1. Login as school_admin
+2. Navigate to /school-admin/children
+3. Click Add Student
+4. Fill form [name, date_of_birth, gender, address, school_id]
+5. Submit	Student created successfully; Status 201; Student saved with school_id; Status = active	School admin logged in
+TC_ACAD_10	Assign student to class	1. Login as school_admin
+2. Navigate to class detail page
+3. Click Add Students
+4. Select student(s)
+5. POST /classes/{classId}/students [student_id]
+6. Submit	Student added to class; Status 200; StudentClass record created; Student appears in class roster	Student exists; Class exists; Student not already in class
+TC_ACAD_11	Assign student already in another class	1. Student in Class A
+2. Attempt to add to Class B
+3. Submit	System allows if business rule permits or error: 'Student already in a class'; Check business requirements	Student in Class A; Class B exists
+TC_ACAD_12	Transfer student between classes	1. Login as school_admin
+2. Navigate to student detail
+3. Click Transfer Class
+4. POST /student/{id}/transfer [from_class_id, to_class_id]
+5. Submit	Student transferred successfully; Old StudentClass record updated/deleted; New StudentClass record created; Student appears in new class roster	Student in Class A; Class B exists
+TC_ACAD_13	Link parent to student	1. Login as school_admin
+2. Navigate to student detail
+3. Click Add Parent
+4. POST /student/{studentId}/parents [parent_id, relationship]
+5. Submit	Parent linked to student; Status 200; ParentStudent record created; Parent can now see student data	Student exists; Parent account exists
+TC_ACAD_14	Remove parent from student	1. Login as school_admin
+2. Navigate to student detail
+3. Select parent to remove
+4. DELETE /student/{studentId}/parents/{parentId}
+5. Confirm	Parent unlinked from student; Status 200; ParentStudent record deleted; Parent cannot see student data anymore	Parent linked to student
+TC_ACAD_15	Assign teacher to class	1. Login as school_admin
+2. Navigate to class detail
+3. Select teacher
+4. Update class [teacher_id]
+5. Save	Teacher assigned to class; Status 200; Class.teacher_id updated; Teacher can view class	Teacher account exists; Class exists
+TC_ACAD_16	Teacher views assigned class	1. Login as teacher [email: teacher1@test.com]
+2. Navigate to /teacher dashboard
+3. GET /teachers/class
+4. Verify response	Returns teacher's assigned class; Status 200; Class details displayed; Student list visible	Teacher assigned to class
+TC_ACAD_17	Teacher views student list	1. Login as teacher
+2. Navigate to class page
+3. GET /teachers/class/students
+4. Verify list	Returns students in teacher's class; Status 200; Correct number of students; Student details visible	Teacher assigned to class; Students in class
+TC_ACAD_18	Teacher attempts to view another class	1. Login as teacher1 (Class A)
+2. Attempt to access Class B data
+3. Verify response	Access denied or empty result; Teacher can only see assigned class	Teacher assigned to Class A; Class B exists
+TC_ACAD_19	Teacher checks in student	1. Login as teacher
+2. Navigate to attendance page
+3. Select date: today
+4. POST /teachers/daily-reports/checkin [student_id, checkin_time, temperature]
+5. Submit	Check-in successful; Status 201; DailyReport created; Student status = present	Teacher logged in; Student in class
+TC_ACAD_20	Check-in student already checked in	1. Student already checked in today
+2. Attempt to check-in again
+3. Submit	Error: 'Student already checked in'; Status 400; No duplicate record created	Student checked in today
+TC_ACAD_21	Teacher updates daily report comment	1. Login as teacher
+2. Navigate to daily report
+3. PUT /teachers/daily-reports/{id}/comment [comment]
+4. Save	Comment updated successfully; Status 200; Comment saved in DB; Parent can view comment	Daily report exists
+TC_ACAD_22	Teacher checks out student	1. Login as teacher
+2. Navigate to check-out page
+3. PUT /teachers/daily-reports/checkout [report_id, checkout_time, picked_by]
+4. Submit	Check-out successful; Status 200; DailyReport updated with checkout info; Student status = picked up	Daily report with check-in exists
+TC_ACAD_23	View weekly reports for student	1. Login as teacher
+2. Navigate to student detail
+3. GET /teachers/students/{id}/daily-reports/weekly
+4. Verify response	Returns 7 days of reports; Status 200; Correct student data; Sorted by date	Daily reports exist for student
+TC_ACAD_24	School admin creates time slots	1. Login as school_admin
+2. Navigate to /school-admin/calendar (slots)
+3. POST /school-admin/calendar/slots [slot_name, start_time, end_time]
+4. Submit	Time slot created; Status 201; Available for calendar assignment	School admin logged in
+TC_ACAD_25	Create activity	1. Login as school_admin
+2. POST /school-admin/calendar/activities [activity_name, description]
+3. Submit	Activity created; Status 201; Available for calendar assignment	School admin logged in
+TC_ACAD_26	Create class calendar entry	1. Login as school_admin
+2. Navigate to class calendar
+3. POST /school-admin/calendar/calendar/{calendarId} [class_id, slot_id, activity_id, weekday_id]
+4. Submit	Calendar entry created; Status 201; Schedule visible to teacher and parents	Class, slot, activity exist
+TC_ACAD_27	Bulk create weekly calendar	1. Login as school_admin
+2. POST /school-admin/calendar/calendar/bulk [array of calendar entries for full week]
+3. Submit	All entries created successfully; Status 200/201; Full week schedule visible	Class, slots, activities exist
+TC_ACAD_28	Teacher views class calendar	1. Login as teacher
+2. Navigate to /teacher/calendar
+3. GET /teachers/class-calendar
+4. Verify response	Returns class schedule; Status 200; Weekly view displayed; Activities and time slots shown	Teacher assigned to class; Calendar entries exist
+TC_ACAD_29	Delete calendar entry	1. Login as school_admin
+2. Navigate to calendar
+3. DELETE /school-admin/calendar/calendar/{calendarId}
+4. Confirm	Calendar entry deleted; Status 200; Entry removed from schedule	Calendar entry exists
+TC_ACAD_30	Promote class to next academic year	1. Login as school_admin
+2. Navigate to class detail (Lớp Mầm 1)
+3. POST /classes/{id}/promote [new_class_name, new_class_age_id, new_academic_year]
+4. Confirm	New class created; Status 201; All students transferred to new class; Old class archived or marked	Class exists with students; New class age exists

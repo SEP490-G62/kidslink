@@ -1,0 +1,57 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10	UTC11	UTC12	UTC13	UTC14	UTC15
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+teacher				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Input:				
+date provided in path				O	O		O	O	O	O	O	O	O	O	O	O	O	O
+date invalid format						O					
+date missing							O				
+class_id provided				O			O	O	O	O	O	O	O	O	O	O	O
+class_id missing					O								
+CONDITION - Teacher:				
+Teacher exists				O	O	O	O		O	O	O	O	O	O	O	O	O	O
+Teacher not found								O			
+Teacher has classes				O	O	O	O	O		O	O	O	O	O	O	O	O	O
+Teacher has no classes									O		
+CONDITION - Class:				
+Class belongs to teacher				O	O	O	O	O	O		O	O	O	O	O	O	O	O
+Class belongs to another teacher										O		
+Teacher is primary				O	O	O	O	O	O	O	O	O		O	O	O	O	O
+Teacher is secondary											O			
+CONDITION - Students:				
+Students exist in class				O		O	O	O	O	O		O	O	O	O	O	O	O
+No students in class												O	
+Students with checkin report				O		O	O	O	O	O			O	O	O	O	O	O
+Students without checkin report													O			
+Students with checkout report				O		O	O	O	O	O					O	O	O
+Student data populated														O		
+CONDITION - Class info:				
+Class info populated															O	O	O	O
+School populated															O	O	O	O
+CONDITION - Schedule:				
+Has calendar entry for date																O		
+No calendar entry for date																	O	
+CONDITION - Response structure:				
+All fields present																		O
+Return				
+TRUE				O	O			O		O	O	O	O	O	O	O	O	O
+FALSE						O	O	O	O	O			
+Exception				
+200				O	O			O		O	O	O	O	O	O	O	O	O
+400						O					
+403										O		
+404							O	O	O			
+Log message				
+Lấy danh sách điểm danh thành công				O	O			O		O	O	O	O	O	O	O	O	O
+Ngày không hợp lệ						O					
+Không tìm thấy giáo viên								O			
+Giáo viên chưa có lớp học									O		
+Không có quyền truy cập lớp này										O		
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A	A	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P	P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

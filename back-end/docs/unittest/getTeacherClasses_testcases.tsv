@@ -1,0 +1,39 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+teacher				O	O	O	O	O	O	O	O
+CONDITION - Teacher:				
+Teacher exists				O	O	O	O		O	O	O
+Teacher not exists					O			
+Teacher has profile				O	O	O	O		O	O	O
+CONDITION - Classes:				
+Teacher has classes as primary (teacher_id)				O		O	O		O	O	O
+Teacher has classes as secondary (teacher_id2)					O					O
+Teacher has no classes							O		
+Multiple academic years						O				
+Multiple classes same year							O			
+Teacher in both roles (primary & secondary)											O
+CONDITION - Data structure:				
+Grouped by academic_year						O	O	O	O	O	O	O
+Sorted by academic_year desc						O				
+Sorted by class_name asc within year							O			
+CONDITION - Population:				
+school_id populated										O	
+class_age_id populated										O	
+Return				
+TRUE				O	O	O	O		O	O	O
+FALSE					O			
+Exception				
+200				O	O	O	O		O	O	O
+404					O			
+Log message				
+Lấy danh sách lớp của giáo viên thành công				O	O	O	O		O	O	O
+Không tìm thấy giáo viên					O			
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

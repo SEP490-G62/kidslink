@@ -1,0 +1,56 @@
+Test Case ID	UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08
+Condition	Precondition				
+	Can connect with server				O	O	O	O	O	O	O	O
+	Requester authenticated				O	O	O	O	O	O	O	O
+	Requester has permission				O	O	O	O	O	O	O	O
+	Health care staff assigned to school				O	O	O	O	O		O	O
+	CONDITION - Requester role:
+	health_care_staff	O	O	O	O	O	O	O	O
+	CONDITION - Input:
+	student_id provided	O	O	O	O	O	O	O	O
+	checkup_date provided	O	O	O	O	O	O	O	O
+	height_cm provided	O	O	O	O	O	O	O	O
+	weight_kg provided	O	O	O	O	O	O	O	O
+	note provided	O	O	O	O	O	O	O	O
+	student_id missing					O
+	checkup_date missing						O
+	height_cm missing							O
+	weight_kg missing								O
+	note missing									O
+	student_id invalid format						O
+	CONDITION - Student:
+	Student exists in same school	O	O	O	O	O	O	O	O
+	Student from different school					O
+	Student does not exist						O
+	CONDITION - Health Care Staff:
+	Staff record exists	O	O	O	O	O	O	O	O
+	Staff record missing						O
+	CONDITION - School:
+	User has school_id	O	O	O	O	O	O		O
+	User without school_id								O
+	CONDITION - Data Format:
+	height_cm as decimal number	O
+	weight_kg as decimal number	O
+	height_cm as string	O	O	O	O	O	O	O
+	weight_kg as string	O	O	O	O	O	O	O
+	Return
+	TRUE	O							O
+	FALSE		O	O	O	O	O	O	O
+	Exception
+	201	O							O
+	400			O	O	O	O	O	O
+	403				O		O	O
+	404					O	O
+	Log message
+	Tạo sổ sức khoẻ thành công	O							O
+	Thiếu trường dữ liệu		O
+	student_id không hợp lệ			O
+	Không tìm thấy học sinh				O
+	Không có quyền tạo sổ sức khỏe cho học sinh này			O
+	Không tìm thấy nhân viên y tế					O
+	Không tìm thấy thông tin trường học						O
+	Result
+	Type (N/A/B)	N	A	A	A	A	A	A	A
+	Passed/Failed	P	P	P	P	P	P	P	P
+	Executed Date	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+	Defect ID

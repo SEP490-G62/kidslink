@@ -1,0 +1,57 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10	UTC11	UTC12	UTC13	UTC14	UTC15
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+teacher				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Input:				
+student_id provided				O		O	O	O	O	O	O	O	O	O	O	O	O	O
+student_id missing					O									
+student_id invalid format						O								
+student_id valid ObjectId				O		O	O	O	O	O	O	O	O	O	O	O	O	O
+report_date provided				O	O	O	O	O	O	O	O	O		O	O	O	O	O
+report_date not provided									O				
+CONDITION - Student:				
+Student exists				O	O	O		O	O	O	O	O	O	O	O	O	O	O
+Student not found							O						
+Student active (status=1)				O	O	O	O		O	O	O	O	O	O	O	O	O	O
+Student inactive (status=0)								O					
+CONDITION - Class:				
+Student in teacher's class				O	O	O	O	O		O	O	O	O	O	O	O	O	O
+Student not in teacher's class									O				
+Teacher is primary (teacher_id)				O	O	O	O	O	O	O	O	O	O		O	O	O	O
+Teacher is secondary (teacher_id2)														O			
+Class has schedule for date				O	O	O	O	O	O		O	O	O	O	O	O	O	O
+Class no schedule for date										O			
+CONDITION - Daily Report:				
+Student checked in				O	O	O	O	O	O	O		O	O	O	O	O	O	O
+Student not checked in											O		
+Student already checked out												O	
+Student has comments													O	O	O	O
+CONDITION - Multiple students:				
+Single student checkout				O	O	O	O	O	O	O	O	O	O	O	O	O	O	
+Multiple students same day															O
+Return				
+TRUE				O										O	O	O	O	O
+FALSE					O	O	O	O	O	O	O	O				O			
+Exception				
+200				O										O	O	O	O	O
+400					O	O			O		O									
+403							O	O							
+404									O		O					
+Log message				
+Checkout thành công				O										O	O	O	O	O
+student_id là bắt buộc					O									
+student_id không hợp lệ						O								
+Không tìm thấy học sinh							O						
+Chỉ có thể thao tác với học sinh đang hoạt động								O					
+Học sinh không thuộc lớp mà bạn phụ trách									O				
+Lớp không có lịch học trong ngày đã chọn										O			
+Không tìm thấy báo cáo checkin cho học sinh trong ngày											O		
+Học sinh đã được checkout												O	
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A	A	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P	P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

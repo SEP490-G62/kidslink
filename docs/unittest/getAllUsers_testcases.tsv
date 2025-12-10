@@ -1,0 +1,41 @@
+Label			UTCID01	UTCID02	UTCID03	UTCID04	UTCID05	UTCID06	UTCID07	UTCID08	UTCID09
+Precondition			
+Can connect with server			O	O	O	O	O	O	O	O	O
+Requester authenticated			O	O	O	O	O		O	O	O
+Requester has valid role			O	O	O	O	O		O		O
+CONDITION - Requester role:			
+admin			O								
+school_admin				O	O	O	O		O	O	O
+teacher									O		
+CONDITION - Query params:			
+No params (default)			O	O							
+page=2, limit=10					O						
+role=teacher						O					
+role=admin (school_admin requests)							O				
+status=1 (active)									O		
+CONDITION - Authorization:			
+Not authenticated						O			
+Unauthorized role (teacher)									O	
+School admin missing school_id										O
+Additional conditions:			
+Valid pagination			O	O	O	O	O	O	O	O	O
+School admin can only see manageable roles				O	O					O	O
+Admin can see all roles			O								
+Return			
+200 with user list			O	O	O				O		
+400 bad request							O			O
+401 unauthorized						O			
+403 forbidden									O	
+Exception			
+200			O	O	O				O		
+400							O			O
+401						O			
+403									O	
+Log message			
+Lấy danh sách users thành công			O	O	O				O		
+School admin chỉ được xem các vai trò được cho phép							O			
+Tài khoản school_admin chưa được gán trường										O
+Type (N/A/B)			N	N	N	N	N	A	A	A	A
+Passed/Failed			P	P	P	P	P	P	P	P	P
+Executed Date			12/03	12/03	12/03	12/03	12/03	12/03	12/03	12/03	12/03
+Defect ID			

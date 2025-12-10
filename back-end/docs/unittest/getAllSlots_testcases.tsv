@@ -1,0 +1,39 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10	UTC11	UTC12	UTC13	UTC14	UTC15
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+school_admin				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+admin							O									
+CONDITION - School:				
+School exists				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+School admin assigned to school				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Slots data:				
+Slots exist (own school)				O	O	O		O	O	O	O	O	O		O	O	O	O
+Slots exist (other school)					O	O							O				
+No slots exist							O									O		
+Slots sorted by start_time								O						O	O
+Multiple slots (30+)															O
+CONDITION - Slot fields:				
+Slot has startTime/endTime				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Time format HH:mm											O				
+Long slot name preserved								O							
+Special characters in name														O
+CONDITION - Data visibility:				
+school_admin sees only own school					O								O				
+admin sees all schools						O											
+Deleted slots excluded									O							
+Internal fields not exposed													O			
+Return				
+TRUE				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+FALSE							
+Exception				
+200				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Log message				
+Lấy danh sách slots thành công				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A	A	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P	P	P	P	P	P	P	P	P
+Executed Date				12/10	12/10	12/10	12/10	12/10	12/10	12/10	12/10	12/10	12/10	12/10	12/10	12/10	12/10	12/10
+Defect ID				

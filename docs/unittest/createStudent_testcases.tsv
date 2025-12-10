@@ -1,0 +1,46 @@
+Label			UTCID01	UTCID02	UTCID03	UTCID04	UTCID05	UTCID06	UTCID07	UTCID08	UTCID09	UTCID10	UTCID11	UTCID12
+Precondition			
+Can connect with server			O	O	O	O	O	O	O	O	O	O	O	O
+Requester authenticated			O	O	O	O	O	O	O	O	O	O	O	
+Requester has permission (school_admin or admin)			O	O	O	O	O	O	O	O	O	O	O	
+School exists and is active			O	O	O	O	O	O	O	O	O	O		
+Class exists and belongs to school			O	O	O	O	O	O	O	O	O			
+CONDITION - Requester role:			
+school_admin			O	O	O	O	O	O	O	O	O	O	O	
+teacher													O
+CONDITION - Input fields:			
+full_name provided			O	O	O	O	O	O	O	O	O	O	O	O
+date_of_birth provided			O	O	O	O	O	O	O	O	O	O		O
+class_id provided			O	O	O	O	O	O	O	O	O		O	O
+gender (optional)			O	O		O	O	O	O	O	O	O	O	O
+avatar (optional)				O	O	O	O	O	O	O	O	O	O
+medical_condition (optional)			O	O	O	O	O	O	O	O	O	O	O	O
+parents (optional)			O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Validation:			
+class belongs to school			O	O	O	O	O	O	O	O	O	O		O
+school status is active			O	O	O	O	O	O	O	O		O	O	
+student not in same class twice same academic year			O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Error cases:			
+Missing date_of_birth					O				
+Missing class_id						O			
+Invalid class_id format							O		
+Class not found							O			
+School is disabled (status: 0)								O	O
+Teacher role unauthorized													O
+Return			
+true, message, student, parents			O	O						
+false, message only					O	O	O	O	O	O	O	O	O	O
+Exception			
+201 created			O	O						
+400 bad request					O	O	O	O	O	O	O	O	
+403 forbidden													O
+404 not found							O	O		
+Log message			
+Tạo học sinh thành công			O	O						
+Thiếu thông tin bắt buộc					O	O			O	
+Không tìm thấy lớp học							O	O		
+Trường học đang bị vô hiệu hóa, không thể thêm học sinh							O	O	
+Type (N/A/B)			N	N	A	A	A	A	A	A	A	A	N	A
+Passed/Failed			P	P	P	P	P	P	P	P	P	P	P	P
+Executed Date			12/04	12/04	12/04	12/04	12/04	12/04	12/04	12/04	12/04	12/04	12/04	12/04
+Defect ID

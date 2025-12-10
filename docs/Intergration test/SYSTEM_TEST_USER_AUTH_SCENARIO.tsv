@@ -1,0 +1,26 @@
+Test Case ID	Test Case Description	Test Case Procedure	Expected Results	Pre-conditions
+Scenario A - Login and Session Management				
+TC_AUTH_01	Login with valid account	1) Open login page "Đăng nhập"; 2) Enter Email = parent1@test.com, Password = correct; 3) Click "Đăng nhập"	Login success; redirect to dashboard; show user name/role; session cookie/token created	Account exists; Active status
+TC_AUTH_02	Login with wrong password	1) Open "Đăng nhập"; 2) Enter valid email, wrong password; 3) Click "Đăng nhập"	Error toast "Sai mật khẩu" (or equivalent); stay on login; no session created	Account exists
+TC_AUTH_03	Login with inactive/locked account	1) Open "Đăng nhập"; 2) Enter locked user credentials; 3) Click "Đăng nhập"	Error "Tài khoản bị khóa"; cannot login	Account locked/inactive
+
+TC_AUTH_05	Logout	1) While logged in; 2) Click avatar menu; 3) Click "Đăng xuất"	Session cleared; redirect to login page	User logged in
+TC_AUTH_06	Session timeout	1) Login; 2) Stay idle until token expiry; 3) Attempt navigation	Redirect to login; message "Phiên đã hết hạn, vui lòng đăng nhập lại"	Configured session expiry
+
+Scenario B - Admin-Provisioned Account (No Self-Registration)				
+TC_AUTH_07	School admin creates user	1) Login as school_admin; 2) Mở "Quản lý tài khoản" (hoặc "Người dùng"); 3) Click "Thêm tài khoản"; 4) Nhập Họ tên, Username, Mật khẩu, Email, Số điện thoại; 5) Chọn Vai trò (Phụ huynh/Giáo viên/Nhân viên/Y tế/Dinh dưỡng); 6) Nếu Vai trò = Giáo viên: điền hồ sơ giáo viên (Trình độ/Chuyên ngành/Năm kinh nghiệm); Nếu Vai trò = Phụ huynh: chọn Học sinh + Mối quan hệ; 7) Click "Lưu"	Toast "Tạo tài khoản thành công"; user hiển thị trong danh sách với vai trò đúng; trạng thái Active; đăng nhập được ngay bằng Username/Mật khẩu vừa tạo	Email/SĐT/Username chưa tồn tại; School admin logged in
+TC_AUTH_08	Cannot create duplicate username/email/phone	1) Login as school_admin; 2) "Quản lý tài khoản" -> "Thêm tài khoản"; 3) Nhập Username hoặc Email hoặc SĐT đã tồn tại; 4) Click "Lưu"	Hiển thị lỗi tương ứng: "Username đã tồn tại" hoặc "Email đã tồn tại" hoặc "SĐT đã tồn tại"; dialog không đóng; không tạo tài khoản mới	Username/Email/SĐT đã có; School admin logged in
+
+
+Scenario C - Password Reset / Forgot Password				
+TC_AUTH_10	Request password reset	1) Open "Quên mật khẩu"; 2) Enter registered email; 3) Click "Gửi"	Email/OTP reset sent; success message "Đã gửi hướng dẫn"; no login created	Email exists
+
+Scenario D - Role-Based Access and Navigation				
+TC_AUTH_13	Parent cannot access admin page	1) Login as parent; 2) Manually enter URL /school-admin/posts	Access denied (403) or redirect to home; message "Không có quyền truy cập"	Parent account logged in
+TC_AUTH_14	Teacher sees teacher dashboard	1) Login as teacher; 2) Auto-redirect to Teacher Dashboard (/teacher)	Teacher dashboard loads; role-specific menu visible	Teacher account logged in
+TC_AUTH_15	School admin sees admin menu	1) Login as school_admin; 2) Menu shows modules: Lớp, Học sinh, Bài viết, Khiếu nại, Thực đơn... 	Admin menus visible; access granted	School admin account logged in
+
+Scenario E - Security and Validation				
+TC_AUTH_16	Password complexity validation	1) On Thiết lập mật khẩu/Đổi mật khẩu, enter weak password (e.g., "123"); 2) Submit	Shows validation "Mật khẩu không hợp lệ"; blocked	Password policy configured
+TC_AUTH_17	Rate limit login attempts	1) Same user: enter wrong password 5 times quickly	Shows captcha/lockout message; further attempts blocked temporarily	Rate limiting enabled
+TC_AUTH_18	CSRF/invalid token on form	1) Submit protected form (e.g., change profile) with missing/invalid token	Request rejected; message "Phiên không hợp lệ"; no data change	CSRF protection enabled

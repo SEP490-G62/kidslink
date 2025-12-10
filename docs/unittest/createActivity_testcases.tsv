@@ -1,0 +1,36 @@
+Label			UTCID01	UTCID02	UTCID03	UTCID04	UTCID05
+Precondition			
+Can connect with server			O	O	O	O	O
+Requester authenticated			O	O	O	O	O
+Requester has permission			O	O	O			
+School admin assigned			O	O	O			
+CONDITION - Requester role:			
+school_admin			O	O	O	O	
+admin					O	
+CONDITION - Input:			
+name provided			O	O	O	O	O
+description provided			O	O	O	O	O
+name is empty					O		
+description is empty						O	
+requireOutdoor value			O	O	O	O	O
+CONDITION - School assignment:			
+School admin has school_id			O	O	O		O
+School admin no school_id						
+Return			
+success: true			O	O			
+success: false					O	O	O
+data fields returned			O	O			
+activity_name saved			O	O			
+Exception			
+201			O	O			
+400					O	O	O
+403						
+Log message			
+Đã tạo hoạt động mới			O	O			
+Vui lòng cung cấp tên và mô tả hoạt động					O	O	
+School admin chưa được gán trường học						O
+Chỉ school_admin mới có quyền tạo activity						
+Type (N/A/B)			N	N	A	A	A
+Passed/Failed			P	P	P	P	P
+Executed Date			12/06	12/06	12/06	12/06	12/06
+Defect ID

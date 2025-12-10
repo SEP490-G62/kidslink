@@ -13,7 +13,18 @@ const School = require('../models/School');
 const { sendMail } = require('../utils/mailer');
 const cloudinary = require('../utils/cloudinary');
 
-const PARENT_RELATIONSHIPS = ['father', 'mother', 'guardian', 'other'];
+const PARENT_RELATIONSHIPS = ['father', 'mother', 'guardian', 'other', 'Bố', 'Mẹ', 'Người giám hộ', 'Khác'];
+
+const RELATIONSHIP_NORMALIZE = {
+  'Bố': 'father',
+  'Mẹ': 'mother',
+  'Người giám hộ': 'guardian',
+  'Khác': 'other',
+  'father': 'father',
+  'mother': 'mother',
+  'guardian': 'guardian',
+  'other': 'other'
+};
 
 function sanitizeUsername(base = '') {
   return base
@@ -120,9 +131,11 @@ async function ensureParentAccount(parentPayload, studentId, studentName) {
   if (!parentPayload || !parentPayload.relationship) {
     throw new Error('Thiếu thông tin relationship của phụ huynh');
   }
-  const relationship = parentPayload.relationship;
+  
+  let relationship = parentPayload.relationship;
+  // Không chuẩn hóa, chỉ lưu đúng giá trị nhận được (tiếng Việt)
   if (!PARENT_RELATIONSHIPS.includes(relationship)) {
-    throw new Error(`relationship không hợp lệ. Hỗ trợ: ${PARENT_RELATIONSHIPS.join(', ')}`);
+    throw new Error(`relationship không hợp lệ. Hỗ trợ: Bố, Mẹ, Người giám hộ, Khác`);
   }
 
   const email = parentPayload.email?.trim().toLowerCase() || null;
@@ -184,13 +197,13 @@ async function ensureParentAccount(parentPayload, studentId, studentName) {
 
   const existingLink = await ParentStudent.findOne({ parent_id: parentDoc._id, student_id: studentId });
   if (existingLink) {
-    existingLink.relationship = relationship;
+    existingLink.relationship = relationship; // Lưu đúng giá trị tiếng Việt
     await existingLink.save();
   } else {
     await ParentStudent.create({
       parent_id: parentDoc._id,
       student_id: studentId,
-      relationship,
+      relationship, // Lưu đúng giá trị tiếng Việt
     });
   }
 
