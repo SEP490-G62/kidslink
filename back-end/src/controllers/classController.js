@@ -20,10 +20,19 @@ async function listClasses(req, res) {
     const filter = {};
     
     // Nếu là school_admin, chỉ lấy classes của school_id của họ
+    let adminSchoolId = null;
     if (req.user?.role === 'school_admin') {
       try {
-        const adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        adminSchoolId = await getSchoolIdForAdmin(req.user.id);
         filter.school_id = adminSchoolId;
+        
+        // Chỉ lấy các lớp thuộc năm học lớn nhất (nếu không có query academic_year)
+        if (!academic_year) {
+          const latestAcademicYear = await getLatestAcademicYearForSchool(adminSchoolId);
+          if (latestAcademicYear) {
+            filter.academic_year = latestAcademicYear;
+          }
+        }
       } catch (err) {
         return res.status(err.statusCode || 400).json({ success: false, message: err.message });
       }
@@ -54,10 +63,25 @@ async function listClasses(req, res) {
   }
 }
 
+// Helper function to parse academic year and get start year
+function parseAcademicYear(academicYear) {
+  if (!academicYear || typeof academicYear !== 'string') return -Infinity;
+  const parts = academicYear.split('-');
+  const startYear = parseInt(parts[0], 10);
+  return Number.isFinite(startYear) ? startYear : -Infinity;
+}
+
 async function getLatestAcademicYearForSchool(schoolId) {
   const academicYears = await ClassModel.find({ school_id: schoolId }).distinct('academic_year');
   if (!academicYears || academicYears.length === 0) return null;
-  academicYears.sort((a, b) => (a > b ? -1 : a < b ? 1 : 0));
+  
+  // Sort by start year (parse academic year to get start year)
+  academicYears.sort((a, b) => {
+    const yearA = parseAcademicYear(a);
+    const yearB = parseAcademicYear(b);
+    return yearB - yearA; // Descending order
+  });
+  
   return academicYears[0];
 }
 
