@@ -85,7 +85,7 @@ const TeacherSchedule = () => {
         ]);
         if (mounted) {
           setCalendarData(classCalendarRes);
-          setTeachingCalendarData(teachingCalendarRes);
+            setTeachingCalendarData(teachingCalendarRes);
 
           // Xử lý response slots - có thể là { data: [...] } hoặc trực tiếp array
           let slotsArray = [];

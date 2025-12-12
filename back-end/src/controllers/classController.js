@@ -120,6 +120,24 @@ async function createClass(req, res) {
       return res.status(400).json({ success: false, message: 'academic_year là bắt buộc' });
     }
 
+    // Validate end_date phải sau start_date
+    const startDate = new Date(payload.start_date);
+    const endDate = new Date(payload.end_date);
+    if (endDate <= startDate) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Ngày kết thúc phải sau ngày bắt đầu' 
+      });
+    }
+
+    // Validate teacher1 và teacher2 không được trùng nhau
+    if (payload.teacher_id2 && String(payload.teacher_id) === String(payload.teacher_id2)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Giáo viên chính và giáo viên phụ không được trùng nhau' 
+      });
+    }
+
     // Get school_id - từ user nếu là school_admin, hoặc từ payload
     let schoolId = payload.school_id;
     if (req.user?.role === 'school_admin') {
@@ -242,6 +260,29 @@ async function updateClass(req, res) {
     const class_name = payload.class_name !== undefined ? payload.class_name : existingClass.class_name;
     const academic_year = payload.academic_year !== undefined ? payload.academic_year : existingClass.academic_year;
     const teacher_id = payload.teacher_id !== undefined ? payload.teacher_id : existingClass.teacher_id;
+    const teacher_id2 = payload.teacher_id2 !== undefined ? payload.teacher_id2 : existingClass.teacher_id2;
+    
+    // Validate end_date phải sau start_date (nếu có thay đổi dates)
+    if (payload.start_date || payload.end_date) {
+      const startDate = new Date(payload.start_date || existingClass.start_date);
+      const endDate = new Date(payload.end_date || existingClass.end_date);
+      if (endDate <= startDate) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Ngày kết thúc phải sau ngày bắt đầu' 
+        });
+      }
+    }
+
+    // Validate teacher1 và teacher2 không được trùng nhau
+    const finalTeacherId = payload.teacher_id !== undefined ? payload.teacher_id : existingClass.teacher_id;
+    const finalTeacherId2 = payload.teacher_id2 !== undefined ? payload.teacher_id2 : existingClass.teacher_id2;
+    if (finalTeacherId2 && String(finalTeacherId) === String(finalTeacherId2)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Giáo viên chính và giáo viên phụ không được trùng nhau' 
+      });
+    }
     
     // Nếu là school_admin, không cho phép đổi school_id
     let school_id = existingClass.school_id;
@@ -417,6 +458,24 @@ async function promoteClass(req, res) {
     }
     if (!payload.academic_year) {
       return res.status(400).json({ success: false, message: 'academic_year là bắt buộc' });
+    }
+
+    // Validate end_date phải sau start_date
+    const startDate = new Date(payload.start_date);
+    const endDate = new Date(payload.end_date);
+    if (endDate <= startDate) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Ngày kết thúc phải sau ngày bắt đầu' 
+      });
+    }
+
+    // Validate teacher1 và teacher2 không được trùng nhau
+    if (payload.teacher_id2 && String(payload.teacher_id) === String(payload.teacher_id2)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Giáo viên chính và giáo viên phụ không được trùng nhau' 
+      });
     }
 
     // Get school_id - từ user nếu là school_admin, hoặc từ lớp cũ

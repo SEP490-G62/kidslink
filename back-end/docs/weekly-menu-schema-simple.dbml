@@ -1,0 +1,102 @@
+// Weekly Menu Database Schema - Simplified Version
+// Focus on Weekly Menu Management for Nutrition Staff
+// Use this file on https://dbdiagram.io
+
+Table School {
+  _id ObjectId [pk]
+  school_name string
+  address string
+  phone string
+  email string
+  logo_url string
+  status number
+}
+
+Table User {
+  _id ObjectId [pk]
+  full_name string
+  username string [unique]
+  role string
+  school_id ObjectId [ref: > School._id]
+  Note: 'Nutrition Staff có role = nutrition_staff'
+}
+
+Table Meal {
+  _id ObjectId [pk]
+  meal string
+  Note: 'Bữa ăn: Sáng, Trưa, Xế (Global - không có school_id)'
+}
+
+Table Dish {
+  _id ObjectId [pk]
+  dish_name string
+  description string
+  meal_type ObjectId [ref: > Meal._id]
+  school_id ObjectId [ref: > School._id]
+  Note: 'Món ăn thuộc về một trường cụ thể'
+}
+
+Table ClassAge {
+  _id ObjectId [pk]
+  age number
+  age_name string
+  school_id ObjectId [ref: > School._id]
+  Note: 'Nhóm tuổi: 3-4 tuổi, 4-5 tuổi, ...'
+}
+
+Table WeekDay {
+  _id ObjectId [pk]
+  day_of_week string
+  Note: 'Ngày trong tuần: Monday, Tuesday, ..., Sunday (Global)'
+}
+
+Table ClassAgeMeal {
+  _id ObjectId [pk]
+  class_age_id ObjectId [ref: > ClassAge._id]
+  meal_id ObjectId [ref: > Meal._id]
+  weekday_id ObjectId [ref: > WeekDay._id]
+  date datetime
+  Note: 'Liên kết: Nhóm tuổi + Bữa ăn + Ngày trong tuần + Ngày cụ thể'
+}
+
+Table DishesClassAgeMeal {
+  _id ObjectId [pk]
+  class_age_meal_id ObjectId [ref: > ClassAgeMeal._id]
+  dish_id ObjectId [ref: > Dish._id]
+  
+  indexes {
+    (class_age_meal_id, dish_id) [unique]
+  }
+  Note: 'Bảng nối: Mỗi ClassAgeMeal có thể có nhiều Dish'
+}
+
+Table Class {
+  _id ObjectId [pk]
+  class_name string
+  academic_year string
+  school_id ObjectId [ref: > School._id]
+  class_age_id ObjectId [ref: > ClassAge._id]
+  Note: 'Lớp học thuộc một nhóm tuổi và một trường'
+}
+
+Table Student {
+  _id ObjectId [pk]
+  full_name string
+  school_id ObjectId [ref: > School._id]
+  dob datetime
+  gender number
+  allergy string
+  Note: 'Thông tin dị ứng quan trọng cho weekly menu'
+}
+
+Table StudentClass {
+  _id ObjectId [pk]
+  student_id ObjectId [ref: > Student._id]
+  class_id ObjectId [ref: > Class._id]
+  
+  indexes {
+    (student_id, class_id) [unique]
+  }
+  Note: 'Học sinh thuộc lớp nào'
+}
+
