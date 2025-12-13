@@ -36,6 +36,7 @@ const DailyReportPage = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [bulkDialog, setBulkDialog] = useState({ open: false, saving: false, items: [] });
   const [historyDialog, setHistoryDialog] = useState({ open: false, student: null, reports: [], loading: false, weekStart: null });
+  const [hasSchedule, setHasSchedule] = useState(true);
   const wasTodayRef = useRef(false); // Lưu lại xem lần trước có đang ở ngày hôm nay không
 
   // Lấy danh sách lớp, mặc định chọn lớp có academic_year lớn nhất
@@ -124,8 +125,10 @@ const DailyReportPage = () => {
       try {
         const res = await apiService.get(`/teachers/class/students/attendance/${selectedDate}?class_id=${selectedClass}`);
         setStudents(res?.students || []);
+        setHasSchedule(res?.has_schedule === undefined ? true : !!res.has_schedule);
       } catch (err) {
         setStudents([]);
+        setHasSchedule(true);
       }
       setLoading(false);
     }
@@ -134,12 +137,30 @@ const DailyReportPage = () => {
 
   // Sửa nhận xét
   const handleEditComment = (student) => {
+    if (!canReportToday) {
+      setSnackbar({ open: true, message: 'Chỉ có thể nhận xét trong ngày có lịch học và là hôm nay.', severity: 'warning' });
+      return;
+    }
+    if (!isStudentActive(student)) {
+      setSnackbar({ open: true, message: 'Học sinh đang ở trạng thái ngưng hoạt động, không thể nhận xét.', severity: 'warning' });
+      return;
+    }
     setEditDialog({ open: true, student, comment: student.report?.comments || '', saving: false });
   };
   const handleCloseEdit = () => {
     setEditDialog({ open: false, student: null, comment: '', saving: false });
   };
   const handleSaveEdit = async () => {
+    if (!canReportToday) {
+      setSnackbar({ open: true, message: 'Chỉ có thể nhận xét trong ngày có lịch học và là hôm nay.', severity: 'warning' });
+      setEditDialog({ open: false, student: null, comment: '', saving: false });
+      return;
+    }
+    if (!isStudentActive(editDialog.student)) {
+      setSnackbar({ open: true, message: 'Không thể nhận xét cho học sinh đã ngưng hoạt động.', severity: 'warning' });
+      setEditDialog({ open: false, student: null, comment: '', saving: false });
+      return;
+    }
     setEditDialog(dialog => ({ ...dialog, saving: true }));
     try {
       await apiService.put(`/teachers/daily-reports/${editDialog.student.report?._id || editDialog.student._id}/comment`, { comments: editDialog.comment, report_date: selectedDate });
@@ -155,17 +176,26 @@ const DailyReportPage = () => {
 
   // Hàm nhận xét tất cả học sinh chưa có nhận xét
   const openBulkDialog = () => {
-    if (!isToday) return;
-    const studentsToComment = students.filter(st => !st.report || !st.report.comments);
+    if (!canReportToday) {
+      setSnackbar({ open: true, message: 'Chỉ có thể nhận xét trong ngày có lịch học và là hôm nay.', severity: 'info' });
+      return;
+    }
+    const studentsToComment = students.filter(st => isStudentActive(st) && (!st.report || !st.report.comments));
     if (studentsToComment.length === 0) {
-      setSnackbar({ open: true, message: 'Tất cả học sinh đã có nhận xét.', severity: 'info' });
+      const hasActive = students.some(isStudentActive);
+      setSnackbar({ 
+        open: true, 
+        message: hasActive ? 'Tất cả học sinh đang hoạt động đã có nhận xét.' : 'Không có học sinh hoạt động để nhận xét.', 
+        severity: 'info' 
+      });
       return;
     }
     const initialItems = studentsToComment.map(st => ({
       id: st.report?._id || st._id,
       studentId: st._id,
       name: st.full_name,
-      comment: bulkComment || ''
+      comment: bulkComment || '',
+      status: st.status
     }));
     setBulkDialog({ open: true, saving: false, items: initialItems });
   };
@@ -183,7 +213,11 @@ const DailyReportPage = () => {
   };
 
   const handleSaveBulkDialog = async () => {
-    const payloads = bulkDialog.items.filter(it => (it.comment || '').trim().length > 0);
+    if (!canReportToday) {
+      setSnackbar({ open: true, message: 'Chỉ có thể nhận xét trong ngày có lịch học và là hôm nay.', severity: 'warning' });
+      return;
+    }
+    const payloads = bulkDialog.items.filter(it => it.status === 1 && (it.comment || '').trim().length > 0);
     if (payloads.length === 0) {
       setSnackbar({ open: true, message: 'Vui lòng nhập nhận xét cho ít nhất một học sinh.', severity: 'warning' });
       return;
@@ -218,6 +252,10 @@ const DailyReportPage = () => {
     const todayStr = `${year}-${month}-${day}`;
     return selectedDate === todayStr;
   })();
+
+  const isStudentActive = (student) => student?.status === 1;
+  const hasActiveStudents = students.some(isStudentActive);
+  const canReportToday = isToday && hasSchedule;
 
   // Tính toán tuần hiện tại (thứ 2 đến chủ nhật)
   const getCurrentWeekStart = () => {
@@ -294,6 +332,12 @@ const DailyReportPage = () => {
           </CardContent>
         </Card>
 
+        {!hasSchedule && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Lớp không có lịch học trong ngày {formatDate(selectedDate)} nên không thể nhận xét hoặc điểm danh.
+          </Alert>
+        )}
+
         {/* FILTER & BULK COMMENT card - gọn tối giản */}
         <Card sx={{ mb: 4, borderRadius: 3, px: 2, py: 1, background: '#f8fafc', boxShadow:'0 1px 4px #0001' }} elevation={0}>
           <CardContent sx={{ pb: '12px !important', pt: '8px' }}>
@@ -342,12 +386,12 @@ const DailyReportPage = () => {
                     placeholder="Nhập nhận xét ..."
                     value={bulkComment}
                     onChange={e => setBulkComment(e.target.value)}
-                    disabled={bulkSaving || !isToday}
+                    disabled={bulkSaving || !canReportToday || !hasActiveStudents}
                     inputProps={{ style: { fontSize: '0.97rem', color: '#38404a' } }}
                     sx={{bgcolor:'#fff', borderRadius:2, '& input::placeholder': {color:'#bbb', fontStyle:'italic', opacity:1}, minWidth:0}}
                   />
                   <ArgonButton color="info" size="small" variant="contained" disableElevation
-                    disabled={!isToday}
+                    disabled={!canReportToday || !hasActiveStudents}
                     onClick={openBulkDialog} sx={{ minWidth: 120, fontWeight:600, fontSize:'0.98rem', px:2, py:1, boxShadow:'none' }}>
                     Nhận xét
                   </ArgonButton>
@@ -393,10 +437,27 @@ const DailyReportPage = () => {
                               <Typography variant="caption" color="text.secondary">
                                 Ngày sinh: {student.dob?.slice(0,10)}
                               </Typography>
+                            {!isStudentActive(student) && (
+                              <Chip 
+                                label="Ngưng hoạt động"
+                                size="small"
+                                color="default"
+                                sx={{mt:0.5, fontWeight:600, borderRadius:1}}
+                              />
+                            )}
                             </Box>
-                            <Tooltip title={student.report?.comments ? 'Sửa nhận xét' : 'Thêm nhận xét'}>
+                            <Tooltip title={!hasSchedule ? 'Lớp không có lịch học' : (!isStudentActive(student) ? 'Học sinh ngưng hoạt động' : (student.report?.comments ? 'Sửa nhận xét' : 'Thêm nhận xét'))}>
                               <span>
-                                <IconButton color="info" size="small" onClick={(e) => { e.stopPropagation(); if (isToday) handleEditComment(student); }} disabled={!isToday}>
+                                <IconButton 
+                                  color="info" 
+                                  size="small" 
+                                  onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    if (!canReportToday || !isStudentActive(student)) return; 
+                                    handleEditComment(student); 
+                                  }} 
+                                  disabled={!canReportToday || !isStudentActive(student)}
+                                >
                                   {student.report?.comments ? <EditIcon /> : <AddCommentIcon />}
                                 </IconButton>
                               </span>
@@ -430,13 +491,13 @@ const DailyReportPage = () => {
               placeholder="Nhập nhận xét chi tiết về học sinh..."
               value={editDialog.comment}
               onChange={e => setEditDialog(d => ({ ...d, comment: e.target.value }))}
-              disabled={editDialog.saving || !isToday}
+              disabled={editDialog.saving || !canReportToday || !isStudentActive(editDialog.student)}
               sx={{bgcolor:'#f4faff'}}
             />
           </DialogContent>
           <DialogActions sx={{px:3,pb:2}}>
             <ArgonButton onClick={handleCloseEdit} disabled={editDialog.saving} color="secondary" variant="outlined" sx={{minWidth:100, fontWeight:600}}>Hủy</ArgonButton>
-            <ArgonButton onClick={handleSaveEdit} variant="contained" color="info" disabled={editDialog.saving || !isToday} sx={{minWidth:130, fontWeight:700}}>
+            <ArgonButton onClick={handleSaveEdit} variant="contained" color="info" disabled={editDialog.saving || !canReportToday || !isStudentActive(editDialog.student)} sx={{minWidth:130, fontWeight:700}}>
               {editDialog.saving ? 'Đang lưu...' : (editDialog.student?.report?.comments ? 'Lưu sửa' : 'Thêm nhận xét')}
             </ArgonButton>
           </DialogActions>
@@ -462,7 +523,7 @@ const DailyReportPage = () => {
                         placeholder="Nhập nhận xét..."
                         value={it.comment}
                         onChange={e => handleChangeBulkItem(idx, e.target.value)}
-                        disabled={bulkDialog.saving || !isToday}
+                        disabled={bulkDialog.saving || !canReportToday || it.status !== 1}
                         sx={{bgcolor:'#fff'}}
                       />
                     </Box>
@@ -473,7 +534,7 @@ const DailyReportPage = () => {
           </DialogContent>
           <DialogActions sx={{px:3,pb:2}}>
             <ArgonButton onClick={handleCloseBulkDialog} disabled={bulkDialog.saving} color="secondary" variant="outlined" sx={{minWidth:100, fontWeight:600}}>Hủy</ArgonButton>
-            <ArgonButton onClick={handleSaveBulkDialog} variant="contained" color="info" disabled={bulkDialog.saving || !isToday || bulkDialog.items.length===0} sx={{minWidth:130, fontWeight:700}}>
+            <ArgonButton onClick={handleSaveBulkDialog} variant="contained" color="info" disabled={bulkDialog.saving || !canReportToday || bulkDialog.items.length===0} sx={{minWidth:130, fontWeight:700}}>
               {bulkDialog.saving ? 'Đang lưu...' : 'Lưu tất cả'}
             </ArgonButton>
           </DialogActions>

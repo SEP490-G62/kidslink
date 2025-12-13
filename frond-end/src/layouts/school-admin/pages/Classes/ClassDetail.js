@@ -23,6 +23,8 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
 import ClassIcon from "@mui/icons-material/Class";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
@@ -36,6 +38,7 @@ import Footer from "examples/Footer";
 import api from "services/api";
 import TransferClassModal from "./TransferClassModal";
 import ClassModal from "./ClassModal";
+import AddStudentModal from "./AddStudentModal";
 
 const infoColor = "#11cdef";
 const infoHoverColor = "rgba(17, 205, 239, 0.12)";
@@ -50,6 +53,7 @@ const ClassDetail = () => {
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [addStudentModalOpen, setAddStudentModalOpen] = useState(false);
 
   useEffect(() => {
     fetchClassDetail();
@@ -110,6 +114,24 @@ const ClassDetail = () => {
 
   const handleEditSuccess = () => {
     fetchClassDetail();
+  };
+
+  const handleAddStudentSuccess = () => {
+    fetchClassDetail();
+  };
+
+  const handleRemoveStudent = async (student) => {
+    if (!student?._id) return;
+    const confirm = window.confirm(`Bạn có chắc muốn xóa học sinh "${student.full_name}" khỏi lớp?`);
+    if (!confirm) return;
+
+    try {
+      await api.delete(`/classes/${id}/students/${student._id}`, true);
+      fetchClassDetail();
+    } catch (error) {
+      console.error("Lỗi xóa học sinh khỏi lớp:", error);
+      alert(error?.message || "Không thể xóa học sinh khỏi lớp. Vui lòng thử lại.");
+    }
   };
 
   const getGenderText = (gender) => {
@@ -227,19 +249,34 @@ const ClassDetail = () => {
                     },
                   }}
                 />
-                <ArgonButton
-                  color="info"
-                  size="medium"
-                  onClick={handleEdit}
-                  variant="contained"
-                  startIcon={<EditIcon />}
-                  sx={{
-                    fontWeight: 600,
-                    transition: "all 0.3s ease",
-                  }}
-                >
-                  Chỉnh sửa
-                </ArgonButton>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                  <ArgonButton
+                    color="success"
+                    size="medium"
+                    onClick={() => setAddStudentModalOpen(true)}
+                    variant="gradient"
+                    startIcon={<PersonAddAltIcon />}
+                    sx={{
+                      fontWeight: 600,
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    Thêm học sinh
+                  </ArgonButton>
+                  <ArgonButton
+                    color="info"
+                    size="medium"
+                    onClick={handleEdit}
+                    variant="contained"
+                    startIcon={<EditIcon />}
+                    sx={{
+                      fontWeight: 600,
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    Chỉnh sửa
+                  </ArgonButton>
+                </Stack>
               </Stack>
             </Box>
           </CardContent>
@@ -559,6 +596,19 @@ const ClassDetail = () => {
                           >
                             <SwapHorizIcon fontSize="small" />
                           </IconButton>
+                          <IconButton
+                            size="small"
+                            title="Xóa khỏi lớp"
+                            onClick={() => handleRemoveStudent(student)}
+                            sx={{
+                              color: "#d32f2f",
+                              "&:hover": {
+                                backgroundColor: "#ffebee",
+                              },
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -601,6 +651,13 @@ const ClassDetail = () => {
           onSuccess={() => {
             fetchClassDetail();
           }}
+        />
+
+        <AddStudentModal
+          open={addStudentModalOpen}
+          onClose={() => setAddStudentModalOpen(false)}
+          classId={id}
+          onSuccess={handleAddStudentSuccess}
         />
       </ArgonBox>
       <Footer />

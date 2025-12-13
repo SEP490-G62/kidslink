@@ -1,0 +1,207 @@
+@startuml Chat Feature - Backend Class Diagram
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 10
+skinparam packageFontSize 11
+skinparam classFontSize 9
+skinparam maxMessageSize 60
+
+!define ROUTES_COLOR #E3F2FD
+!define CONTROLLER_COLOR #FFF3E0
+!define SERVICE_COLOR #F3E5F5
+!define MIDDLEWARE_COLOR #E8F5E9
+!define MODEL_COLOR #FCE4EC
+
+package "Routes Layer" ROUTES_COLOR {
+  class MessagingRouter {
+    + POST /conversations
+    + GET /conversations
+    + GET /conversations/:id
+    + POST /conversations/:id/participants
+    + GET /conversations/:id/messages
+    + POST /messages
+    + PUT /conversations/:id/read
+    + GET /unread-count
+    + POST /conversations/direct
+    + GET /teachers-by-student/:id
+    + GET /parents-by-teacher-class
+    + registerRoutes()
+  }
+  
+  class TeacherRouter {
+    + POST /class/chat-group
+    + registerRoutes()
+  }
+}
+
+package "Controller Layer" CONTROLLER_COLOR {
+  class MessagingController {
+    + createConversation(req, res)
+    + addParticipant(req, res)
+    + getConversations(req, res)
+    + getConversation(req, res)
+    + getMessages(req, res)
+    + sendMessage(req, res)
+    + markAsRead(req, res)
+    + getUnreadCount(req, res)
+    + createDirectConversationWithTeacher(req, res)
+    + getTeachersByStudent(req, res)
+    + createClassChatGroup(req, res)
+    + getParentsByTeacherClass(req, res)
+  }
+}
+
+package "Service/Utils Layer" SERVICE_COLOR {
+  class SocketService {
+    - userSockets: Map
+    - socketUsers: Map
+    + authenticateSocket(socket, next)
+    + initializeSocket(io)
+    + sendNotificationToUser(io, user_id, event, data)
+    Events: send_message, new_message,
+    new_message_notification, mark_as_read,
+    join_conversation, typing
+  }
+  
+  class CloudinaryService {
+    + uploader.upload(image_base64, options)
+  }
+}
+
+package "Middleware Layer" MIDDLEWARE_COLOR {
+  class AuthMiddleware {
+    + authenticate(req, res, next)
+    + authorize(allowedRoles)
+    + verifyToken(req, res, next)
+  }
+}
+
+package "Data Models Layer" MODEL_COLOR {
+  class ConversationModel {
+    + _id: ObjectId
+    + title: String
+    + class_id: ObjectId
+    + is_class_group: Boolean
+    + create_at: Date
+    + last_message_at: Date
+    + save()
+    + findById(id)
+    + findOne(query)
+    + find(query)
+  }
+  
+  class MessageModel {
+    + _id: ObjectId
+    + content: String
+    + image_url: String
+    + image_public_id: String
+    + conversation_id: ObjectId
+    + sender_id: ObjectId
+    + send_at: Date
+    + read_status: Number
+    + save()
+    + find(query)
+    + findOne(query)
+    + updateMany(filter, update)
+    + countDocuments(query)
+  }
+  
+  class ConversationParticipantModel {
+    + _id: ObjectId
+    + user_id: ObjectId
+    + conversation_id: ObjectId
+    + save()
+    + find(query)
+    + findOne(query)
+    + countDocuments(query)
+    + create(data)
+  }
+  
+  class UserModel {
+    + _id: ObjectId
+    + full_name: String
+    + avatar_url: String
+    + role: String
+  }
+  
+  class ClassModel {
+    + _id: ObjectId
+    + class_name: String
+    + academic_year: String
+    + teacher_id: ObjectId
+    + teacher_id2: ObjectId
+  }
+  
+  class TeacherModel {
+    + _id: ObjectId
+    + user_id: ObjectId
+  }
+  
+  class ParentModel {
+    + _id: ObjectId
+    + user_id: ObjectId
+  }
+  
+  class StudentClassModel {
+    + _id: ObjectId
+    + class_id: ObjectId
+    + student_id: ObjectId
+  }
+  
+  class ParentStudentModel {
+    + _id: ObjectId
+    + parent_id: ObjectId
+    + student_id: ObjectId
+  }
+}
+
+' Relationships
+MessagingRouter --> MessagingController : calls
+TeacherRouter --> MessagingController : calls
+MessagingController --> AuthMiddleware : uses
+MessagingController --> SocketService : uses
+MessagingController --> CloudinaryService : uses
+
+MessagingController --> ConversationModel : saves/queries
+MessagingController --> MessageModel : saves/queries
+MessagingController --> ConversationParticipantModel : saves/queries
+MessagingController --> UserModel : queries
+MessagingController --> ClassModel : queries
+MessagingController --> TeacherModel : queries
+MessagingController --> ParentModel : queries
+MessagingController --> StudentClassModel : queries
+MessagingController --> ParentStudentModel : queries
+
+SocketService --> MessageModel : creates
+SocketService --> ConversationModel : updates
+SocketService --> ConversationParticipantModel : queries
+
+ConversationModel --> ClassModel : references
+MessageModel --> ConversationModel : references
+MessageModel --> UserModel : references
+ConversationParticipantModel --> ConversationModel : references
+ConversationParticipantModel --> UserModel : references
+ClassModel --> TeacherModel : references
+StudentClassModel --> ClassModel : references
+ParentStudentModel --> ParentModel : references
+
+note right of MessagingController
+  Business Logic:
+  - Validates user access
+  - Creates conversations
+  - Manages participants
+  - Handles messages
+  - Tracks unread counts
+  - Creates class chat groups
+end note
+
+note right of SocketService
+  Real-time Communication:
+  - Authenticates socket connections
+  - Handles message sending
+  - Broadcasts notifications
+  - Manages typing indicators
+end note
+
+@enduml

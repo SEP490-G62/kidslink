@@ -84,6 +84,7 @@ const TeacherChat = () => {
   const [classIdInput, setClassIdInput] = useState('');
   const [titleInput, setTitleInput] = useState('');
   const [creatingGroup, setCreatingGroup] = useState(false);
+  // Kiểm tra xem đã có nhóm chat lớp nào (conversation gắn với class_id) chưa
   const hasClassGroup = useMemo(() => (conversations || []).some(c => !!c.class_id), [conversations]);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState(null);
@@ -809,12 +810,39 @@ const TeacherChat = () => {
   const handlePickEmoji = (emo) => setNewMessage((prev) => (prev || '') + emo);
 
   const getConversationTitle = (conversation) => {
-    // Nếu conversation có 2 thành viên, hiển thị tên đối phương
+    // Nếu conversation có 2 thành viên, hiển thị "Tên đối phương - Tên lớp - Năm học"
     if (conversation.participants_count === 2 && conversation.participants && Array.isArray(conversation.participants)) {
       const otherParticipant = conversation.participants.find(
         p => (p._id?.toString() || p._id) !== (currentUserId?.toString() || currentUserId)
       );
       if (otherParticipant && otherParticipant.full_name) {
+        // Lấy thông tin lớp từ class_id hoặc từ title
+        let className = '';
+        let academicYear = '';
+        
+        // Xử lý class_id có thể là object hoặc string
+        if (conversation.class_id) {
+          if (typeof conversation.class_id === 'object' && conversation.class_id !== null) {
+            className = conversation.class_id.class_name || '';
+            academicYear = conversation.class_id.academic_year || '';
+          }
+        }
+        
+        // Nếu không có từ class_id, parse từ title: "Tên parent - Tên teacher - Tên lớp - Năm học"
+        if ((!className || !academicYear) && conversation.title) {
+          const parts = conversation.title.split(' - ');
+          if (parts.length >= 4) {
+            className = className || parts[parts.length - 2] || '';
+            academicYear = academicYear || parts[parts.length - 1] || '';
+          }
+        }
+        
+        // Tạo title hiển thị: "Tên đối phương - Tên lớp - Năm học"
+        if (className && academicYear) {
+          return `${otherParticipant.full_name} - ${className} - ${academicYear}`;
+        } else if (className) {
+          return `${otherParticipant.full_name} - ${className}`;
+        }
         return otherParticipant.full_name;
       }
     }
@@ -956,6 +984,7 @@ const TeacherChat = () => {
                             setCreatingGroup(false);
                           }
                         }}
+                        disabled={creatingGroup}
                       >
                         {creatingGroup ? 'Đang tạo...' : 'Tạo nhóm lớp'}
                       </ArgonButton>

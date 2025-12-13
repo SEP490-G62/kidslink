@@ -1,0 +1,181 @@
+@startuml CreateClassChatGroupSequence
+actor "Teacher" as User
+participant "Client UI\n(TeacherChat/index.js)" as UI
+participant "messagingService" as Service
+participant "Route\nPOST /teachers/class/chat-group" as Route
+participant "messagingController\ncreateClassChatGroup" as Controller
+participant "Teacher Model" as TeacherModel
+participant "Class Model" as ClassModel
+participant "Conversation Model" as ConversationModel
+participant "ConversationParticipant Model" as ParticipantModel
+participant "StudentClass Model" as StudentClassModel
+participant "ParentStudent Model" as ParentStudentModel
+database "Database" as DB
+
+User -> UI: Click "Tạo nhóm lớp" button
+activate UI
+UI -> UI: setCreatingGroup(true)
+UI -> Service: createClassChatGroup(null, null)
+activate Service
+Service -> Route: POST /teachers/class/chat-group
+activate Route
+Route -> Controller: createClassChatGroup(req, res)
+activate Controller
+
+Controller -> Controller: Extract user_id from req.user
+Controller -> TeacherModel: findOne({ user_id })
+activate TeacherModel
+TeacherModel -> DB: Query teacher
+DB -> TeacherModel: teacher document
+TeacherModel -> Controller: teacher
+deactivate TeacherModel
+
+alt class_id not provided
+    Controller -> ClassModel: find({ teacher_id or teacher_id2 }).sort({ academic_year: -1 })
+    activate ClassModel
+    ClassModel -> DB: Query latest class
+    DB -> ClassModel: latest class
+    ClassModel -> Controller: latestClass[0]
+    deactivate ClassModel
+    Controller -> Controller: class_id = latestClass[0]._id
+    Controller -> Controller: title = "Nhóm chat - {class_name}"
+else class_id provided
+    Controller -> Controller: Use provided class_id and title
+end
+
+Controller -> ClassModel: findOne({ _id: class_id, teacher_id or teacher_id2 }).populate('teacher_id', 'teacher_id2')
+activate ClassModel
+ClassModel -> DB: Query class with teachers
+DB -> ClassModel: class with populated teachers
+ClassModel -> Controller: classExists
+deactivate ClassModel
+
+Controller -> ConversationModel: findOne({ class_id, is_class_group: true })
+activate ConversationModel
+ConversationModel -> DB: Query existing class group
+DB -> ConversationModel: existingConversation or null
+ConversationModel -> Controller: existingConversation
+deactivate ConversationModel
+
+alt Class group already exists
+    Controller -> ParticipantModel: findOne({ conversation_id, user_id })
+    activate ParticipantModel
+    ParticipantModel -> DB: Query participant
+    DB -> ParticipantModel: existingParticipant or null
+    ParticipantModel -> Controller: existingParticipant
+    deactivate ParticipantModel
+    
+    alt Teacher not in group
+        Controller -> ParticipantModel: create({ user_id, conversation_id })
+        activate ParticipantModel
+        ParticipantModel -> DB: Insert participant
+        DB -> ParticipantModel: new participant
+        ParticipantModel -> Controller: participant created
+        deactivate ParticipantModel
+    end
+    
+    Controller -> ConversationModel: populate('class_id', 'class_name')
+    activate ConversationModel
+    ConversationModel -> DB: Populate class
+    DB -> ConversationModel: conversation with class
+    ConversationModel -> Controller: populated conversation
+    deactivate ConversationModel
+    
+    Controller -> ParticipantModel: countDocuments({ conversation_id })
+    activate ParticipantModel
+    ParticipantModel -> DB: Count participants
+    DB -> ParticipantModel: count
+    ParticipantModel -> Controller: participantsCount
+    deactivate ParticipantModel
+    
+    Controller -> Route: res.status(200).json({ message, conversation })
+    deactivate Controller
+    Route -> Service: Response with existing conversation
+    deactivate Route
+    Service -> UI: res.success = true, res.data.conversation
+    deactivate Service
+    UI -> UI: Update conversations list
+    UI -> UI: setSelectedConversation(conv)
+    UI -> UI: setCreatingGroup(false)
+    UI -> User: Display group chat
+    deactivate UI
+    
+else Class group does not exist
+    Controller -> ConversationModel: new Conversation({ title, class_id, is_class_group: true })
+    activate ConversationModel
+    ConversationModel -> DB: Insert conversation
+    DB -> ConversationModel: new conversation
+    ConversationModel -> Controller: conversation
+    deactivate ConversationModel
+    
+    Controller -> Controller: participantUserIds = new Set()
+    
+    note right of Controller
+        Add teachers:
+        - teacher_id.user_id
+        - teacher_id2.user_id (if exists)
+    end note
+    
+    Controller -> Controller: Add teacher user_ids to participantUserIds
+    
+    Controller -> StudentClassModel: find({ class_id }).populate('student_id')
+    activate StudentClassModel
+    StudentClassModel -> DB: Query student classes
+    DB -> StudentClassModel: student classes
+    StudentClassModel -> Controller: studentClasses
+    deactivate StudentClassModel
+    
+    Controller -> Controller: Extract studentIds from studentClasses
+    
+    Controller -> ParentStudentModel: find({ student_id in studentIds }).populate('parent_id')
+    activate ParentStudentModel
+    ParentStudentModel -> DB: Query parent students
+    DB -> ParentStudentModel: parent students
+    ParentStudentModel -> Controller: parentStudents
+    deactivate ParentStudentModel
+    
+    Controller -> Controller: Add all parent user_ids to participantUserIds
+    
+    note right of Controller
+        Create participants for:
+        - All teachers (teacher_id, teacher_id2)
+        - All parents of students in class
+    end note
+    
+    loop For each user_id in participantUserIds
+        Controller -> ParticipantModel: create({ user_id, conversation_id })
+        activate ParticipantModel
+        ParticipantModel -> DB: Insert participant
+        DB -> ParticipantModel: participant
+        ParticipantModel -> Controller: participant
+        deactivate ParticipantModel
+    end
+    
+    Controller -> ConversationModel: populate('class_id', 'class_name')
+    activate ConversationModel
+    ConversationModel -> DB: Populate class
+    DB -> ConversationModel: conversation with class
+    ConversationModel -> Controller: populated conversation
+    deactivate ConversationModel
+    
+    Controller -> ParticipantModel: countDocuments({ conversation_id })
+    activate ParticipantModel
+    ParticipantModel -> DB: Count participants
+    DB -> ParticipantModel: count
+    ParticipantModel -> Controller: participantsCount
+    deactivate ParticipantModel
+    
+    Controller -> Route: res.status(201).json({ message, conversation })
+    deactivate Controller
+    Route -> Service: Response with new conversation
+    deactivate Route
+    Service -> UI: res.success = true, res.data.conversation
+    deactivate Service
+    UI -> UI: Update conversations list (add to top)
+    UI -> UI: setSelectedConversation(conv)
+    UI -> UI: setCreatingGroup(false)
+    UI -> User: Display new group chat
+    deactivate UI
+end
+
+@enduml

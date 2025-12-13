@@ -1,10 +1,23 @@
-const { Complaint, ComplaintType } = require('../../models');
+const { Complaint, ComplaintType, User } = require('../../models');
 const cloudinary = require('../../utils/cloudinary');
 
 // GET /api/teachers/complaints/types - Lấy danh sách các loại đơn (chỉ loại teacher)
 const getComplaintTypes = async (req, res) => {
   try {
-    const complaintTypes = await ComplaintType.find({ category: { $in: ['teacher'] } })
+    const userId = req.user.id;
+    const user = await User.findById(userId).select('school_id');
+
+    if (!user || !user.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy thông tin trường học'
+      });
+    }
+
+    const complaintTypes = await ComplaintType.find({
+      category: { $in: ['teacher'] },
+      school_id: user.school_id
+    })
       .select('_id name description category')
       .sort({ createdAt: 1 });
 
@@ -29,6 +42,14 @@ const createComplaint = async (req, res) => {
     const { complaint_type_id, reason, image } = req.body;
     const userId = req.user.id;
 
+    const user = await User.findById(userId).select('school_id');
+    if (!user || !user.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy thông tin trường học'
+      });
+    }
+
     // Validation
     if (!complaint_type_id) {
       return res.status(400).json({
@@ -45,7 +66,7 @@ const createComplaint = async (req, res) => {
     }
 
     // Kiểm tra complaint_type_id có tồn tại và thuộc category 'teacher' không
-    const complaintType = await ComplaintType.findTeacherTypeById(complaint_type_id);
+    const complaintType = await ComplaintType.findTeacherTypeById(complaint_type_id, user.school_id);
     if (!complaintType) {
       return res.status(404).json({
         success: false,
@@ -76,6 +97,7 @@ const createComplaint = async (req, res) => {
     // Tạo complaint mới
     const newComplaint = await Complaint.create({
       complaint_type_id,
+      school_id: user.school_id,
       complaintTypeName: complaintTypeName || complaintType.name,
       reason: reason.trim(),
       image: imageUrl,
@@ -107,8 +129,19 @@ const createComplaint = async (req, res) => {
 const getMyComplaints = async (req, res) => {
   try {
     const userId = req.user.id;
+    const user = await User.findById(userId).select('school_id');
 
-    const complaints = await Complaint.find({ user_id: userId })
+    if (!user || !user.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy thông tin trường học'
+      });
+    }
+
+    const complaints = await Complaint.find({
+      user_id: userId,
+      school_id: user.school_id
+    })
       .select('-complaint_type_id')
       .sort({ createdAt: -1 });
 
@@ -132,6 +165,14 @@ const getComplaintById = async (req, res) => {
   try {
     const { complaintId } = req.params;
     const userId = req.user.id;
+    const user = await User.findById(userId).select('school_id');
+
+    if (!user || !user.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy thông tin trường học'
+      });
+    }
 
     const complaint = await Complaint.findById(complaintId)
       .select('-complaint_type_id')
@@ -146,6 +187,13 @@ const getComplaintById = async (req, res) => {
 
     // Kiểm tra xem user có phải chủ sở hữu của đơn không
     if (complaint.user_id._id.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền xem đơn này'
+      });
+    }
+
+    if (complaint.school_id?.toString() !== user.school_id.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Bạn không có quyền xem đơn này'

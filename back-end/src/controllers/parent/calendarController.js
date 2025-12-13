@@ -5,8 +5,20 @@ const {
   StudentClass,
   Class: ClassModel,
   Calendar,
-  Slot
+  Slot,
+  User
 } = require('../../models');
+
+// Helper: lấy school_id của user (parent/teacher/...) từ bảng User
+async function getSchoolIdForUser(userId) {
+  const user = await User.findById(userId).select('school_id');
+  if (!user || !user.school_id) {
+    const error = new Error('Tài khoản chưa được gán trường học');
+    error.statusCode = 400;
+    throw error;
+  }
+  return user.school_id;
+}
 
 // GET /parent/class-calendar?student_id=optional
 // Trả về lịch học theo lớp của con với năm học mới nhất
@@ -146,7 +158,20 @@ module.exports = { getClassCalendarLatest };
 // Trả về danh sách slot (khung giờ) chuẩn để render theo hàng
 async function getClassTimeSlots(req, res) {
   try {
-    const slots = await Slot.find({}).sort({ start_time: 1, end_time: 1 });
+    // Lấy school_id của user hiện tại (parent hoặc teacher dùng chung API này)
+    const userId = req.user && req.user.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Chưa xác thực' });
+    }
+
+    let schoolId;
+    try {
+      schoolId = await getSchoolIdForUser(userId);
+    } catch (error) {
+      return res.status(error.statusCode || 400).json({ error: error.message });
+    }
+
+    const slots = await Slot.find({ school_id: schoolId }).sort({ start_time: 1, end_time: 1 });
     const data = slots.map(s => ({
       id: s._id,
       slotName: s.slot_name,

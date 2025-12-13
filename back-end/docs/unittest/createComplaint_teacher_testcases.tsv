@@ -1,0 +1,51 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10	UTC11	UTC12	UTC13	UTC14	UTC15
+Condition				Precondition
+	Can connect with server				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+	Requester authenticated				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+	Requester has permission				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+	Teacher assigned to school				O	O	O	O	O	O	O		O	O	O	O	O	O	O
+	CONDITION - Requester role:
+	teacher	O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+	CONDITION - Input:
+	complaint_type_id provided	O	O	O	O		O	O	O	O	O	O	O	O	O	O
+	reason provided	O	O	O	O	O		O	O	O	O	O	O	O	O	O
+	image provided				O	O	O	O	O	O	O	O	O	O	O
+	reason is empty				O		O	O	O	O	O	O	O	O
+	complaint_type_id missing					O
+	reason missing						O
+	reason blank string							O
+	CONDITION - Complaint Type:
+	Type exists in same school	O	O	O	O	O	O	O	O	O		O	O	O	O	O
+	Type from different school								O
+	Type has teacher category	O	O	O	O	O	O	O	O	O	O		O	O	O	O
+	Type has both categories		O	O	O	O	O	O	O	O	O	O	O	O	O	O
+	Type has parent category (not teacher)							O
+	Type does not exist								O
+	CONDITION - Image:
+	Image upload succeeds					O	O	O	O	O	O	O	O	O	O
+	Image upload fails											O
+	Image is undefined									O
+	CONDITION - School:
+	Teacher has school_id	O	O	O	O	O	O	O		O	O	O	O	O	O	O
+	CONDITION - Response:
+	complaint_type_id excluded										O
+	Return
+	TRUE	O	O	O	O			O	O	O	O	O	O	O	O	O
+	FALSE		O	O	O	O	O	O	O	O	O	O	O		O
+	Exception
+	201	O	O	O	O			O	O	O	O	O	O	O	O	O
+	400				O	O	O	O	O	O	O	O
+	404								O	O	O
+	500											O
+	Log message
+	Gửi đơn thành công	O	O	O	O			O	O	O	O	O	O	O	O	O
+	Vui lòng chọn loại đơn					O
+	Vui lòng nhập lý do hoặc nội dung						O	O	O	O
+	Loại đơn không tồn tại hoặc không dành cho giáo viên							O	O	O
+	Không tìm thấy thông tin trường học						O
+	Có lỗi xảy ra khi upload ảnh											O
+	Result
+	Type (N/A/B)	N	A	A	A	A	A	A	A	A	A	A	A	A	A	A
+	Passed/Failed	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P
+	Executed Date	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+	Defect ID

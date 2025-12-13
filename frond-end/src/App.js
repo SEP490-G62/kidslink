@@ -38,6 +38,7 @@ import adminRoutes from "routes/adminRoutes";
 import { useArgonController, setMiniSidenav } from "context";
 import { AuthProvider } from "context/AuthContext";
 import messagingService from "services/messagingService";
+import apiService from "services/api";
 
 // Images
 import brand from "assets/images/kll3.png";
@@ -47,13 +48,40 @@ import brandDark from "assets/images/kll3.png";
 import "assets/css/nucleo-icons.css";
 import "assets/css/nucleo-svg.css";
 
+const CLASS_DEPENDENT_TEACHER_ROUTE_KEYS = new Set([
+  "teacher-daily-report",
+  "teacher-attendance",
+  "teacher-chat",
+]);
+
+const teacherRoutesWithoutLatestYearFeatures = teacherRoutes.filter(
+  (route) => !CLASS_DEPENDENT_TEACHER_ROUTE_KEYS.has(route.key)
+);
+
 export default function App() {
   const [controller, dispatch] = useArgonController();
   const { miniSidenav, direction, layout, sidenavColor, darkSidenav, darkMode } =
     controller;
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const [rtlCache, setRtlCache] = useState(null);
+  const [teacherNavRoutes, setTeacherNavRoutes] = useState(teacherRoutes);
   const { pathname } = useLocation();
+  const isTeacherPath = pathname.startsWith("/teacher");
+  const isParentPath = pathname.startsWith("/parent");
+  const isHealthCareStaffPath = pathname.startsWith("/health-care");
+  const isNutritionStaffPath = pathname.startsWith("/nutrition");
+  const isSchoolAdminPath = pathname.startsWith("/school-admin");
+  const isAdminPath = pathname.startsWith("/admin");
+  // Determine role from localStorage to support role-based sidenav
+  let userRole = null;
+  try {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      userRole = JSON.parse(storedUser)?.role || null;
+    }
+  } catch (e) {
+    userRole = null;
+  }
 
   // Cache for the rtl
   useMemo(() => {
@@ -114,6 +142,50 @@ export default function App() {
     })();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const determineTeacherRoutes = async () => {
+      if (userRole !== "teacher") {
+        if (!cancelled) {
+          setTeacherNavRoutes(teacherRoutes);
+        }
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        if (!cancelled) {
+          setTeacherNavRoutes(teacherRoutes);
+        }
+        return;
+      }
+
+      try {
+        const response = await apiService.get("/teachers/class");
+        const hasLatestAcademicYearClass = response?.metadata?.has_latest_academic_year_class;
+        if (!cancelled) {
+          setTeacherNavRoutes(
+            hasLatestAcademicYearClass === false
+              ? teacherRoutesWithoutLatestYearFeatures
+              : teacherRoutes
+          );
+        }
+      } catch (error) {
+        console.error("Không thể kiểm tra quyền teacher:", error);
+        if (!cancelled) {
+          setTeacherNavRoutes(teacherRoutes);
+        }
+      }
+    };
+
+    determineTeacherRoutes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userRole]);
+
   const getRoutes = (allRoutes) =>
     allRoutes.map((route) => {
       if (route.collapse) {
@@ -129,28 +201,11 @@ export default function App() {
       return null;
     });
 
-  const isTeacherPath = pathname.startsWith("/teacher");
-  const isParentPath = pathname.startsWith("/parent");
-  const isHealthCareStaffPath = pathname.startsWith("/health-care");
-  const isNutritionStaffPath = pathname.startsWith("/nutrition");
-  const isSchoolAdminPath = pathname.startsWith("/school-admin");
-  const isAdminPath = pathname.startsWith("/admin");
-  // Determine role from localStorage to support role-based sidenav
-  let userRole = null;
-  try {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      userRole = JSON.parse(storedUser)?.role || null;
-    }
-  } catch (e) {
-    userRole = null;
-  }
-  
   // Nếu role là admin, luôn dùng adminRoutes
   const activeRoutes = userRole === "admin"
     ? adminRoutes
     : isTeacherPath
-    ? teacherRoutes
+    ? teacherNavRoutes
     : isParentPath
     ? parentRoutes
     : isHealthCareStaffPath

@@ -78,8 +78,8 @@ const schoolAdminService = {
   },
 
   // Likes
-  getLikes: async (postId) => {
-    return await api.get(`/school-admin/posts/${postId}/likes`, true);
+  getLikes: async (postId, page = 1, limit = 10) => {
+    return await api.get(`/school-admin/posts/${postId}/likes?page=${page}&limit=${limit}`, true);
   },
 
   toggleLike: async (postId) => {

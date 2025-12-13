@@ -132,21 +132,20 @@ const schoolAdminRoutes = [
     ),
     component: <ProtectedRoute requiredRoles={["school_admin"]}><ManageComplaints /></ProtectedRoute>,
   },
+ 
+  {
+    type: "divider",
+    key: "school-admin-divider-1",
+  },
   {
     type: "route",
     name: "Thông tin trường học",
     key: "school-info",
     route: "/school-admin/school-info",
-    icon: (
-      <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-settings-gear-65" />
-    ),
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-building" />,
     component: <ProtectedRoute requiredRoles={["school_admin"]}><SchoolInfo /></ProtectedRoute>,
   },
 
-  {
-    type: "divider",
-    key: "school-admin-divider-1",
-  },
   {
     type: "route",
     name: "Thông tin cá nhân",

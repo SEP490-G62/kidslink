@@ -79,6 +79,7 @@ const TeacherAttendance = () => {
   const [checkingIn, setCheckingIn] = useState(null);
   const [checkingOut, setCheckingOut] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [hasSchedule, setHasSchedule] = useState(true);
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     type: null, // 'checkin' or 'checkout'
@@ -158,16 +159,26 @@ const TeacherAttendance = () => {
       setStudents(response.students || []);
       setStatistics(response.statistics || null);
       setClassInfo(response.class_info || null);
+      setHasSchedule(response.has_schedule === undefined ? true : !!response.has_schedule);
       
     } catch (err) {
       console.error('Error fetching attendance data:', err);
       setError(err.message || 'Không thể tải thông tin điểm danh');
+      setHasSchedule(true);
     } finally {
       setLoading(false);
     }
   };
 
   const openConfirmDialog = (type, student) => {
+    if (!hasSchedule) {
+      setError('Lớp không có lịch học trong ngày này');
+      return;
+    }
+    if (!isStudentActive(student)) {
+      setError('Chỉ có thể thao tác với học sinh đang hoạt động');
+      return;
+    }
     setConfirmDialog({
       open: true,
       type,
@@ -184,6 +195,10 @@ const TeacherAttendance = () => {
   };
 
   const handleCheckin = async (studentId, studentName) => {
+    if (!hasSchedule) {
+      setError('Không thể check in khi lớp không có lịch học');
+      return;
+    }
     try {
       setCheckingIn(studentId);
       setError(null);
@@ -210,6 +225,10 @@ const TeacherAttendance = () => {
   };
 
   const handleCheckout = async (studentId, studentName) => {
+    if (!hasSchedule) {
+      setError('Không thể check out khi lớp không có lịch học');
+      return;
+    }
     try {
       setCheckingOut(studentId);
       setError(null);
@@ -280,6 +299,10 @@ const TeacherAttendance = () => {
     return gender === 0 ? 'primary' : 'secondary';
   };
 
+  const isStudentActive = (student) => student?.status === 1;
+
+  const canInteractWithStudent = (student) => isStudentActive(student) && isDateValidForAttendance() && hasSchedule;
+
   if (loading && students.length === 0) {
     return (
       <DashboardLayout>
@@ -332,6 +355,26 @@ const TeacherAttendance = () => {
             </ArgonTypography>
             <ArgonTypography variant="body2" sx={{ mt: 0.5 }}>
               Ngày đã chọn: <strong>{formatDate(selectedDate)}</strong> - Không thể thực hiện checkin/checkout
+            </ArgonTypography>
+          </Alert>
+        )}
+
+        {!hasSchedule && (
+          <Alert
+            severity="info"
+            sx={{
+              mb: 2,
+              zIndex: 10,
+              position: 'relative',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+            }}
+            icon={<Schedule />}
+          >
+            <ArgonTypography variant="body2" fontWeight="bold">
+              📘 Lớp không có lịch học trong ngày {formatDate(selectedDate)}
+            </ArgonTypography>
+            <ArgonTypography variant="body2" sx={{ mt: 0.5 }}>
+              Không thể thực hiện checkin/checkout khi lớp không có lịch học.
             </ArgonTypography>
           </Alert>
         )}
@@ -645,9 +688,19 @@ const TeacherAttendance = () => {
                                 boxShadow: '0 1px 4px rgba(0,0,0,0.1)'
                               }}
                             />
-                            <ArgonTypography variant="body1" fontWeight="bold">
-                              {student.full_name}
-                            </ArgonTypography>
+                            <Box>
+                              <ArgonTypography variant="body1" fontWeight="bold">
+                                {student.full_name}
+                              </ArgonTypography>
+                              {!isStudentActive(student) && (
+                                <Chip 
+                                  label="Ngưng hoạt động"
+                                  color="default"
+                                  size="small"
+                                  sx={{ mt: 0.5, fontWeight: 'bold', borderRadius: 1 }}
+                                />
+                              )}
+                            </Box>
                           </Box>
                         </TableCell>
 
@@ -724,12 +777,20 @@ const TeacherAttendance = () => {
 
                         {/* Thao tác */}
                         <TableCell align="center">
-                          {!student.attendance.has_checkin ? (
+                          {!hasSchedule ? (
+                            <ArgonTypography variant="body2" color="text">
+                              Không có lịch học
+                            </ArgonTypography>
+                          ) : !isStudentActive(student) ? (
+                            <ArgonTypography variant="body2" color="text">
+                              Ngưng hoạt động
+                            </ArgonTypography>
+                          ) : !student.attendance.has_checkin ? (
                             <ArgonButton
                               variant="contained"
                               color="success"
                               size="small"
-                              disabled={checkingIn === student._id || checkingOut === student._id || !isDateValidForAttendance()}
+                              disabled={checkingIn === student._id || checkingOut === student._id || !canInteractWithStudent(student)}
                               onClick={() => openConfirmDialog('checkin', student)}
                               startIcon={<Login />}
                               sx={{
@@ -740,12 +801,12 @@ const TeacherAttendance = () => {
                                 py: 0.5,
                                 minWidth: 100,
                                 fontSize: '0.8rem',
-                                boxShadow: isDateValidForAttendance() ? '0 1px 4px rgba(76, 175, 80, 0.3)' : 'none',
-                                '&:hover': isDateValidForAttendance() ? {
+                                boxShadow: canInteractWithStudent(student) ? '0 1px 4px rgba(76, 175, 80, 0.3)' : 'none',
+                                '&:hover': canInteractWithStudent(student) ? {
                                   boxShadow: '0 2px 8px rgba(76, 175, 80, 0.4)',
                                   transform: 'translateY(-1px)'
                                 } : {},
-                                opacity: !isDateValidForAttendance() ? 0.5 : 1
+                                opacity: !canInteractWithStudent(student) ? 0.5 : 1
                               }}
                             >
                               {checkingIn === student._id ? (
@@ -778,7 +839,7 @@ const TeacherAttendance = () => {
                               variant="contained"
                               color="info"
                               size="small"
-                              disabled={checkingIn === student._id || checkingOut === student._id || !isDateValidForAttendance()}
+                              disabled={checkingIn === student._id || checkingOut === student._id || !canInteractWithStudent(student)}
                               onClick={() => openConfirmDialog('checkout', student)}
                               startIcon={<Logout />}
                               sx={{
@@ -789,12 +850,12 @@ const TeacherAttendance = () => {
                                 py: 0.5,
                                 minWidth: 100,
                                 fontSize: '0.8rem',
-                                boxShadow: isDateValidForAttendance() ? '0 1px 4px rgba(33, 150, 243, 0.3)' : 'none',
-                                '&:hover': isDateValidForAttendance() ? {
+                                boxShadow: canInteractWithStudent(student) ? '0 1px 4px rgba(33, 150, 243, 0.3)' : 'none',
+                                '&:hover': canInteractWithStudent(student) ? {
                                   boxShadow: '0 2px 8px rgba(33, 150, 243, 0.4)',
                                   transform: 'translateY(-1px)'
                                 } : {},
-                                opacity: !isDateValidForAttendance() ? 0.5 : 1
+                                opacity: !canInteractWithStudent(student) ? 0.5 : 1
                               }}
                             >
                               {checkingOut === student._id ? (

@@ -1,0 +1,150 @@
+@startuml View Weekly Meal Menu - Nutrition Staff
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+skinparam backgroundColor white
+skinparam classBackgroundColor white
+skinparam classBorderColor black
+skinparam arrowColor black
+
+package "Routes" {
+  class C_NutritionStaffRoutes {
+    + registerRoutes(router: ExpressRouter): void
+  }
+}
+
+package "Controller" {
+  class C_NutritionController {
+    + getWeeklyAssignedDishes(req: Request, res: Response): Promise<void>
+    + getAssignedDishes(req: Request, res: Response): Promise<void>
+    - getUserSchoolId(req: Request): Promise<ObjectId>
+  }
+}
+
+package "Middleware" {
+  class C_AuthMiddleware {
+    + authenticate(req, res, next): void
+    + authorize(allowedRoles: String[]): Function
+  }
+  
+  class C_ErrorHandlerMiddleware {
+    + handleError(err, req, res, next): void
+  }
+}
+
+package "Models" {
+  class C_ClassAgeMealModel {
+    - _id: ObjectId
+    - class_age_id: ObjectId
+    - meal_id: ObjectId
+    - weekday_id: ObjectId
+    - date: Date
+    - createdAt: Date
+    - updatedAt: Date
+    + find(query: Object): Promise<ClassAgeMeal[]>
+    + findOne(query: Object): Promise<ClassAgeMeal>
+  }
+  
+  class C_DishesClassAgeMealModel {
+    - _id: ObjectId
+    - class_age_meal_id: ObjectId
+    - dish_id: ObjectId
+    - createdAt: Date
+    - updatedAt: Date
+    + find(query: Object): Promise<DishesClassAgeMeal[]>
+  }
+  
+  class C_ClassAgeModel {
+    - _id: ObjectId
+    - age: Number
+    - age_name: String
+    - school_id: ObjectId
+    + findOne(query: Object): Promise<ClassAge>
+  }
+  
+  class C_MealModel {
+    - _id: ObjectId
+    - meal: String
+    + findById(id: ObjectId): Promise<Meal>
+  }
+  
+  class C_WeekDayModel {
+    - _id: ObjectId
+    - day_of_week: String
+  }
+  
+  class C_DishModel {
+    - _id: ObjectId
+    - dish_name: String
+    - description: String
+    - meal_type: ObjectId
+    - school_id: ObjectId
+  }
+  
+  class C_UserModel {
+    - _id: ObjectId
+    - full_name: String
+    - username: String
+    - role: String
+    - school_id: ObjectId
+    + findById(id: ObjectId): Promise<User>
+  }
+  
+  class C_SchoolModel {
+    - _id: ObjectId
+    - school_name: String
+  }
+}
+
+' Relationships
+C_NutritionStaffRoutes --> C_NutritionController : use
+C_NutritionStaffRoutes --> C_AuthMiddleware : use
+
+C_NutritionController --> C_AuthMiddleware : auth check
+C_NutritionController --> C_ClassAgeMealModel : find\npopulate
+C_NutritionController --> C_DishesClassAgeMealModel : find\npopulate
+C_NutritionController --> C_ClassAgeModel : findOne
+C_NutritionController --> C_MealModel : findById
+C_NutritionController --> C_UserModel : findById
+
+C_AuthMiddleware ..> C_ErrorHandlerMiddleware : on failure
+
+C_ClassAgeMealModel --> C_ClassAgeModel : class_age_id
+C_ClassAgeMealModel --> C_MealModel : meal_id
+C_ClassAgeMealModel --> C_WeekDayModel : weekday_id
+
+C_DishesClassAgeMealModel --> C_ClassAgeMealModel : class_age_meal_id
+C_DishesClassAgeMealModel --> C_DishModel : dish_id
+
+C_DishModel --> C_MealModel : meal_type
+C_DishModel --> C_SchoolModel : school_id
+C_ClassAgeModel --> C_SchoolModel : school_id
+C_UserModel --> C_SchoolModel : school_id
+
+note right of C_NutritionController::getUserSchoolId
+  Get school_id from logged-in user
+end note
+
+note right of C_NutritionController::getWeeklyAssignedDishes
+  Build date range (7 days)
+  Filter by class_age_id, meal_id, weekday_id
+  Group dishes by ClassAgeMeal
+end note
+
+note right of C_NutritionController::getAssignedDishes
+  Get dishes for specific
+  ClassAgeMeal combination
+end note
+
+note right of C_ClassAgeMealModel
+  Links ClassAge, Meal, WeekDay
+  and Date
+end note
+
+note right of C_DishesClassAgeMealModel
+  Junction table linking
+  ClassAgeMeal to Dishes
+end note
+
+@enduml
+

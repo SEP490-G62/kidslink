@@ -98,20 +98,8 @@ const parentRoutes = [
     component: <ProtectedRoute requiredRoles={['parent']}><ParentFeePayment /></ProtectedRoute>,
   },
   {
-    type: "divider",
-    key: "parent-divider-1"
-  },
-  {
     type: "route",
-    name: "Thông tin cá nhân",
-    key: "parent-personal-info",
-    route: "/parent/personal-info",
-    icon: <ArgonBox component="i" color="text" fontSize="14px" className="ni ni-single-02" />,
-    component: <ProtectedRoute requiredRoles={['parent']}><ParentPersonalInfo /></ProtectedRoute>,
-  },
-  {
-    type: "route",
-    name: "Khiếu nại & Góp ý",
+    name: "Đơn",
     key: "parent-complaints-feedback",
     route: "/parent/complaints-feedback",
     icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-chat-round" />,
@@ -125,6 +113,19 @@ const parentRoutes = [
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
     component: <ProtectedRoute requiredRoles={['parent']}><ParentChat /></ProtectedRoute>,
   },
+  {
+    type: "divider",
+    key: "parent-divider-1"
+  },
+  {
+    type: "route",
+    name: "Thông tin cá nhân",
+    key: "parent-personal-info",
+    route: "/parent/personal-info",
+    icon: <ArgonBox component="i" color="text" fontSize="14px" className="ni ni-single-02" />,
+    component: <ProtectedRoute requiredRoles={['parent']}><ParentPersonalInfo /></ProtectedRoute>,
+  },
+
 
 ];
 

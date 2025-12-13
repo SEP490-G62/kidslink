@@ -181,6 +181,10 @@ function FeeAndPayment() {
             is_paid: true
           }));
           await fetchFees();
+          // Trigger refresh unpaid fees count in sidenav
+          window.dispatchEvent(
+            new CustomEvent("kidslink:refresh_unpaid_fees")
+          );
           setTimeout(() => {
             handleClosePaymentDialog();
           }, 1200);

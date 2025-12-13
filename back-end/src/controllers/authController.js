@@ -12,11 +12,18 @@ function signToken(user) {
   const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
   // Thời hạn token: mặc định 24 giờ, có thể cấu hình qua JWT_EXPIRES_IN trong .env
   const expiresIn = process.env.JWT_EXPIRES_IN || '1h';
-  return jwt.sign(
-    { id: user._id, role: user.role, username: user.username, full_name: user.full_name },
-    secret,
-    { expiresIn }
-  );
+  const payload = {
+    id: user._id,
+    role: user.role,
+    username: user.username,
+    full_name: user.full_name
+  };
+
+  if (user.school_id) {
+    payload.school_id = user.school_id.toString();
+  }
+
+  return jwt.sign(payload, secret, { expiresIn });
 }
 
 // Validators
@@ -144,7 +151,8 @@ async function register(req, res) {
         avatar_url: user.avatar_url,
         email: user.email,
         phone_number: user.phone_number,
-        status: user.status
+        status: user.status,
+        school_id: user.school_id ? user.school_id.toString() : null
       }
     });
   } catch (err) {
@@ -195,7 +203,8 @@ async function login(req, res) {
           avatar_url: adminUser.avatar_url,
           email: '',
           phone_number: '',
-          status: 1
+          status: 1,
+          school_id: null
         }
       });
     }
@@ -235,7 +244,8 @@ async function login(req, res) {
         avatar_url: user.avatar_url,
         email: user.email,
         phone_number: user.phone_number,
-        status: user.status
+        status: user.status,
+        school_id: user.school_id ? user.school_id.toString() : null
       }
     });
   } catch (err) {

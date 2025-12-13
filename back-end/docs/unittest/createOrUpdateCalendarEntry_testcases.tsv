@@ -1,0 +1,62 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10	UTC11	UTC12	UTC13	UTC14	UTC15
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+school_admin				O	O	O	O	O	O	O	O	O	O	O	O	O	O	
+admin															O
+CONDITION - Operation:				
+Create new entry				O		O	O	O	O	O	O	O	O	O	O	O	O	O
+Update existing entry					O									
+CONDITION - Input:				
+classId provided				O	O		O	O	O	O	O	O	O	O	O	O	O	O
+classId missing						O								
+date provided				O	O	O		O	O	O	O	O	O	O	O	O	O	O
+date missing							O							
+slotId provided				O	O	O	O		O	O	O	O	O	O	O	O	O	O
+slotId missing								O						
+activityId provided				O	O	O	O	O		O	O	O	O	O	O	O	O	O
+activityId missing									O					
+CONDITION - Class:				
+Class exists				O	O	O	O	O	O		O	O	O	O	O	O	O	O
+Class not exists										O				
+Class has teacher_id				O	O	O	O	O	O	O	O	O	O		O	O	O	O
+Class missing teacher_id													O		
+Class thuộc trường của admin				O	O	O	O	O	O	O	O	O		O	O	O	O	O
+Class thuộc trường khác												O			
+CONDITION - Slot:				
+Slot exists				O	O	O	O	O	O	O		O	O	O	O	O	O	O
+Slot not exists											O			
+CONDITION - Activity:				
+Activity exists				O	O	O	O	O	O	O	O		O	O	O	O	O	O
+Activity not exists												O		
+CONDITION - Schedule conflict:				
+No time overlap				O	O	O	O	O	O	O	O	O	O	O			O	O
+Time overlap with same class													O		
+Teacher has another class same time														O	
+CONDITION - Response format:				
+Response includes all fields															O	
+Return				
+    TRUE				O	O												O	O
+    FALSE						O	O	O	O	O	O	O	O	O	O	O	O		
+Exception				
+201				O												O	O
+200					O									
+400						O	O	O	O					O	O	O		
+403												O			
+404										O	O	O				
+Log message				
+Đã thêm lịch học mới				O												O	O
+Đã cập nhật lịch học					O									
+Không tìm thấy lớp học										O				
+Không tìm thấy khung giờ tiết học											O			
+Không tìm thấy hoạt động												O		
+Lớp không có giáo viên chủ nhiệm													O		
+Khung giờ bị trùng trong ngày														O	
+Giáo viên đã dạy lớp khác cùng khung giờ															O
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A	A	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P	P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

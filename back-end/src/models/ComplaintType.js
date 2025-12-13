@@ -12,6 +12,12 @@ const complaintTypeSchema = new mongoose.Schema({
       message: 'Phải có ít nhất một loại người dùng'
     }
   },
+  school_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true,
+    index: true
+  },
   name: {
     type: String,
     required: true,
@@ -25,18 +31,30 @@ const complaintTypeSchema = new mongoose.Schema({
   timestamps: true
 });
 
-complaintTypeSchema.statics.findParentTypeById = function(typeId) {
-  return this.findOne({
+complaintTypeSchema.statics.findParentTypeById = function(typeId, schoolId) {
+  const filter = {
     _id: typeId,
     category: { $in: ['parent'] }
-  });
+  };
+
+  if (schoolId) {
+    filter.school_id = schoolId;
+  }
+
+  return this.findOne(filter);
 };
 
-complaintTypeSchema.statics.findTeacherTypeById = function(typeId) {
-  return this.findOne({
+complaintTypeSchema.statics.findTeacherTypeById = function(typeId, schoolId) {
+  const filter = {
     _id: typeId,
     category: { $in: ['teacher'] }
-  });
+  };
+
+  if (schoolId) {
+    filter.school_id = schoolId;
+  }
+
+  return this.findOne(filter);
 };
 
 module.exports = mongoose.model('ComplaintType', complaintTypeSchema);

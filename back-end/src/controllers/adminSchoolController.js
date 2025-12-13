@@ -449,15 +449,8 @@ const deleteSchool = async (req, res) => {
       });
     }
 
-    // Check if school has users
-    const userCount = await User.countDocuments({ school_id: schoolId });
-    if (userCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa trường học. Trường học này có ${userCount} người dùng. Vui lòng xóa hoặc chuyển người dùng trước.`
-      });
-    }
-
+    // Admin có quyền xóa school dù có người dùng hay không
+    // Xóa school sẽ không tự động xóa users, nhưng users sẽ không còn school_id
     await School.findByIdAndDelete(schoolId);
 
     return res.json({

@@ -31,6 +31,20 @@ import ArgonTypography from "components/ArgonTypography";
 import parentService from "services/parentService";
 import schoolAdminService from "services/schoolAdminService";
 
+// Helper function to convert role to Vietnamese
+const getRoleLabel = (role) => {
+  switch (role) {
+    case 'parent':
+      return 'Phụ huynh';
+    case 'teacher':
+      return 'Cô giáo';
+    case 'school_admin':
+      return 'Quản trị viên';
+    default:
+      return '';
+  }
+};
+
 function CommentItem({ 
   comment, 
   depth = 0, 
@@ -46,7 +60,8 @@ function CommentItem({
   onCommentUpdate,
   onCommentDelete,
   forceShowReplies = false,
-  isAdmin = false
+  isAdmin = false,
+  isReadOnly = false
 }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [showReplies, setShowReplies] = useState(forceShowReplies || false);
@@ -82,6 +97,7 @@ function CommentItem({
     : (comment.replies || []).slice(0, INITIAL_REPLIES_COUNT);
 
   const handleStartReply = (commentToReply) => {
+    if (isReadOnly) return;
     setReplyingTo(commentToReply);
     setShowReplyForm(true);
   };
@@ -93,7 +109,7 @@ function CommentItem({
   };
 
   const handleReplyComment = async (parentCommentId) => {
-    if (!replyText.trim() || !postId) return;
+    if (isReadOnly || !replyText.trim() || !postId) return;
     
     try {
       setReplyLoading(true);
@@ -126,8 +142,8 @@ function CommentItem({
   };
 
   const isOwnComment = currentUserId && comment.user_id?._id && comment.user_id._id === currentUserId;
-  const canEditComment = isOwnComment;
-  const canDeleteComment = isAdmin || isOwnComment;
+  const canEditComment = !isReadOnly && isOwnComment;
+  const canDeleteComment = !isReadOnly && (isAdmin || isOwnComment);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -249,29 +265,43 @@ function CommentItem({
             }}
           >
             <ArgonBox display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
-              <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
-                {comment.user_id?.full_name}
-              </ArgonTypography>
+              <ArgonBox display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                <ArgonTypography variant="caption" fontWeight="bold" color="dark" fontSize="13px">
+                  {comment.user_id?.full_name}
+                </ArgonTypography>
+                {comment.user_id?.role && (
+                  <ArgonTypography variant="caption" color="text.secondary" fontSize="11px">
+                    ({getRoleLabel(comment.user_id.role)})
+                  </ArgonTypography>
+                )}
+              </ArgonBox>
               {/* Hiển thị tên người được reply (giống Facebook) */}
               {comment.parent_comment_id && comment.parent_comment_id.user_id && (
                 <>
                   <ArgonTypography variant="caption" color="text.secondary" fontSize="12px">
                     Trả lời
                   </ArgonTypography>
-                  <ArgonTypography 
-                    variant="caption" 
-                    fontWeight="bold" 
-                    color="info" 
-                    fontSize="12px"
-                    sx={{ 
-                      '&:hover': { 
-                        textDecoration: 'underline',
-                        cursor: 'pointer'
-                      } 
-                    }}
-                  >
-                    @{comment.parent_comment_id.user_id.full_name}
-                  </ArgonTypography>
+                  <ArgonBox display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                    <ArgonTypography 
+                      variant="caption" 
+                      fontWeight="bold" 
+                      color="info" 
+                      fontSize="12px"
+                      sx={{ 
+                        '&:hover': { 
+                          textDecoration: 'underline',
+                          cursor: 'pointer'
+                        } 
+                      }}
+                    >
+                      @{comment.parent_comment_id.user_id.full_name}
+                    </ArgonTypography>
+                    {comment.parent_comment_id.user_id.role && (
+                      <ArgonTypography variant="caption" color="text.secondary" fontSize="11px">
+                        ({getRoleLabel(comment.parent_comment_id.user_id.role)})
+                      </ArgonTypography>
+                    )}
+                  </ArgonBox>
                 </>
               )}
             </ArgonBox>
@@ -323,7 +353,7 @@ function CommentItem({
 
           {/* Actions row: like, reply, timestamp, menu */}
           <ArgonBox display="flex" alignItems="center" gap={1.5} mt={0.75} ml={0.5}>
-            {!isEditing && (
+            {!isEditing && !isReadOnly && (
               <Button
                 size="small"
                 onClick={() => handleStartReply(comment)}
@@ -382,7 +412,7 @@ function CommentItem({
       </ArgonBox>
 
       {/* Reply Form */}
-      {showReplyForm && replyingTo && replyingTo._id === comment._id && (
+      {!isReadOnly && showReplyForm && replyingTo && replyingTo._id === comment._id && (
         <ArgonBox ml={depth >= 2 ? 6 : getMarginLeft(depth) + 3} mt={1}>
           <ArgonBox display="flex" alignItems="flex-end" gap={1}>
             <TextField
@@ -512,6 +542,7 @@ function CommentItem({
                 // Hoặc nếu comment này nằm trong danh sách cần hiển thị (vừa được reply vào)
                 forceShowReplies={forceShowReplies || (depth >= 1 && showReplies)}
                 isAdmin={isAdmin}
+                isReadOnly={isReadOnly}
               />
             );
           })}
@@ -693,7 +724,8 @@ CommentItem.propTypes = {
   onCommentUpdate: PropTypes.func,
   onCommentDelete: PropTypes.func,
   forceShowReplies: PropTypes.bool,
-  isAdmin: PropTypes.bool
+  isAdmin: PropTypes.bool,
+  isReadOnly: PropTypes.bool
 };
 
 export default CommentItem;

@@ -33,7 +33,10 @@ const getAllComplaints = async (req, res) => {
     const userIds = schoolUsers.map(user => user._id);
 
     // Build query filter
-    const query = { user_id: { $in: userIds } };
+    const query = {
+      user_id: { $in: userIds },
+      school_id: schoolAdmin.school_id
+    };
     if (status && ['pending', 'approve', 'reject'].includes(status)) {
       query.status = status;
     }
@@ -86,6 +89,13 @@ const getComplaintById = async (req, res) => {
       });
     }
 
+    if (complaint.school_id?.toString() !== schoolAdmin.school_id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền xem đơn này'
+      });
+    }
+
     // Kiểm tra xem complaint có thuộc về trường của school admin không
     if (complaint.user_id.school_id?.toString() !== schoolAdmin.school_id.toString()) {
       return res.status(403).json({
@@ -132,6 +142,13 @@ const approveComplaint = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy đơn'
+      });
+    }
+
+    if (complaint.school_id?.toString() !== schoolAdmin.school_id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền xử lý đơn này'
       });
     }
 
@@ -196,6 +213,13 @@ const rejectComplaint = async (req, res) => {
       });
     }
 
+    if (complaint.school_id?.toString() !== schoolAdmin.school_id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền xử lý đơn này'
+      });
+    }
+
     // Kiểm tra xem complaint có thuộc về trường của school admin không
     if (complaint.user_id.school_id?.toString() !== schoolAdmin.school_id.toString()) {
       return res.status(403).json({
@@ -256,19 +280,16 @@ const getComplaintStats = async (req, res) => {
 
     // Helper function để tính stats
     const getStats = async (userIds) => {
-      const total = await Complaint.countDocuments({ user_id: { $in: userIds } });
-      const pending = await Complaint.countDocuments({ 
-        user_id: { $in: userIds },
-        status: 'pending'
-      });
-      const approved = await Complaint.countDocuments({ 
-        user_id: { $in: userIds },
-        status: 'approve'
-      });
-      const rejected = await Complaint.countDocuments({ 
-        user_id: { $in: userIds },
-        status: 'reject'
-      });
+      const baseFilter = {
+        school_id: schoolAdmin.school_id,
+        user_id: userIds.length ? { $in: userIds } : { $in: [] }
+      };
+
+      const total = await Complaint.countDocuments(baseFilter);
+      const pending = await Complaint.countDocuments({ ...baseFilter, status: 'pending' });
+      const approved = await Complaint.countDocuments({ ...baseFilter, status: 'approve' });
+      const rejected = await Complaint.countDocuments({ ...baseFilter, status: 'reject' });
+
       return { total, pending, approved, rejected };
     };
 
@@ -301,7 +322,19 @@ const getComplaintStats = async (req, res) => {
 // GET /api/school-admin/complaint-types - Lấy tất cả loại đơn
 const getAllComplaintTypes = async (req, res) => {
   try {
-    const complaintTypes = await ComplaintType.find()
+    const schoolAdminId = req.user.id;
+    const schoolAdmin = await User.findById(schoolAdminId).select('school_id');
+
+    if (!schoolAdmin || !schoolAdmin.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy thông tin trường học'
+      });
+    }
+
+    const complaintTypes = await ComplaintType.find({
+      school_id: schoolAdmin.school_id
+    })
       .select('_id name description category')
       .sort({ category: 1, createdAt: 1 })
       .lean();
@@ -325,6 +358,15 @@ const getAllComplaintTypes = async (req, res) => {
 const createComplaintType = async (req, res) => {
   try {
     const { name, description, category } = req.body;
+    const schoolAdminId = req.user.id;
+    const schoolAdmin = await User.findById(schoolAdminId).select('school_id');
+
+    if (!schoolAdmin || !schoolAdmin.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy thông tin trường học'
+      });
+    }
 
     // Validation
     if (!name || !name.trim()) {
@@ -351,7 +393,8 @@ const createComplaintType = async (req, res) => {
 
     // Kiểm tra xem đã có loại đơn với tên này chưa (không phân biệt category)
     const existingType = await ComplaintType.findOne({
-      name: name.trim()
+      name: name.trim(),
+      school_id: schoolAdmin.school_id
     });
 
     if (existingType) {
@@ -365,7 +408,8 @@ const createComplaintType = async (req, res) => {
     const newComplaintType = await ComplaintType.create({
       name: name.trim(),
       description: description ? description.trim() : '',
-      category: categories
+      category: categories,
+      school_id: schoolAdmin.school_id
     });
 
     res.status(201).json({
@@ -388,6 +432,15 @@ const updateComplaintType = async (req, res) => {
   try {
     const { typeId } = req.params;
     const { name, description, category } = req.body;
+    const schoolAdminId = req.user.id;
+    const schoolAdmin = await User.findById(schoolAdminId).select('school_id');
+
+    if (!schoolAdmin || !schoolAdmin.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy thông tin trường học'
+      });
+    }
 
     const complaintType = await ComplaintType.findById(typeId);
     if (!complaintType) {
@@ -397,12 +450,20 @@ const updateComplaintType = async (req, res) => {
       });
     }
 
+    if (complaintType.school_id?.toString() !== schoolAdmin.school_id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền chỉnh sửa loại đơn này'
+      });
+    }
+
     // Validation
     if (name && name.trim()) {
       // Kiểm tra xem đã có loại đơn khác với tên này chưa
       const existingType = await ComplaintType.findOne({
         name: name.trim(),
-        _id: { $ne: typeId }
+        _id: { $ne: typeId },
+        school_id: schoolAdmin.school_id
       });
 
       if (existingType) {
@@ -459,13 +520,28 @@ const updateComplaintType = async (req, res) => {
 const deleteComplaintType = async (req, res) => {
   try {
     const { typeId } = req.params;
-    const { id: userId, role } = req.user;
+    const schoolAdminId = req.user.id;
+    const schoolAdmin = await User.findById(schoolAdminId).select('school_id');
+
+    if (!schoolAdmin || !schoolAdmin.school_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy thông tin trường học'
+      });
+    }
 
     const complaintType = await ComplaintType.findById(typeId);
     if (!complaintType) {
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy loại đơn'
+      });
+    }
+
+    if (complaintType.school_id?.toString() !== schoolAdmin.school_id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền xóa loại đơn này'
       });
     }
 

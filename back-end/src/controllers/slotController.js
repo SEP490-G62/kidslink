@@ -74,8 +74,11 @@ const createSlot = async (req, res) => {
       });
     }
 
-    // Validate time
-    if (startTime >= endTime) {
+    // Validate time (convert to minutes for proper comparison)
+    const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
+    const endMinutes = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+    
+    if (startMinutes >= endMinutes) {
       return res.status(400).json({
         success: false,
         message: 'Giờ bắt đầu phải nhỏ hơn giờ kết thúc'

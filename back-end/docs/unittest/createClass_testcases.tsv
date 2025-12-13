@@ -1,0 +1,51 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10	UTC11	UTC12
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+admin				O		O	O	O	O				O	O	O
+school_admin					O					O	O	O			
+CONDITION - Input:				
+class_name provided				O	O		O	O	O	O	O	O	O	O	O
+class_age_id provided				O	O	O		O	O	O	O	O	O	O	O
+teacher_id provided				O	O	O	O		O	O	O	O	O	O	O
+teacher_id2 provided												O				O
+academic_year provided				O	O	O	O	O		O	O	O	O	O	O
+start_date provided				O	O	O	O	O	O	O	O	O	O	O	O
+end_date provided				O	O	O	O	O	O	O	O	O	O	O	O
+class_name missing						O										
+class_age_id missing							O									
+teacher_id missing								O								
+academic_year missing									O							
+CONDITION - School:				
+School admin has school_id					O						O	O			
+CONDITION - Teacher:				
+Teacher cùng trường				O	O	O	O	O	O	O		O	O	O	O
+Teacher phụ cùng trường															O
+CONDITION - Class rules:				
+Trùng tên lớp cùng năm học											O		
+Giáo viên đã có lớp trong năm												O	
+Return				
+TRUE				O	O										O
+FALSE						O	O	O	O	O	O	O	O	O	O
+Exception				
+201				O	O										O
+400						O	O	O	O	O	O		O	O	O
+403											O	O		
+Log message				
+Tạo lớp thành công				O	O										O
+class_name là bắt buộc						O										
+class_age_id là bắt buộc							O									
+teacher_id là bắt buộc								O								
+academic_year là bắt buộc									O							
+School admin chưa được gán trường học												O		
+Giáo viên chính không thuộc trường của bạn											O			
+Giáo viên phụ không thuộc trường của bạn												O		
+Đã tồn tại lớp "Lớp A1" trong năm học 2024-2025													O	
+Giáo viên chính đã có lớp trong năm học 2024-2025														O
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

@@ -21,16 +21,29 @@ const pickPayosConfigFields = (config = {}) => {
   }, {});
 };
 
-const findTargetSchool = async (schoolId) => {
-  if (schoolId) {
-    return School.findById(schoolId);
+const findTargetSchool = async (req) => {
+  const role = req.user?.role;
+  const schoolIdFromUser = req.user?.school_id;
+
+  if (role === 'school_admin') {
+    if (!schoolIdFromUser) {
+      const error = new Error('Tài khoản school admin chưa được gán school_id');
+      error.statusCode = 400;
+      throw error;
+    }
+    return School.findById(schoolIdFromUser);
   }
+
+  if (req.params.schoolId) {
+    return School.findById(req.params.schoolId);
+  }
+
   return School.findOne();
 };
 
 const getSchoolInfo = async (req, res) => {
   try {
-    const school = await findTargetSchool(req.params.schoolId);
+    const school = await findTargetSchool(req);
 
     if (!school) {
       return res.status(404).json({
@@ -45,6 +58,12 @@ const getSchoolInfo = async (req, res) => {
     });
   } catch (error) {
     console.error('getSchoolInfo error:', error);
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
     return res.status(500).json({
       success: false,
       message: 'Lỗi khi lấy thông tin trường học',
@@ -55,7 +74,7 @@ const getSchoolInfo = async (req, res) => {
 
 const updateSchoolInfo = async (req, res) => {
   try {
-    const school = await findTargetSchool(req.params.schoolId);
+    const school = await findTargetSchool(req);
 
     if (!school) {
       return res.status(404).json({
@@ -168,6 +187,12 @@ const updateSchoolInfo = async (req, res) => {
     });
   } catch (error) {
     console.error('updateSchoolInfo error:', error);
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
     return res.status(500).json({
       success: false,
       message: 'Lỗi khi cập nhật thông tin trường học',

@@ -74,7 +74,8 @@ function CommentModal({
     console.log('🔍 Loading comments for post:', selectedPost.id);
     try {
       const service = teacherService;
-      const response = await service.getComments(selectedPost.id);
+      // Load all comments by using a very large limit
+      const response = await service.getComments(selectedPost.id, 1, 10000);
       console.log('✅ Comments response:', response);
       console.log('📝 Comments array:', response.data?.comments);
       console.log('📊 Comments count:', response.data?.comments?.length);

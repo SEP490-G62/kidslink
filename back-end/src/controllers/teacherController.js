@@ -2,6 +2,17 @@ const mongoose = require('mongoose');
 const { Class, Teacher, StudentClass, Student, DailyReport, Calendar, User } = require('../models');
 const cloudinary = require('../utils/cloudinary');
 
+const getDateRange = (dateInput) => {
+  const start = new Date(dateInput);
+  if (Number.isNaN(start.getTime())) {
+    return null;
+  }
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+};
+
 // --- Helper để lấy teacher từ request (có thể bỏ qua tạm khi test) ---
 async function getTeacherByReqUser(req) {
   // Tạm thời hardcode một teacher ID để test
@@ -39,6 +50,9 @@ async function getTeacherClasses(req, res) {
       return res.status(404).json({ error: 'Không tìm thấy giáo viên' });
     }
 
+    const teacherUser = await User.findById(teacher.user_id).select('school_id');
+    const schoolId = teacherUser?.school_id || null;
+
     const classes = await Class.find({
       $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
     })
@@ -57,7 +71,33 @@ async function getTeacherClasses(req, res) {
       .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
       .map((year) => ({ academic_year: year, classes: grouped[year] }));
 
-    return res.json({ teacher_id: teacher._id, data: result });
+    let latestAcademicYear = null;
+    let hasLatestAcademicYearClass = false;
+    if (schoolId) {
+      const academicYears = await Class.distinct('academic_year', { school_id: schoolId });
+      if (Array.isArray(academicYears) && academicYears.length > 0) {
+        academicYears.sort((a, b) => (a > b ? -1 : a < b ? 1 : 0));
+        latestAcademicYear = academicYears[0];
+        if (latestAcademicYear) {
+          const match = await Class.exists({
+            school_id: schoolId,
+            academic_year: latestAcademicYear,
+            $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+          });
+          hasLatestAcademicYearClass = !!match;
+        }
+      }
+    }
+
+    return res.json({
+      teacher_id: teacher._id,
+      data: result,
+      metadata: {
+        latest_academic_year: latestAcademicYear,
+        has_latest_academic_year_class: hasLatestAcademicYearClass,
+        school_id: schoolId ? schoolId.toString() : null
+      }
+    });
   } catch (err) {
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
@@ -155,14 +195,17 @@ async function getStudentsAttendanceByDate(req, res) {
     const mappings = await StudentClass.find({ class_id: classId });
     const studentIds = mappings.map((m) => m.student_id);
 
-    const start = new Date(date);
-    if (Number.isNaN(start.getTime())) return res.status(400).json({ error: 'Ngày không hợp lệ' });
-    const end = new Date(start);
-    end.setHours(23, 59, 59, 999);
+    const range = getDateRange(date);
+    if (!range) return res.status(400).json({ error: 'Ngày không hợp lệ' });
+
+    const hasSchedule = await Calendar.exists({
+      class_id: classId,
+      date: { $gte: range.start, $lte: range.end }
+    });
 
     const reports = await DailyReport.find({
       student_id: { $in: studentIds },
-      report_date: { $gte: start, $lte: end }
+      report_date: { $gte: range.start, $lte: range.end }
     })
       .populate('student_id')
       .populate('teacher_checkin_id')
@@ -220,7 +263,14 @@ async function getStudentsAttendanceByDate(req, res) {
       school: cls.school_id || null
     };
 
-    return res.json({ class_id: classId, date: start.toISOString().split('T')[0], class_info, statistics, students });
+    return res.json({ 
+      class_id: classId, 
+      date: range.start.toISOString().split('T')[0], 
+      class_info, 
+      statistics, 
+      students,
+      has_schedule: !!hasSchedule
+    });
   } catch (err) {
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
@@ -251,7 +301,10 @@ async function getTeacherLatestClassCalendar(req, res) {
       .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } });
 
     if (!latestClass) {
-      return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
+      return res.json({
+        class: null,
+        calendars: []
+      });
     }
 
     // Lấy calendars của lớp và populate dữ liệu liên quan
@@ -313,18 +366,6 @@ async function getTeacherTeachingCalendar(req, res) {
       return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
     }
 
-    // Lấy tất cả các lớp mà giáo viên dạy (teacher_id hoặc teacher_id2)
-    const classes = await Class.find({
-      $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
-    })
-      .sort({ academic_year: -1 })
-      .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } })
-      .populate({ path: 'teacher_id2', model: Teacher, populate: { path: 'user_id', model: 'User' } });
-
-    if (!classes || classes.length === 0) {
-      return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
-    }
-
     // Lấy tất cả calendars mà giáo viên dạy (theo teacher_id trong calendar)
     const calendars = await Calendar.find({ teacher_id: teacher._id })
       .populate('weekday_id')
@@ -333,14 +374,35 @@ async function getTeacherTeachingCalendar(req, res) {
       .populate({ path: 'class_id', model: Class, select: 'class_name academic_year' })
       .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } });
 
-    // Tạo map để nhóm theo lớp
-    const classesMap = new Map();
-    classes.forEach(cls => {
-      classesMap.set(cls._id.toString(), {
-        id: cls._id,
-        name: cls.class_name,
-        academicYear: cls.academic_year
+    // Nếu giáo viên chưa có lịch dạy nào, trả về rỗng
+    if (!calendars || calendars.length === 0) {
+      // Tuy nhiên vẫn trả về các lớp giáo viên phụ trách (nếu có) để UI hiển thị danh sách
+      const classes = await Class.find({
+        $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+      })
+        .sort({ academic_year: -1 })
+        .select('class_name academic_year');
+
+      return res.json({
+        classes: classes.map(cls => ({
+          id: cls._id,
+          name: cls.class_name,
+          academicYear: cls.academic_year
+        })),
+        calendars: []
       });
+    }
+
+    // Tạo map để nhóm theo lớp (bao gồm cả các lớp không phải GVCN nhưng giáo viên có tiết dạy)
+    const classesMap = new Map();
+    calendars.forEach(cal => {
+      if (cal.class_id) {
+        classesMap.set(cal.class_id._id.toString(), {
+          id: cal.class_id._id,
+          name: cal.class_id.class_name,
+          academicYear: cal.class_id.academic_year
+        });
+      }
     });
 
     // Nhóm calendars theo ngày và lớp

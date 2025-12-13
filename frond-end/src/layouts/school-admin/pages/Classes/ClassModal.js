@@ -10,6 +10,7 @@ import {
   FormControl,
   Select,
   Grid,
+  Alert,
 } from "@mui/material";
 import ArgonBox from "components/ArgonBox";
 import ArgonButton from "components/ArgonButton";
@@ -32,6 +33,7 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState(null);
 
   // Tạo danh sách 5 năm học gần nhất
   const generateAcademicYears = () => {
@@ -127,6 +129,7 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
       };
       loadData();
       setErrors({});
+      setApiError(null);
     }
   }, [open, classData, isEdit]);
 
@@ -158,9 +161,54 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
   };
 
   const handleChange = (field) => (e) => {
-    setFormData({ ...formData, [field]: e.target.value });
+    const newValue = e.target.value;
+    const updatedFormData = { ...formData, [field]: newValue };
+    setFormData(updatedFormData);
+    
+    // Clear error for this field
     if (errors[field]) {
       setErrors({ ...errors, [field]: "" });
+    }
+    if (apiError) {
+      setApiError(null);
+    }
+    
+    // Real-time validation for end_date
+    if (field === "end_date" && updatedFormData.start_date && newValue) {
+      const startDate = new Date(updatedFormData.start_date);
+      const endDate = new Date(newValue);
+      if (endDate <= startDate) {
+        setErrors({ ...errors, end_date: "Ngày kết thúc phải sau ngày bắt đầu" });
+      }
+    }
+    
+    // Real-time validation for start_date (re-validate end_date if it exists)
+    if (field === "start_date" && updatedFormData.end_date && newValue) {
+      const startDate = new Date(newValue);
+      const endDate = new Date(updatedFormData.end_date);
+      if (endDate <= startDate) {
+        setErrors({ ...errors, end_date: "Ngày kết thúc phải sau ngày bắt đầu" });
+      } else if (errors.end_date === "Ngày kết thúc phải sau ngày bắt đầu") {
+        setErrors({ ...errors, end_date: "" });
+      }
+    }
+    
+    // Real-time validation for teacher_id2 (check if same as teacher_id)
+    if (field === "teacher_id2" && updatedFormData.teacher_id && newValue) {
+      if (newValue === updatedFormData.teacher_id) {
+        setErrors({ ...errors, teacher_id2: "Giáo viên phụ không được trùng với giáo viên chính" });
+      } else if (errors.teacher_id2 === "Giáo viên phụ không được trùng với giáo viên chính") {
+        setErrors({ ...errors, teacher_id2: "" });
+      }
+    }
+    
+    // Real-time validation for teacher_id (re-validate teacher_id2 if it exists)
+    if (field === "teacher_id" && updatedFormData.teacher_id2 && newValue) {
+      if (newValue === updatedFormData.teacher_id2) {
+        setErrors({ ...errors, teacher_id2: "Giáo viên phụ không được trùng với giáo viên chính" });
+      } else if (errors.teacher_id2 === "Giáo viên phụ không được trùng với giáo viên chính") {
+        setErrors({ ...errors, teacher_id2: "" });
+      }
     }
   };
 
@@ -184,6 +232,21 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
     if (!formData.end_date) {
       newErrors.end_date = "Ngày kết thúc là bắt buộc";
     }
+    
+    // Validate end_date phải sau start_date
+    if (formData.start_date && formData.end_date) {
+      const startDate = new Date(formData.start_date);
+      const endDate = new Date(formData.end_date);
+      if (endDate <= startDate) {
+        newErrors.end_date = "Ngày kết thúc phải sau ngày bắt đầu";
+      }
+    }
+    
+    // Validate teacher1 và teacher2 không được trùng nhau
+    if (formData.teacher_id && formData.teacher_id2 && formData.teacher_id === formData.teacher_id2) {
+      newErrors.teacher_id2 = "Giáo viên phụ không được trùng với giáo viên chính";
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -192,6 +255,7 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
     if (!validate()) return;
 
     setLoading(true);
+    setApiError(null);
     try {
       if (isPromoteMode && classData) {
         // Gọi API lên lớp
@@ -205,9 +269,8 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
       onClose();
     } catch (e) {
       console.error("Lỗi lưu lớp:", e);
-      alert(
-        `Lỗi ${isPromoteMode ? "lên lớp" : isEdit ? "cập nhật" : "tạo"} lớp: ${e.message || "Vui lòng thử lại"}`
-      );
+      const errorMessage = e.response?.data?.message || e.message || "Vui lòng thử lại";
+      setApiError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -229,6 +292,11 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
           </ArgonBox>
         ) : (
           <ArgonBox component="form">
+            {apiError && (
+              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setApiError(null)}>
+                {apiError}
+              </Alert>
+            )}
             <ArgonBox mb={3}>
               <ArgonTypography variant="caption" color="text" sx={{ fontStyle: 'italic' }}>
                 Giáo viên: {teachers.length} | Khối tuổi: {classAges.length}
@@ -320,7 +388,7 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
                     Giáo viên phụ
                   </ArgonTypography>
                 </ArgonBox>
-                <FormControl fullWidth size="small">
+                <FormControl fullWidth size="small" error={!!errors.teacher_id2}>
                   <Select
                     value={formData.teacher_id2}
                     onChange={handleChange("teacher_id2")}
@@ -335,6 +403,11 @@ const ClassModal = ({ open, onClose, classData, onSuccess, isPromoteMode = false
                       </MenuItem>
                     ))}
                   </Select>
+                  {errors.teacher_id2 && (
+                    <ArgonTypography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                      {errors.teacher_id2}
+                    </ArgonTypography>
+                  )}
                 </FormControl>
               </Grid>
 

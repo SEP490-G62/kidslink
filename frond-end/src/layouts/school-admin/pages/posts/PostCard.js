@@ -48,11 +48,22 @@ function PostCard({
   const [anchorEl, setAnchorEl] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const isPending = post.status === "pending";
 
   // Check if current user owns this post
   const isOwnPost = currentUserId && post.authorId && post.authorId === currentUserId;
+  const deleteActionLabel = isPending ? "Từ chối bài viết" : "Xóa bài viết";
+  const deleteDialogTitle = isPending ? "Xác nhận từ chối bài viết" : "Xác nhận xóa bài viết";
+  const deleteDialogActionText = isDeleting ? "Đang xử lý..." : deleteActionLabel;
+  const renderDeleteIcon = () => {
+    if (isPending) return null;
+    return <i className="ni ni-fat-remove" style={{ fontSize: '18px', color: '#f44336' }} />;
+  };
 
   const handleLike = async () => {
+    if (isPending) {
+      return;
+    }
     try {
       if (isAdmin) {
         const response = await schoolAdminService.toggleLike(post.id);
@@ -389,7 +400,6 @@ function PostCard({
   };
 
   // Kiểm tra trạng thái post
-  const isPending = post.status === 'pending';
   const isApproved = post.status === 'approved';
 
   return (
@@ -522,9 +532,6 @@ function PostCard({
                       }
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <i className="fas fa-check" style={{ fontSize: '18px', color: '#4caf50' }} />
-                    </ListItemIcon>
                     <ListItemText 
                       primary="Duyệt bài"
                       primaryTypographyProps={{
@@ -574,11 +581,13 @@ function PostCard({
                         }
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <i className="ni ni-fat-remove" style={{ fontSize: '18px', color: '#f44336' }} />
-                      </ListItemIcon>
+                      {!isPending && (
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          {renderDeleteIcon()}
+                        </ListItemIcon>
+                      )}
                       <ListItemText 
-                        primary="Xóa bài viết"
+                        primary={deleteActionLabel}
                         primaryTypographyProps={{
                           fontSize: '14px',
                           fontWeight: 500,
@@ -635,6 +644,8 @@ function PostCard({
             <Button
               startIcon={<i className="ni ni-like-2" />}
               onClick={handleLike}
+              disabled={isPending}
+              title={isPending ? "Bài viết đang chờ duyệt" : "Thích bài viết"}
               sx={{
                 color: isLiked ? '#1976d2' : '#6c757d',
                 textTransform: 'none',
@@ -643,6 +654,8 @@ function PostCard({
                 px: { xs: 1.5, sm: 2 },
                 py: 1,
                 fontSize: { xs: '12px', sm: '14px' },
+                cursor: isPending ? 'not-allowed' : 'pointer',
+                opacity: isPending ? 0.6 : 1,
                 '&:hover': {
                   backgroundColor: isLiked ? 'rgba(25, 118, 210, 0.08)' : 'rgba(108, 117, 125, 0.08)',
                   transform: 'scale(1.05)'
@@ -677,6 +690,7 @@ function PostCard({
           <Button
             startIcon={<i className="ni ni-chat-round" />}
             onClick={() => onComment(post.id)}
+            title={isPending ? "Bài viết đang chờ duyệt - chỉ xem bình luận" : "Bình luận về bài viết"}
             sx={{
               color: '#6c757d',
               textTransform: 'none',
@@ -685,6 +699,8 @@ function PostCard({
               px: { xs: 1.5, sm: 2 },
               py: 1,
               fontSize: { xs: '12px', sm: '14px' },
+              cursor: 'pointer',
+              opacity: isPending ? 0.85 : 1,
               '&:hover': {
                 backgroundColor: 'rgba(108, 117, 125, 0.08)',
                 transform: 'scale(1.05)'
@@ -712,21 +728,23 @@ function PostCard({
       >
         <DialogTitle>
           <ArgonBox display="flex" alignItems="center" gap={2}>
-            <ArgonBox
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: '50%',
-                backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <i className="ni ni-fat-remove" style={{ fontSize: '24px', color: '#f44336' }} />
-            </ArgonBox>
+            {!isPending && (
+              <ArgonBox
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <i className="ni ni-fat-remove" style={{ fontSize: '24px', color: '#f44336' }} />
+              </ArgonBox>
+            )}
             <ArgonTypography variant="h6" fontWeight="bold" color="dark">
-              Xác nhận xóa bài viết
+              {deleteDialogTitle}
             </ArgonTypography>
           </ArgonBox>
         </DialogTitle>
@@ -764,7 +782,13 @@ function PostCard({
             disabled={isDeleting}
             variant="contained"
             color="error"
-            startIcon={isDeleting ? <i className="ni ni-spinner" /> : <i className="ni ni-fat-remove" />}
+            startIcon={
+              isDeleting
+                ? <i className="ni ni-spinner" />
+                : isPending
+                  ? null
+                  : <i className="ni ni-fat-remove" />
+            }
             sx={{
               borderRadius: 2,
               px: 3,
@@ -786,7 +810,7 @@ function PostCard({
               }
             }}
           >
-            {isDeleting ? 'Đang xóa...' : 'Xóa bài viết'}
+            {deleteDialogActionText}
           </Button>
         </DialogActions>
       </Dialog>

@@ -43,6 +43,7 @@ function CommentModal({
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
+  const isReadOnly = selectedPost?.status === 'pending';
   
   // Reply comment state
   const [replyingTo, setReplyingTo] = useState(null);
@@ -75,7 +76,8 @@ function CommentModal({
     console.log('🔍 Loading comments for post:', selectedPost.id);
     try {
       const service = isAdmin ? schoolAdminService : parentService;
-      const response = await service.getComments(selectedPost.id);
+      // Load all comments by using a very large limit
+      const response = await service.getComments(selectedPost.id, 1, 10000);
       console.log('✅ Comments response:', response);
       console.log('📝 Comments array:', response.data?.comments);
       console.log('📊 Comments count:', response.data?.comments?.length);
@@ -109,7 +111,7 @@ function CommentModal({
   };
 
   const handleSubmitComment = async () => {
-    if (!newComment.trim() || !selectedPost?.id) return;
+    if (isReadOnly || !newComment.trim() || !selectedPost?.id) return;
     
     try {
       setCommentLoading(true);
@@ -132,6 +134,7 @@ function CommentModal({
   };
 
   const handleStartReply = (comment) => {
+    if (isReadOnly) return;
     setReplyingTo(comment);
     setReplyText('');
   };
@@ -142,7 +145,7 @@ function CommentModal({
   };
 
   const handleReplyComment = async (parentCommentId) => {
-    if (!replyText.trim()) return;
+    if (isReadOnly || !replyText.trim()) return;
     
     try {
       setReplyLoading(true);
@@ -482,6 +485,7 @@ function CommentModal({
                   onCommentDelete={handleCommentDelete}
                   forceShowReplies={shouldShowRepliesFor.has(comment._id)}
                   isAdmin={isAdmin}
+                  isReadOnly={isReadOnly}
                 />
               ))}
                                   </ArgonBox>
@@ -511,6 +515,7 @@ function CommentModal({
               onChange={(e) => setNewComment(e.target.value)}
               variant="outlined"
               size="small"
+              disabled={isReadOnly || commentLoading}
               sx={{ 
                 flex: 1,
                 width: '100%',
@@ -536,7 +541,7 @@ function CommentModal({
           <Button 
             onClick={handleSubmitComment}
             variant="contained"
-            disabled={!newComment.trim() || commentLoading}
+            disabled={isReadOnly || !newComment.trim() || commentLoading}
             startIcon={commentLoading ? <CircularProgress size={16} color="inherit" /> : <i className="ni ni-send" />}
             sx={{
               minWidth: 'auto',
@@ -573,6 +578,11 @@ function CommentModal({
             {commentLoading ? 'Đang gửi...' : 'Gửi'}
           </Button>
         </ArgonBox>
+        {isReadOnly && (
+          <ArgonTypography variant="caption" color="text.secondary" mt={1} display="block">
+            Bài viết đang chờ duyệt. Bạn chỉ có thể xem các bình luận hiện có.
+          </ArgonTypography>
+        )}
       </ArgonBox>
     </Dialog>
   );
@@ -587,7 +597,8 @@ CommentModal.propTypes = {
     author: PropTypes.string.isRequired,
     date: PropTypes.string.isRequired,
     time: PropTypes.string.isRequired,
-    content: PropTypes.string.isRequired
+    content: PropTypes.string.isRequired,
+    status: PropTypes.string
   }),
   onUpdateCommentCount: PropTypes.func.isRequired,
   isAdmin: PropTypes.bool
