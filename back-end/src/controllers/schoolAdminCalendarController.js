@@ -441,6 +441,29 @@ const createOrUpdateCalendarEntry = async (req, res) => {
   }
 };
 
+// Helper function to parse academic year and get start year
+function parseAcademicYear(academicYear) {
+  if (!academicYear || typeof academicYear !== 'string') return -Infinity;
+  const parts = academicYear.split('-');
+  const startYear = parseInt(parts[0], 10);
+  return Number.isFinite(startYear) ? startYear : -Infinity;
+}
+
+// Helper function to get latest academic year for a school
+async function getLatestAcademicYearForSchool(schoolId) {
+  const academicYears = await Class.find({ school_id: schoolId }).distinct('academic_year');
+  if (!academicYears || academicYears.length === 0) return null;
+  
+  // Sort by start year (parse academic year to get start year)
+  academicYears.sort((a, b) => {
+    const yearA = parseAcademicYear(a);
+    const yearB = parseAcademicYear(b);
+    return yearB - yearA; // Descending order
+  });
+  
+  return academicYears[0];
+}
+
 // BULK create or update calendar entries
 // Body: { entries: [{ classId, date, slotId, activityId, teacherId, delete }] }
 const bulkUpsertCalendars = async (req, res) => {
@@ -462,9 +485,12 @@ const bulkUpsertCalendars = async (req, res) => {
 
     // Get school_id for school_admin
     let adminSchoolId = null;
+    let latestAcademicYear = null;
     if (req.user?.role === 'school_admin') {
       try {
         adminSchoolId = await getSchoolIdForAdmin(req.user.id);
+        // Lấy năm học lớn nhất của trường
+        latestAcademicYear = await getLatestAcademicYearForSchool(adminSchoolId);
       } catch (error) {
         return res.status(400).json({
           success: false,
@@ -475,6 +501,7 @@ const bulkUpsertCalendars = async (req, res) => {
 
     let successCount = 0;
     const errors = [];
+    let filteredCount = 0; // Đếm số entry bị lọc bỏ
 
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
@@ -500,6 +527,15 @@ const bulkUpsertCalendars = async (req, res) => {
         // Validate class belongs to same school (for school_admin)
         if (adminSchoolId && String(classData.school_id) !== String(adminSchoolId)) {
           throw new Error('Lớp học không thuộc trường của bạn');
+        }
+
+        // Chỉ xếp lịch cho các lớp thuộc năm học lớn nhất
+        if (adminSchoolId && latestAcademicYear) {
+          const classAcademicYear = classData.academic_year;
+          if (classAcademicYear !== latestAcademicYear) {
+            filteredCount++;
+            continue; // Bỏ qua entry này, không xử lý
+          }
         }
 
         // Lấy calendars của class + date
@@ -655,16 +691,20 @@ const bulkUpsertCalendars = async (req, res) => {
       }
     }
 
+    const message = errors.length === 0
+      ? filteredCount > 0
+        ? `Đã áp dụng lịch mặc định thành công. Đã bỏ qua ${filteredCount} entry không thuộc năm học lớn nhất.`
+        : 'Đã áp dụng lịch mặc định thành công'
+      : 'Hoàn thành với một số lỗi';
+
     return res.json({
       success: errors.length === 0,
-      message:
-        errors.length === 0
-          ? 'Đã áp dụng lịch mặc định thành công'
-          : 'Hoàn thành với một số lỗi',
+      message,
       data: {
         total: entries.length,
         successCount,
         errorCount: errors.length,
+        filteredCount, // Số entry bị lọc bỏ (không thuộc năm học lớn nhất)
         errors,
       },
     });

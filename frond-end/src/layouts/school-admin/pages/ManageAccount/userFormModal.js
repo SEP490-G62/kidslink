@@ -823,7 +823,7 @@ const UserFormModal = ({ open, onClose, onSuccess, user, students }) => {
                 {selectedStudent && (
                   <Grid item xs={12}>
                     <Box
-                      sx={{
+                    sx={{
                         p: 2,
                         borderRadius: 2,
                         border: "1px solid #e3f2fd",
@@ -850,8 +850,8 @@ const UserFormModal = ({ open, onClose, onSuccess, user, students }) => {
                         </ArgonTypography>
                       </Box>
                     </Box>
-                  </Grid>
-                )}
+                </Grid>
+              )}
         </Grid>
             </SectionCard>
           )}

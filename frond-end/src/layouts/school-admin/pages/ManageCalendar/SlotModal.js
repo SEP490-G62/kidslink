@@ -91,7 +91,7 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
       setSelectedDate(date || "");
       fetchSlots();
       fetchActivities();
-      fetchTeachers();
+        fetchTeachers();
       
       if (calendarEntry) {
         // Chỉnh sửa calendar entry có sẵn - populate form data
@@ -209,8 +209,8 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
       console.log("Calendar ID:", calendarId);
       
       await schoolAdminService.createOrUpdateCalendarEntry(calendarId, requestData);
-      onSuccess();
-      onClose();
+        onSuccess();
+        onClose();
     } catch (error) {
       console.error("Error saving calendar entry:", error);
       console.error("Full error object:", error);
@@ -290,15 +290,15 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
         >
           <CloseIcon sx={{ fontSize: 22 }} />
         </ArgonButton>
-      </DialogTitle>
+        </DialogTitle>
 
       <DialogContent sx={{ p: 3 }}>
         {error && (
           <Alert
             severity="error"
-            sx={{
-              mb: 3,
-              borderRadius: 2,
+                sx={{ 
+                  mb: 3, 
+                  borderRadius: 2,
               "& .MuiAlert-message": {
                 fontWeight: 500,
               },
@@ -448,7 +448,7 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
                   </Paper>
                 </Grid>
               )}
-
+              
               {/* Chọn khung giờ tiết học - ẩn khi đã chọn sẵn từ bảng */}
               {!preSelectedSlot && (
                 <Grid item xs={12}>
@@ -651,7 +651,7 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
                               color="text"
                             >
                               {selectedTeacher.specialization}
-                            </ArgonTypography>
+                          </ArgonTypography>
                           )}
                         </ArgonBox>
                       </ArgonBox>
@@ -662,7 +662,7 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
             </Grid>
           </SectionCard>
         </Stack>
-      </DialogContent>
+        </DialogContent>
 
       <DialogActions
         sx={{
@@ -692,13 +692,13 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
           }}
           disabled={loading}
         >
-          Hủy
-        </ArgonButton>
-        <ArgonButton 
-          onClick={handleSubmit} 
+            Hủy
+          </ArgonButton>
+          <ArgonButton 
+            onClick={handleSubmit} 
           color={calendarEntry ? "success" : "info"}
           variant="contained"
-          disabled={loading}
+            disabled={loading}
           sx={{
             minWidth: calendarEntry ? 140 : 120,
             borderRadius: 2,
@@ -735,9 +735,9 @@ const SlotModal = ({ open, onClose, calendarEntry, date, weekDays = [], classId,
             : calendarEntry 
               ? "Cập nhật tiết học" 
               : "Thêm tiết học"}
-        </ArgonButton>
-      </DialogActions>
-    </Dialog>
+          </ArgonButton>
+        </DialogActions>
+      </Dialog>
   );
 };
 
