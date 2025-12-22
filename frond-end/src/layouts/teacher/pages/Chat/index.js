@@ -1092,35 +1092,52 @@ const TeacherChat = () => {
                                 </Box>
                               }
                               secondary={
-                                <Box sx={{ mt: 0.25, pr: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  {lastMessage ? (
+                                <Box sx={{ mt: 0.25, pr: 0.5 }}>
+                                  {/* Hiển thị thông tin students nếu là conversation 1-1 với parent */}
+                                  {conv.participants_count === 2 && conv.students && Array.isArray(conv.students) && conv.students.length > 0 && (
                                     <Typography
                                       variant="caption"
-                                      color="text.secondary"
+                                      color="primary"
                                       sx={{
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                        fontSize: '0.75rem',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 500,
                                         display: 'block',
-                                        width: '100%'
+                                        mb: 0.25
                                       }}
                                     >
-                                      {lastMessage.sender_id?.full_name || 'Người dùng'}: {lastMessage.content}
-                                    </Typography>
-                                  ) : (
-                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                                      Chưa có tin nhắn
+                                      Học sinh: {conv.students.map(s => s.full_name).join(', ')}
                                     </Typography>
                                   )}
-                                  {unreadCount > 0 && (
-                                    <Chip 
-                                      label={unreadCount > 99 ? '99+' : unreadCount} 
-                                      color="error"
-                                      size="small" 
-                                      sx={{ height: 18, fontSize: '0.65rem' }}
-                                    />
-                                  )}
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    {lastMessage ? (
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                          fontSize: '0.75rem',
+                                          display: 'block',
+                                          width: '100%'
+                                        }}
+                                      >
+                                        {lastMessage.sender_id?.full_name || 'Người dùng'}: {lastMessage.content}
+                                      </Typography>
+                                    ) : (
+                                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                        Chưa có tin nhắn
+                                      </Typography>
+                                    )}
+                                    {unreadCount > 0 && (
+                                      <Chip 
+                                        label={unreadCount > 99 ? '99+' : unreadCount} 
+                                        color="error"
+                                        size="small" 
+                                        sx={{ height: 18, fontSize: '0.65rem' }}
+                                      />
+                                    )}
+                                  </Box>
                                 </Box>
                               }
                               sx={{ 
@@ -1658,7 +1675,19 @@ const TeacherChat = () => {
                 </ListItemAvatar>
                 <ListItemText
                   primary={parent.full_name || 'Phụ huynh'}
-                  secondary="Phụ huynh"
+                  secondary={
+                    <Box>
+                      {parent.students && Array.isArray(parent.students) && parent.students.length > 0 ? (
+                        <Typography variant="body2" color="primary" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
+                          Học sinh: {parent.students.map(s => s.full_name).join(', ')}
+                        </Typography>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                          Phụ huynh
+                        </Typography>
+                      )}
+                    </Box>
+                  }
                 />
               </ListItem>
             ))}

@@ -164,10 +164,27 @@ export default function SchedulePlanner() {
 
   const weekDaysOptions = useMemo(() => weekDays.map(d => ({ id: d._id, name: d.day_of_week })), [weekDays]);
   const filteredAllDishesWeekly = useMemo(() => {
-    if (!dishSearchWeekly.trim()) return dishes;
-    const q = dishSearchWeekly.trim().toLowerCase();
-    return dishes.filter(d => (d.dish_name || "").toLowerCase().includes(q));
-  }, [dishes, dishSearchWeekly]);
+    let filtered = dishes;
+    
+    // Filter by meal_id: chỉ hiển thị dishes có category chứa meal_id hiện tại
+    if (currentWeeklySlot?.meal_id) {
+      filtered = filtered.filter((dish) => {
+        const categories = dish.category || [];
+        return categories.some((cat) => {
+          const catId = cat?._id || cat;
+          return String(catId) === String(currentWeeklySlot.meal_id);
+        });
+      });
+    }
+    
+    // Filter by search term
+    if (dishSearchWeekly.trim()) {
+      const q = dishSearchWeekly.trim().toLowerCase();
+      filtered = filtered.filter(d => (d.dish_name || "").toLowerCase().includes(q));
+    }
+    
+    return filtered;
+  }, [dishes, dishSearchWeekly, currentWeeklySlot]);
 
   const hasAnyDishThisWeek = useMemo(() => {
     if (!weeklyMealSelection || Object.keys(weeklyMealSelection).length === 0) return false;
@@ -260,6 +277,7 @@ export default function SchedulePlanner() {
     const slotData = weeklyMealSelection[key] || { dishes: [], date, meal_id: mealId, weekday_id: weekdayId };
     setCurrentWeeklySlot({ meal_id: mealId, weekday_id: weekdayId, date });
     setSelectedDishesForWeekly(new Set((slotData.dishes || []).map(d => d._id)));
+    setDishSearchWeekly(""); // Reset search khi mở dialog mới
     setWeeklyMealDialogOpen(true);
   };
 
@@ -902,7 +920,10 @@ export default function SchedulePlanner() {
 
       <Dialog
         open={weeklyMealDialogOpen}
-        onClose={() => setWeeklyMealDialogOpen(false)}
+        onClose={() => {
+          setWeeklyMealDialogOpen(false);
+          setDishSearchWeekly(""); // Reset search khi đóng dialog
+        }}
         fullWidth
         maxWidth="md"
         PaperProps={{
@@ -1010,12 +1031,18 @@ export default function SchedulePlanner() {
                 </Grid>
 
                 <Grid item xs={12}>
+                  {currentWeeklySlot?.meal_id && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      Chỉ hiển thị các món ăn thuộc loại bữa: <strong>{meals.find(m => m._id === currentWeeklySlot.meal_id)?.meal || "—"}</strong>
+                    </Alert>
+                  )}
                   <ArgonBox sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
                     <ArgonButton
                       size="small"
                       variant="contained"
                       color="info"
                       onClick={() => setSelectedDishesForWeekly(new Set(filteredAllDishesWeekly.map(d => d._id)))}
+                      disabled={filteredAllDishesWeekly.length === 0}
                       sx={{
                         borderRadius: 2,
                         textTransform: "none",
@@ -1083,6 +1110,8 @@ export default function SchedulePlanner() {
                           <ArgonTypography variant="body2" color="text.secondary">
                             {dishSearchWeekly
                               ? `Không tìm thấy món phù hợp với "${dishSearchWeekly}"`
+                              : currentWeeklySlot?.meal_id
+                              ? `Chưa có món ăn nào thuộc loại bữa "${meals.find(m => m._id === currentWeeklySlot.meal_id)?.meal || "—"}". Vui lòng thêm món ăn ở phần Quản lý món và chọn loại bữa phù hợp.`
                               : "Chưa có món ăn nào. Vui lòng thêm món ăn ở phần Quản lý món."}
                           </ArgonTypography>
                         </ArgonBox>

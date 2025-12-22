@@ -16,7 +16,16 @@ async function getSchoolIdForAdmin(userId) {
 // GET /classes
 async function listClasses(req, res) {
   try {
-    const { page = 1, limit = 50, school_id, class_age_id, teacher_id, academic_year } = req.query;
+    const {
+      page = 1,
+      limit = 50,
+      school_id,
+      class_age_id,
+      teacher_id,
+      academic_year,
+      latestAcademicYear, // optional flag: nếu = 'true' thì chỉ lấy lớp thuộc năm học mới nhất
+    } = req.query;
+
     const filter = {};
     
     // Nếu là school_admin, chỉ lấy classes của school_id của họ
@@ -25,12 +34,12 @@ async function listClasses(req, res) {
       try {
         adminSchoolId = await getSchoolIdForAdmin(req.user.id);
         filter.school_id = adminSchoolId;
-        
-        // Chỉ lấy các lớp thuộc năm học lớn nhất (nếu không có query academic_year)
-        if (!academic_year) {
-          const latestAcademicYear = await getLatestAcademicYearForSchool(adminSchoolId);
-          if (latestAcademicYear) {
-            filter.academic_year = latestAcademicYear;
+
+        // Chỉ lấy các lớp thuộc năm học lớn nhất nếu có flag latestAcademicYear và không truyền academic_year cụ thể
+        if (latestAcademicYear === 'true' && !academic_year) {
+          const latestYear = await getLatestAcademicYearForSchool(adminSchoolId);
+          if (latestYear) {
+            filter.academic_year = latestYear;
           }
         }
       } catch (err) {

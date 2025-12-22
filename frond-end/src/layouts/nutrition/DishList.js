@@ -46,7 +46,7 @@ export default function NutritionDishList() {
 
   const [dishDialogOpen, setDishDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState(null);
-  const [dishForm, setDishForm] = useState({ dish_name: "", description: "", meal_type: "" });
+  const [dishForm, setDishForm] = useState({ dish_name: "", description: "", category: [] });
   const [dishSubmitting, setDishSubmitting] = useState(false);
 
   useEffect(() => {
@@ -75,8 +75,11 @@ export default function NutritionDishList() {
     let filtered = dishes;
     if (mealTypeFilter) {
       filtered = filtered.filter((dish) => {
-        const id = dish.meal_type?._id || dish.meal_type;
-        return String(id) === String(mealTypeFilter);
+        const categories = dish.category || [];
+        return categories.some((cat) => {
+          const catId = cat?._id || cat;
+          return String(catId) === String(mealTypeFilter);
+        });
       });
     }
     if (search.trim()) {
@@ -92,23 +95,23 @@ export default function NutritionDishList() {
 
   const openAddDish = () => {
     setEditingDish(null);
-    setDishForm({ dish_name: "", description: "", meal_type: "" });
+    setDishForm({ dish_name: "", description: "", category: [] });
     setDishDialogOpen(true);
   };
 
   const openEditDish = (dish) => {
     setEditingDish(dish);
-    const mealTypeId = dish.meal_type?._id || dish.meal_type || "";
+    const categoryIds = (dish.category || []).map((cat) => cat?._id || cat).filter(Boolean);
     setDishForm({ 
       dish_name: dish.dish_name || "", 
       description: dish.description || "",
-      meal_type: mealTypeId
+      category: categoryIds
     });
     setDishDialogOpen(true);
   };
 
   const submitDish = async () => {
-    if (!dishForm.dish_name?.trim() || !dishForm.description?.trim() || !dishForm.meal_type) return;
+    if (!dishForm.dish_name?.trim() || !dishForm.description?.trim() || !dishForm.category || dishForm.category.length === 0) return;
     setDishSubmitting(true);
     try {
       if (editingDish) {
@@ -276,13 +279,24 @@ export default function NutritionDishList() {
                         </TableRow>
                       ) : (
                       filteredDishes.map((dish) => {
-                        const mealName = dish.meal_type?.meal || dish.meal_type || "—";
+                        const categories = dish.category || [];
                           return (
                           <TableRow key={dish._id} hover>
                             <TableCell sx={{ fontWeight: 600 }}>{dish.dish_name}</TableCell>
                             <TableCell>{dish.description}</TableCell>
                             <TableCell>
-                              <Chip label={mealName} size="small" color="success" variant="outlined" />
+                              <ArgonBox display="flex" gap={0.5} flexWrap="wrap">
+                                {categories.length === 0 ? (
+                                  <Chip label="—" size="small" color="default" variant="outlined" />
+                                ) : (
+                                  categories.map((cat, idx) => {
+                                    const catName = cat?.meal || cat || "—";
+                                    return (
+                                      <Chip key={cat?._id || idx} label={catName} size="small" color="success" variant="outlined" />
+                                    );
+                                  })
+                                )}
+                              </ArgonBox>
                               </TableCell>
                             <TableCell align="right">
                               <IconButton color="primary" size="small" onClick={() => openEditDish(dish)} sx={{ mr: 1 }}>
@@ -324,8 +338,18 @@ export default function NutritionDishList() {
                 select
                     fullWidth
                 label="Loại bữa ăn"
-                value={dishForm.meal_type}
-                onChange={(e) => setDishForm((prev) => ({ ...prev, meal_type: e.target.value }))}
+                SelectProps={{
+                  multiple: true,
+                  renderValue: (selected) => {
+                    if (!selected || selected.length === 0) return "Chọn bữa ăn";
+                    return selected.map((id) => {
+                      const meal = meals.find((m) => m._id === id);
+                      return meal ? meal.meal : id;
+                    }).join(", ");
+                  }
+                }}
+                value={dishForm.category || []}
+                onChange={(e) => setDishForm((prev) => ({ ...prev, category: e.target.value }))}
                 placeholder="Chọn bữa ăn"
               >
                 {meals.map((meal) => (
@@ -356,7 +380,7 @@ export default function NutritionDishList() {
             variant="contained"
             color="success"
             onClick={submitDish}
-            disabled={dishSubmitting || !dishForm.dish_name?.trim() || !dishForm.description?.trim() || !dishForm.meal_type}
+            disabled={dishSubmitting || !dishForm.dish_name?.trim() || !dishForm.description?.trim() || !dishForm.category || dishForm.category.length === 0}
             startIcon={dishSubmitting ? <CircularProgress size={16} color="inherit" /> : null}
           >
             {dishSubmitting ? "Đang lưu..." : editingDish ? "Cập nhật" : "Thêm mới"}

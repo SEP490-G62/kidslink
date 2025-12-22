@@ -62,6 +62,8 @@ function Breadcrumbs({ icon, title, route, light }) {
       'notices': 'Thông báo y tế',
       'students': 'Học sinh',
       'nutrition': 'Dinh dưỡng',
+      'dishes': 'Thực đơn',
+
     };
     
     return translations[routeName] || routeName;
@@ -96,6 +98,8 @@ function Breadcrumbs({ icon, title, route, light }) {
       'notices': 'Thông báo y tế',
       'students': 'Học sinh',
       'nutrition': 'Dinh dưỡng',
+      'dishes': 'Món ăn',
+
     };
     
     return titleTranslations[titleName] || titleName.replace("-", " ");
