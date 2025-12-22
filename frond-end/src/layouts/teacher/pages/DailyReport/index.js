@@ -653,7 +653,7 @@ const DailyReportPage = () => {
                         )}
                       </Grid>
 
-                      {report.comments && report.comments !== 'Nghỉ' && (
+                      {report.comments && (
                         <Box mt={1.5} p={1.5} sx={{bgcolor:'#f4faff', borderRadius:1.5, borderLeft:'3px solid #1976d2'}}>
                           <Box display="flex" alignItems="flex-start" gap={1}>
                             <CommentIcon color="info" fontSize="small" sx={{mt:0.3}} />
