@@ -11,10 +11,11 @@ const dishSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  meal_type: {
-    type: mongoose.Schema.Types.ObjectId,
+  category: {
+    type: [mongoose.Schema.Types.ObjectId],
     ref: 'Meal',
-    required: true
+    required: true,
+    default: []
   },
   school_id: {
     type: mongoose.Schema.Types.ObjectId,

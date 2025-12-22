@@ -60,7 +60,8 @@ const ClassesPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await api.get("/classes", true);
+      // Tăng limit để lấy tất cả lớp của tất cả năm học
+      const res = await api.get("/classes?limit=1000", true);
       if (res.success && res.data) {
         setClasses(res.data);
       } else {

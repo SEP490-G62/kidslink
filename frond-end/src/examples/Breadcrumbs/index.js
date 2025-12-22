@@ -74,6 +74,9 @@ function Breadcrumbs({ icon, title, route, light }) {
       'fees': 'Phí',
       'school-info': 'Thông tin trường',
       'complaints': 'Đơn',
+      'calendar': 'Thời khóa biểu',
+      'dishes': 'Thực đơn',
+
     };
     
     return translations[routeName] || routeName;
@@ -114,6 +117,9 @@ function Breadcrumbs({ icon, title, route, light }) {
       'children': 'Học sinh',
       'students': 'Học sinh',
       'schools': 'Trường học',
+      'calendar': 'Thời khóa biểu',
+      'dishes': 'Thực đơn',
+
     };
     
     return titleTranslations[titleName] || titleName.replace("-", " ");

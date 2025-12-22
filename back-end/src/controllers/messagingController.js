@@ -8,6 +8,7 @@ const Teacher = require('../models/Teacher');
 const StudentClass = require('../models/StudentClass');
 const ParentStudent = require('../models/ParentStudent');
 const Parent = require('../models/Parent');
+const Student = require('../models/Student');
 const cloudinary = require('../utils/cloudinary');
 
 // Tạo cuộc trò chuyện mới
@@ -148,16 +149,66 @@ exports.getConversations = async (req, res) => {
           .populate('user_id', 'full_name avatar_url role')
           .select('user_id');
 
+        const participantsData = participants.map(p => ({
+          _id: p.user_id?._id || p.user_id,
+          full_name: p.user_id?.full_name,
+          avatar_url: p.user_id?.avatar_url,
+          role: p.user_id?.role
+        }));
+
+        // Nếu là conversation 1-1 giữa teacher và parent, và user hiện tại là teacher, lấy danh sách students
+        let students = [];
+        if (participants_count === 2 && conv.class_id && req.user.role === 'teacher') {
+          // Tìm parent trong participants
+          const parentParticipant = participantsData.find(p => p.role === 'parent');
+          if (parentParticipant) {
+            try {
+              // Lấy parent document
+              const parentDoc = await Parent.findOne({ user_id: parentParticipant._id });
+              if (parentDoc) {
+                // Lấy class_id (có thể là object hoặc string)
+                const classId = conv.class_id._id || conv.class_id;
+                
+                // Lấy tất cả students của parent
+                const parentStudents = await ParentStudent.find({ parent_id: parentDoc._id })
+                  .populate('student_id', 'full_name avatar_url');
+                
+                // Lọc chỉ lấy students trong lớp hiện tại
+                const studentIds = parentStudents
+                  .filter(ps => ps.student_id)
+                  .map(ps => ps.student_id._id);
+                
+                if (studentIds.length > 0) {
+                  const studentsInClass = await StudentClass.find({
+                    student_id: { $in: studentIds },
+                    class_id: classId
+                  }).populate({
+                    path: 'student_id',
+                    select: 'full_name avatar_url'
+                  });
+                  
+                  students = studentsInClass
+                    .filter(sc => sc.student_id && sc.student_id._id)
+                    .map(sc => ({
+                      _id: sc.student_id._id,
+                      full_name: sc.student_id.full_name || 'Học sinh',
+                      avatar_url: sc.student_id.avatar_url || ''
+                    }));
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching students for conversation:', err);
+              // Không throw error, chỉ log và tiếp tục
+            }
+          }
+        }
+
         return {
           ...conv.toObject(),
           lastMessage: lastMessage || null,
           participants_count,
-          participants: participants.map(p => ({
-            _id: p.user_id?._id || p.user_id,
-            full_name: p.user_id?.full_name,
-            avatar_url: p.user_id?.avatar_url,
-            role: p.user_id?.role
-          }))
+          participants: participantsData,
+          students: students.length > 0 ? students : undefined
         };
       })
     );
@@ -817,19 +868,35 @@ exports.getParentsByTeacherClass = async (req, res) => {
         path: 'user_id',
         select: 'full_name avatar_url'
       }
+    }).populate({
+      path: 'student_id',
+      select: 'full_name avatar_url'
     });
 
-    // Tạo map để loại bỏ duplicate (một phụ huynh có thể có nhiều con trong cùng lớp)
+    // Tạo map để loại bỏ duplicate và nhóm students theo parent
     const parentMap = new Map();
     parentStudents.forEach(ps => {
-      if (ps.parent_id && ps.parent_id.user_id) {
+      if (ps.parent_id && ps.parent_id.user_id && ps.student_id) {
         const parentUserId = ps.parent_id.user_id._id.toString();
         if (!parentMap.has(parentUserId)) {
           parentMap.set(parentUserId, {
             parent_id: ps.parent_id._id,
             user_id: ps.parent_id.user_id._id,
             full_name: ps.parent_id.user_id.full_name,
-            avatar_url: ps.parent_id.user_id.avatar_url
+            avatar_url: ps.parent_id.user_id.avatar_url,
+            students: [] // Khởi tạo mảng students
+          });
+        }
+        // Thêm student vào danh sách students của parent (chỉ lấy students trong lớp này)
+        const parentData = parentMap.get(parentUserId);
+        const studentExists = parentData.students.some(s => 
+          s._id.toString() === ps.student_id._id.toString()
+        );
+        if (!studentExists) {
+          parentData.students.push({
+            _id: ps.student_id._id,
+            full_name: ps.student_id.full_name,
+            avatar_url: ps.student_id.avatar_url
           });
         }
       }
