@@ -36,7 +36,12 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper
+  Paper,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack
 } from '@mui/material';
 import { 
   CheckCircle, 
@@ -49,7 +54,8 @@ import {
   TrendingUp,
   Group,
   CheckCircleOutline,
-  CancelOutlined
+  CancelOutlined,
+  CalendarMonth
 } from '@mui/icons-material';
 import ArgonBox from 'components/ArgonBox';
 import ArgonTypography from 'components/ArgonTypography';
@@ -69,6 +75,9 @@ const TeacherAttendance = () => {
   const [students, setStudents] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [classInfo, setClassInfo] = useState(null);
+  const [groupedClasses, setGroupedClasses] = useState([]); // [{ academic_year, classes: [...] }]
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedClassId, setSelectedClassId] = useState(null);
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
     const year = today.getFullYear();
@@ -144,9 +153,35 @@ const TeacherAttendance = () => {
     return () => clearInterval(interval);
   }, [selectedDate]);
 
+  // Fetch grouped classes on mount
   useEffect(() => {
-    fetchAttendanceData();
-  }, [selectedDate]);
+    fetchGroupedClasses();
+  }, []);
+
+  const fetchGroupedClasses = async () => {
+    try {
+      const response = await api.get('/teachers/class');
+      const groups = response?.data || [];
+      setGroupedClasses(groups);
+
+      if (groups.length > 0) {
+        // groups are sorted desc by year from backend
+        const latestYear = groups[0].academic_year;
+        const firstClass = groups[0].classes?.[0] || null;
+        setSelectedYear(latestYear);
+        setSelectedClassId(firstClass?._id || null);
+      }
+    } catch (err) {
+      console.error('Error fetching grouped classes:', err);
+      setError(err.message || 'Không thể tải thông tin lớp học');
+    }
+  };
+
+  useEffect(() => {
+    if (selectedClassId || selectedYear) {
+      fetchAttendanceData();
+    }
+  }, [selectedDate, selectedClassId, selectedYear]);
 
   const fetchAttendanceData = async () => {
     try {
@@ -154,7 +189,12 @@ const TeacherAttendance = () => {
       setError(null);
       setSuccessMessage(null);
       
-      const response = await api.get(`/teachers/class/students/attendance/${selectedDate}`);
+      // Nếu có selectedClassId, truyền vào query param
+      const url = selectedClassId 
+        ? `/teachers/class/students/attendance/${selectedDate}?class_id=${selectedClassId}`
+        : `/teachers/class/students/attendance/${selectedDate}`;
+      
+      const response = await api.get(url);
       
       setStudents(response.students || []);
       setStatistics(response.statistics || null);
@@ -168,6 +208,14 @@ const TeacherAttendance = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleYearChange = async (e) => {
+    const year = e.target.value;
+    setSelectedYear(year);
+    const group = groupedClasses.find(g => g.academic_year === year);
+    const cls = group?.classes?.[0] || null;
+    setSelectedClassId(cls?._id || null);
   };
 
   const openConfirmDialog = (type, student) => {
@@ -322,7 +370,7 @@ const TeacherAttendance = () => {
         {/* Header */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
               <Box>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Schedule color="primary" />
@@ -334,6 +382,51 @@ const TeacherAttendance = () => {
                   Quản lý điểm danh đến/đi của học sinh trong lớp
                 </ArgonTypography>
               </Box>
+              {groupedClasses.length > 0 && (
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <CalendarMonth color="action" />
+                  <FormControl size="small" variant="outlined" sx={{
+                    minWidth: 240,
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: '#fff',
+                      borderRadius: 2,
+                      transition: 'box-shadow .2s ease',
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'divider',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.light',
+                    },
+                    '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                      boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+                    }
+                  }}>
+                    <InputLabel id="year-select-label" sx={{ backgroundColor: '#fff', px: 0.5 }}>
+                      Năm học
+                    </InputLabel>
+                    <Select
+                      labelId="year-select-label"
+                      id="year-select"
+                      value={selectedYear}
+                      label="Năm học"
+                      onChange={handleYearChange}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: { borderRadius: 2 }
+                        }
+                      }}
+                    >
+                      {groupedClasses.map(group => (
+                        <MenuItem key={group.academic_year} value={group.academic_year}>
+                          {group.academic_year}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Stack>
+              )}
             </Box>
           </CardContent>
         </Card>

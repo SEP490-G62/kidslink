@@ -26,7 +26,7 @@ const dailyReportSchema = new mongoose.Schema({
   teacher_checkin_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Teacher',
-    required: true
+    required: false
   },
   teacher_checkout_id: {
     type: mongoose.Schema.Types.ObjectId,

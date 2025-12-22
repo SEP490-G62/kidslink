@@ -134,7 +134,8 @@ function ManageCalendar() {
   const fetchClasses = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/classes", true);
+      // Lấy danh sách lớp, chỉ lấy các lớp thuộc năm học mới nhất cho trang Calendar
+      const res = await api.get("/classes?latestAcademicYear=true", true);
       const classesData = res.data?.data || res.data || [];
       setClasses(classesData);
       

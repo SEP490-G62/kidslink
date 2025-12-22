@@ -44,7 +44,7 @@ exports.listDishes = async (req, res) => {
       return res.status(403).json({ error: 'Không tìm thấy school_id của user' });
     }
     const dishes = await Dish.find({ school_id: schoolId })
-      .populate('meal_type')
+      .populate('category')
       .sort({ dish_name: 1 });
     res.json({ count: dishes.length, dishes });
   } catch (err) {
@@ -59,21 +59,21 @@ exports.createDish = async (req, res) => {
     if (!schoolId) {
       return res.status(403).json({ error: 'Không tìm thấy school_id của user' });
     }
-    const { dish_name, description, meal_type } = req.body || {};
-    if (!dish_name || !description || !meal_type) {
-      return res.status(400).json({ error: 'Thiếu dish_name, description hoặc meal_type' });
+    const { dish_name, description, category } = req.body || {};
+    if (!dish_name || !description || !category || !Array.isArray(category) || category.length === 0) {
+      return res.status(400).json({ error: 'Thiếu dish_name, description hoặc category (phải là array không rỗng)' });
     }
-    // Validate meal_type tồn tại
-    const meal = await Meal.findById(meal_type);
-    if (!meal) {
-      return res.status(400).json({ error: 'meal_type không hợp lệ' });
+    // Validate tất cả category tồn tại
+    const meals = await Meal.find({ _id: { $in: category } });
+    if (meals.length !== category.length) {
+      return res.status(400).json({ error: 'Một số category không hợp lệ' });
     }
-    const created = await Dish.create({ dish_name, description, meal_type, school_id: schoolId });
-    const populated = await Dish.findById(created._id).populate('meal_type');
+    const created = await Dish.create({ dish_name, description, category, school_id: schoolId });
+    const populated = await Dish.findById(created._id).populate('category');
     return res.status(201).json(populated);
   } catch (err) {
     if (err.name === 'CastError') {
-      return res.status(400).json({ error: 'meal_type không đúng định dạng ObjectId' });
+      return res.status(400).json({ error: 'category không đúng định dạng ObjectId' });
     }
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
@@ -87,8 +87,8 @@ exports.updateDish = async (req, res) => {
       return res.status(403).json({ error: 'Không tìm thấy school_id của user' });
     }
     const { id } = req.params;
-    const { dish_name, description, meal_type } = req.body || {};
-    if (!dish_name && !description && !meal_type) {
+    const { dish_name, description, category } = req.body || {};
+    if (!dish_name && !description && !category) {
       return res.status(400).json({ error: 'Không có dữ liệu để cập nhật' });
     }
     // Kiểm tra dish có tồn tại và cùng school_id
@@ -96,22 +96,25 @@ exports.updateDish = async (req, res) => {
     if (!existing) {
       return res.status(404).json({ error: 'Không tìm thấy món ăn hoặc không có quyền truy cập' });
     }
-    // Validate meal_type nếu có cập nhật
-    if (meal_type) {
-      const meal = await Meal.findById(meal_type);
-      if (!meal) {
-        return res.status(400).json({ error: 'meal_type không hợp lệ' });
+    // Validate category nếu có cập nhật
+    if (category) {
+      if (!Array.isArray(category) || category.length === 0) {
+        return res.status(400).json({ error: 'category phải là array không rỗng' });
+      }
+      const meals = await Meal.find({ _id: { $in: category } });
+      if (meals.length !== category.length) {
+        return res.status(400).json({ error: 'Một số category không hợp lệ' });
       }
     }
     const updateData = {};
     if (dish_name) updateData.dish_name = dish_name;
     if (description) updateData.description = description;
-    if (meal_type) updateData.meal_type = meal_type;
-    const updated = await Dish.findByIdAndUpdate(id, { $set: updateData }, { new: true }).populate('meal_type');
+    if (category) updateData.category = category;
+    const updated = await Dish.findByIdAndUpdate(id, { $set: updateData }, { new: true }).populate('category');
     return res.json(updated);
   } catch (err) {
     if (err.name === 'CastError') {
-      return res.status(400).json({ error: 'meal_type không đúng định dạng ObjectId' });
+      return res.status(400).json({ error: 'category không đúng định dạng ObjectId' });
     }
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
@@ -390,7 +393,7 @@ exports.assignDishesToClassAgeMeal = async (req, res) => {
       .populate('weekday_id');
     const dishMappings = await DishesClassAgeMeal.find({ class_age_meal_id: classAgeMeal._id }).populate({
       path: 'dish_id',
-      populate: { path: 'meal_type' }
+      populate: { path: 'category' }
     });
 
     return res.json({
@@ -437,7 +440,7 @@ exports.getAssignedDishes = async (req, res) => {
     const mappings = await DishesClassAgeMeal.find({ class_age_meal_id: classAgeMeal._id }).populate({
       path: 'dish_id',
       match: { school_id: schoolId },
-      populate: { path: 'meal_type' }
+      populate: { path: 'category' }
     });
     const validDishes = mappings.filter(m => m.dish_id).map((m) => m.dish_id);
     return res.json({
@@ -514,7 +517,7 @@ exports.getWeeklyAssignedDishes = async (req, res) => {
     }).populate({
       path: 'dish_id',
       match: { school_id: schoolId },
-      populate: { path: 'meal_type' }
+      populate: { path: 'category' }
     });
 
     // Filter out null dish_id

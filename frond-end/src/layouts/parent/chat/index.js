@@ -461,17 +461,17 @@ function ParentChat() {
                         }
                         // Prefetch teachers for each child
                         const entries = await Promise.all(childrenList.map(async (child) => {
-                          try {
-                            const r = await messagingService.getTeachersByStudent(child._id);
-                            return [child._id, r.success ? (r.data.teachers || []) : []];
-                          } catch {
-                            return [child._id, []];
-                          }
-                        }));
-                        const map = {};
-                        entries.forEach(([k, v]) => { map[k] = v; });
-                        setTeachersByChild(map);
-                        setOpenTeacherSelect(true);
+                              try {
+                                const r = await messagingService.getTeachersByStudent(child._id);
+                                return [child._id, r.success ? (r.data.teachers || []) : []];
+                              } catch {
+                                return [child._id, []];
+                              }
+                            }));
+                            const map = {};
+                            entries.forEach(([k, v]) => { map[k] = v; });
+                            setTeachersByChild(map);
+                          setOpenTeacherSelect(true);
                       } catch (e) {
                         setError(e.message || 'Không thể tải danh sách giáo viên');
                       }

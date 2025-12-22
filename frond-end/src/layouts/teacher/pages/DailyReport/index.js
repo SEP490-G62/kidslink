@@ -180,6 +180,7 @@ const DailyReportPage = () => {
       setSnackbar({ open: true, message: 'Chỉ có thể nhận xét trong ngày có lịch học và là hôm nay.', severity: 'info' });
       return;
     }
+    // Lấy tất cả học sinh đang hoạt động chưa có nhận xét
     const studentsToComment = students.filter(st => isStudentActive(st) && (!st.report || !st.report.comments));
     if (studentsToComment.length === 0) {
       const hasActive = students.some(isStudentActive);
@@ -190,13 +191,21 @@ const DailyReportPage = () => {
       });
       return;
     }
-    const initialItems = studentsToComment.map(st => ({
-      id: st.report?._id || st._id,
-      studentId: st._id,
-      name: st.full_name,
-      comment: bulkComment || '',
-      status: st.status
-    }));
+    const initialItems = studentsToComment.map(st => {
+      // Kiểm tra học sinh đã checkin chưa
+      const hasCheckin = st.attendance?.has_checkin || !!st.attendance?.checkin_time;
+      // Nếu chưa checkin, mặc định là "Nghỉ" và không thể sửa
+      const defaultComment = hasCheckin ? (bulkComment || '') : 'Nghỉ';
+      return {
+        id: st.report?._id || st._id,
+        studentId: st._id,
+        name: st.full_name,
+        comment: defaultComment,
+        status: st.status,
+        hasCheckin: hasCheckin, // Đánh dấu để disable field nếu chưa checkin
+        isDisabled: !hasCheckin // Không thể sửa nếu chưa checkin
+      };
+    });
     setBulkDialog({ open: true, saving: false, items: initialItems });
   };
 
@@ -217,6 +226,7 @@ const DailyReportPage = () => {
       setSnackbar({ open: true, message: 'Chỉ có thể nhận xét trong ngày có lịch học và là hôm nay.', severity: 'warning' });
       return;
     }
+    // Lưu tất cả học sinh có comment (bao gồm cả học sinh chưa checkin với comment "Nghỉ")
     const payloads = bulkDialog.items.filter(it => it.status === 1 && (it.comment || '').trim().length > 0);
     if (payloads.length === 0) {
       setSnackbar({ open: true, message: 'Vui lòng nhập nhận xét cho ít nhất một học sinh.', severity: 'warning' });
@@ -516,15 +526,29 @@ const DailyReportPage = () => {
                     <Box display="flex" alignItems="flex-start" gap={2}>
                       <Box minWidth={220} mt={0.5}>
                         <Typography variant="subtitle2" color="text.primary" sx={{fontWeight:700}}>{it.name}</Typography>
+                        {it.isDisabled && (
+                          <Chip 
+                            label="Chưa checkin - Nghỉ" 
+                            size="small" 
+                            color="error" 
+                            sx={{mt:0.5, fontSize:'0.7rem', height:20, fontWeight:600}}
+                          />
+                        )}
                       </Box>
                       <TextField
                         fullWidth
                         size="small"
-                        placeholder="Nhập nhận xét..."
+                        placeholder={it.isDisabled ? "Nghỉ (không thể sửa)" : "Nhập nhận xét..."}
                         value={it.comment}
                         onChange={e => handleChangeBulkItem(idx, e.target.value)}
-                        disabled={bulkDialog.saving || !canReportToday || it.status !== 1}
-                        sx={{bgcolor:'#fff'}}
+                        disabled={bulkDialog.saving || !canReportToday || it.status !== 1 || it.isDisabled}
+                        sx={{
+                          bgcolor: it.isDisabled ? '#f5f5f5' : '#fff',
+                          '& .MuiInputBase-input.Mui-disabled': {
+                            WebkitTextFillColor: it.isDisabled ? '#d32f2f' : 'rgba(0, 0, 0, 0.38)',
+                            fontWeight: it.isDisabled ? 600 : 400
+                          }
+                        }}
                       />
                     </Box>
                   </Grid>
