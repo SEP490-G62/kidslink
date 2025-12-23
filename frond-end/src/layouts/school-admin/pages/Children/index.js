@@ -86,6 +86,29 @@ const formatDate = (value) => {
   }
 };
 
+// Helper function to parse academic year and get start year
+const parseAcademicYear = (academicYear) => {
+  if (!academicYear || typeof academicYear !== 'string') return -Infinity;
+  const parts = academicYear.split('-');
+  const startYear = parseInt(parts[0], 10);
+  return Number.isFinite(startYear) ? startYear : -Infinity;
+};
+
+// Helper function to normalize class ID for comparison
+const normalizeClassId = (classId) => {
+  if (!classId) return null;
+  if (typeof classId === 'object') {
+    if (classId._id !== undefined && classId._id !== null) {
+      return String(classId._id);
+    } else if (classId.toString && typeof classId.toString === 'function') {
+      return String(classId);
+    }
+  } else if (typeof classId === 'string') {
+    return String(classId);
+  }
+  return null;
+};
+
 const ChildrenPage = () => {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -120,7 +143,21 @@ const ChildrenPage = () => {
     setError("");
     try {
       const res = await schoolAdminService.getStudents();
-      setStudents(normalizeStudents(res));
+      const studentsList = normalizeStudents(res);
+      console.log("Loaded students:", studentsList.length);
+      // Debug: log first student with class to see structure
+      const studentWithClass = studentsList.find(s => s.class_id);
+      if (studentWithClass) {
+        console.log("Sample student with class:", {
+          studentId: studentWithClass._id,
+          className: studentWithClass.full_name,
+          class_id: studentWithClass.class_id,
+          class_id_type: typeof studentWithClass.class_id,
+          class_id_id: studentWithClass.class_id?._id,
+          class_id_id_type: typeof studentWithClass.class_id?._id
+        });
+      }
+      setStudents(studentsList);
     } catch (err) {
       console.error("loadStudents error", err);
       setError(err.message || "Không thể tải danh sách học sinh.");
@@ -132,8 +169,10 @@ const ChildrenPage = () => {
 
   const loadClasses = async () => {
     try {
-      const res = await schoolAdminService.getClasses();
+      // Load only classes from latest academic year
+      const res = await schoolAdminService.getClasses(true);
       const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      console.log("Loaded classes (latest year):", list.length, list);
       setClasses(list);
     } catch (err) {
       console.error("loadClasses error", err);
@@ -184,15 +223,43 @@ const ChildrenPage = () => {
     return students.filter((student) => {
       const matchesStatus =
         statusFilter === "" || Number(student.status) === Number(statusFilter);
-      const matchesClass =
-        !classFilter ||
-        (student.class_id?._id || student.class_id) === classFilter;
+      
+      // Get student's class ID using helper function
+      const studentClassId = normalizeClassId(student.class_id);
+      
+      // If filtering by class, only show students in that class
+      if (classFilter) {
+        const normalizedClassFilter = normalizeClassId(classFilter);
+        const matchesClass = studentClassId === normalizedClassFilter;
+        
+        // Debug log (can be removed later)
+        if (!matchesClass && studentClassId) {
+          console.log('Filter mismatch:', {
+            studentClassId,
+            classFilter: normalizedClassFilter,
+            originalClassFilter: classFilter,
+            studentName: student.full_name,
+            classIdType: typeof student.class_id,
+            classIdValue: student.class_id
+          });
+        }
+        
+        if (!matchesClass) return false;
+      }
+      
+      // Check if student has class in latest academic year (for display purposes)
+      const hasClassInLatestYear = studentClassId && classes.length > 0 &&
+        classes.some(cls => {
+          const clsId = String(cls._id || cls.id);
+          return clsId === studentClassId;
+        });
+      
       const matchesKeyword =
         !keyword ||
         student.full_name?.toLowerCase().includes(keyword);
-      return matchesStatus && matchesClass && matchesKeyword;
+      return matchesStatus && matchesKeyword;
     });
-  }, [students, search, statusFilter, classFilter]);
+  }, [students, search, statusFilter, classFilter, classes]);
 
   const handleManageParents = (student) => {
     setParentModalStudent(student);
@@ -208,6 +275,31 @@ const ChildrenPage = () => {
     setClassFilter("");
     setStatusFilter("");
   };
+
+  // Get latest academic year from classes
+  const latestAcademicYear = useMemo(() => {
+    if (classes.length === 0) return null;
+    const years = [...new Set(classes.map(c => c.academic_year).filter(Boolean))];
+    if (years.length === 0) return null;
+    // Sort by start year (parse academic year to get start year)
+    const sortedYears = years.sort((a, b) => {
+      const yearA = parseAcademicYear(a);
+      const yearB = parseAcademicYear(b);
+      return yearB - yearA; // Descending order (newest first)
+    });
+    return sortedYears[0]; // Get the newest year
+  }, [classes]);
+
+  // Get unique academic years from classes
+  const academicYears = useMemo(() => {
+    const years = [...new Set(classes.map(c => c.academic_year).filter(Boolean))];
+    // Sort by start year (parse academic year to get start year)
+    return years.sort((a, b) => {
+      const yearA = parseAcademicYear(a);
+      const yearB = parseAcademicYear(b);
+      return yearB - yearA; // Descending order (newest first)
+    });
+  }, [classes]);
 
   const totalStudents = students.length;
   const activeStudents = students.filter((s) => s.status === 1).length;
@@ -377,7 +469,7 @@ const ChildrenPage = () => {
                     displayEmpty: true,
                     renderValue: (value) => {
                       if (!value) return "Tất cả lớp học";
-                      const cls = classes.find((c) => (c._id || c.id) === value);
+                      const cls = classes.find((c) => String(c._id || c.id) === String(value));
                       return cls ? `${cls.class_name} (${cls.academic_year})` : value;
                     },
                   }}
@@ -385,11 +477,14 @@ const ChildrenPage = () => {
                   <MenuItem value="">
                     <em>Tất cả lớp học</em>
                   </MenuItem>
-                  {classes.map((cls) => (
-                    <MenuItem key={cls._id || cls.id} value={cls._id || cls.id}>
-                      {cls.class_name} - {cls.academic_year}
-                    </MenuItem>
-                  ))}
+                  {classes.map((cls) => {
+                    const clsId = String(cls._id || cls.id);
+                    return (
+                      <MenuItem key={clsId} value={clsId}>
+                        {cls.class_name} - {cls.academic_year}
+                      </MenuItem>
+                    );
+                  })}
                 </TextField>
               </Box>
               <Box sx={{ minWidth: 200 }}>
@@ -537,13 +632,70 @@ const ChildrenPage = () => {
                             : "Nam"}
                         </TableCell>
                         <TableCell>
-                          {student.class_id && typeof student.class_id === "object"
-                            ? `${student.class_id.class_name || "Chưa gán"}${
+                          {(() => {
+                            // Get student's class ID using helper function
+                            const studentClassId = normalizeClassId(student.class_id);
+                            
+                            // Check if student has a class in the latest academic year
+                            // by checking if their class_id exists in the classes list (which only contains latest year classes)
+                            const hasClassInLatestYear = studentClassId && classes.length > 0 &&
+                              classes.some(cls => {
+                                const clsId = normalizeClassId(cls._id || cls.id);
+                                const matches = clsId === studentClassId;
+                                // Debug log for first few comparisons
+                                if (studentClassId && classes.indexOf(cls) < 3) {
+                                  console.log("Class ID comparison:", {
+                                    studentClassId,
+                                    clsId,
+                                    cls_id: cls._id,
+                                    cls_id_type: typeof cls._id,
+                                    matches,
+                                    studentName: student.full_name
+                                  });
+                                }
+                                return matches;
+                              });
+                            
+                            if (hasClassInLatestYear) {
+                              // Find the class object from classes list (latest year)
+                              const studentClass = classes.find(cls => {
+                                const clsId = String(cls._id || cls.id);
+                                return clsId === studentClassId;
+                              });
+                              
+                              if (studentClass) {
+                                return `${studentClass.class_name || "Chưa gán"}${
+                                  studentClass.academic_year
+                                    ? ` (${studentClass.academic_year})`
+                                    : ""
+                                }`;
+                              }
+                            }
+                            
+                            // If student has no class or class is from older academic year
+                            // Show "Chưa có lớp trong năm học này" if latest academic year exists
+                            if (latestAcademicYear) {
+                              return (
+                                <Chip 
+                                  label="Chưa có lớp trong năm học này" 
+                                  color="warning" 
+                                  size="small" 
+                                  variant="outlined"
+                                />
+                              );
+                            }
+                            
+                            // Fallback: show class info if available (for cases where latestAcademicYear is null)
+                            if (student.class_id && typeof student.class_id === "object") {
+                              return `${student.class_id.class_name || "Chưa gán"}${
                                 student.class_id.academic_year
                                   ? ` (${student.class_id.academic_year})`
                                   : ""
-                              }`
-                            : "Chưa gán"}
+                              }`;
+                            }
+                            
+                            return "Chưa gán";
+                          })()}
                         </TableCell>
                         <TableCell>{renderStatusChip(student.status)}</TableCell>
                         <TableCell align="right">

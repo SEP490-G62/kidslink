@@ -748,6 +748,15 @@ function ManageCalendar() {
                           {weekDays.map(day => {
                             const slot = getSlotForDay(day, slotTemplate);
                             
+                            // Không cho phép thêm lịch cho các ngày trong quá khứ
+                            const isPastDay = (() => {
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              const dayDate = new Date(day.date);
+                              dayDate.setHours(0, 0, 0, 0);
+                              return dayDate < today;
+                            })();
+                            
                             return (
                               <TableCell 
                                 key={`cell-${day.isoDate}-${slotTemplate.id || slotIdx}`}
@@ -824,33 +833,44 @@ function ManageCalendar() {
                                     alignItems="center"
                                     sx={{ minHeight: 100, height: '100%' }}
                                   >
-                                    <IconButton
-                                      size="medium"
-                                      onClick={() => {
-                                        setSelectedSlot(null);
-                                        setPreSelectedSlot({
-                                          _id: slotTemplate.id,
-                                          slotName: slotTemplate.slotName,
-                                          startTime: slotTemplate.startTime,
-                                          endTime: slotTemplate.endTime
-                                        });
-                                        setSelectedDate(day.isoDate);
-                                        setSlotModalOpen(true);
-                                      }}
-                                      sx={{ 
-                                        color: '#999',
-                                        width: 48,
-                                        height: 48,
-                                        '&:hover': { 
-                                          color: '#1976d2', 
-                                          backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                                          transform: 'scale(1.1)'
-                                        }
-                                      }}
-                                      title="Thêm nội dung tiết học"
-                                    >
-                                      <i className="fas fa-plus" style={{ fontSize: 20 }} />
-                                    </IconButton>
+                                    {isPastDay ? (
+                                      // Ngày đã qua: không cho phép bấm để thêm lịch
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ fontStyle: 'italic' }}
+                                      >
+                                        Ngày đã qua
+                                      </Typography>
+                                    ) : (
+                                      <IconButton
+                                        size="medium"
+                                        onClick={() => {
+                                          setSelectedSlot(null);
+                                          setPreSelectedSlot({
+                                            _id: slotTemplate.id,
+                                            slotName: slotTemplate.slotName,
+                                            startTime: slotTemplate.startTime,
+                                            endTime: slotTemplate.endTime
+                                          });
+                                          setSelectedDate(day.isoDate);
+                                          setSlotModalOpen(true);
+                                        }}
+                                        sx={{ 
+                                          color: '#999',
+                                          width: 48,
+                                          height: 48,
+                                          '&:hover': { 
+                                            color: '#1976d2', 
+                                            backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                                            transform: 'scale(1.1)'
+                                          }
+                                        }}
+                                        title="Thêm nội dung tiết học"
+                                      >
+                                        <i className="fas fa-plus" style={{ fontSize: 20 }} />
+                                      </IconButton>
+                                    )}
                                   </ArgonBox>
                                 )}
                               </TableCell>

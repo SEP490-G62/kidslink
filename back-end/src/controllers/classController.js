@@ -230,9 +230,12 @@ async function createClass(req, res) {
       });
     }
 
-    // Kiểm tra giáo viên chính đã có lớp nào trong năm học đó chưa
+    // Kiểm tra giáo viên chính đã có lớp nào trong năm học đó chưa (với vai trò teacher_id hoặc teacher_id2)
     const existingClassByTeacher = await ClassModel.findOne({
-      teacher_id: payload.teacher_id,
+      $or: [
+        { teacher_id: payload.teacher_id },
+        { teacher_id2: payload.teacher_id }
+      ],
       academic_year: payload.academic_year,
       school_id: schoolId
     });
@@ -241,6 +244,24 @@ async function createClass(req, res) {
         success: false, 
         message: `Giáo viên chính đã có lớp trong năm học ${payload.academic_year}` 
       });
+    }
+
+    // Kiểm tra giáo viên phụ đã có lớp nào trong năm học đó chưa (nếu có giáo viên phụ)
+    if (payload.teacher_id2) {
+      const existingClassByTeacher2 = await ClassModel.findOne({
+        $or: [
+          { teacher_id: payload.teacher_id2 },
+          { teacher_id2: payload.teacher_id2 }
+        ],
+        academic_year: payload.academic_year,
+        school_id: schoolId
+      });
+      if (existingClassByTeacher2) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Giáo viên phụ đã có lớp trong năm học ${payload.academic_year}` 
+        });
+      }
     }
 
     const doc = await ClassModel.create({
@@ -378,7 +399,10 @@ async function updateClass(req, res) {
     // Kiểm tra giáo viên chính đã có lớp nào trong năm học đó chưa (trừ chính lớp này)
     if (payload.teacher_id || payload.academic_year) {
       const existingClassByTeacher = await ClassModel.findOne({
-        teacher_id: teacher_id,
+        $or: [
+          { teacher_id: teacher_id },
+          { teacher_id2: teacher_id }
+        ],
         academic_year: academic_year,
         school_id: school_id,
         _id: { $ne: id }
@@ -387,6 +411,26 @@ async function updateClass(req, res) {
         return res.status(400).json({ 
           success: false, 
           message: `Giáo viên chính đã có lớp trong năm học ${academic_year}` 
+        });
+      }
+    }
+
+    // Kiểm tra giáo viên phụ đã có lớp nào trong năm học đó chưa (nếu có giáo viên phụ và có thay đổi)
+    if (payload.teacher_id2 !== undefined && payload.teacher_id2) {
+      const finalTeacherId2 = payload.teacher_id2;
+      const existingClassByTeacher2 = await ClassModel.findOne({
+        $or: [
+          { teacher_id: finalTeacherId2 },
+          { teacher_id2: finalTeacherId2 }
+        ],
+        academic_year: academic_year,
+        school_id: school_id,
+        _id: { $ne: id }
+      });
+      if (existingClassByTeacher2) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Giáo viên phụ đã có lớp trong năm học ${academic_year}` 
         });
       }
     }
@@ -570,9 +614,12 @@ async function promoteClass(req, res) {
       });
     }
 
-    // Kiểm tra giáo viên chính đã có lớp nào trong năm học đó chưa
+    // Kiểm tra giáo viên chính đã có lớp nào trong năm học đó chưa (với vai trò teacher_id hoặc teacher_id2)
     const existingClassByTeacher = await ClassModel.findOne({
-      teacher_id: payload.teacher_id,
+      $or: [
+        { teacher_id: payload.teacher_id },
+        { teacher_id2: payload.teacher_id }
+      ],
       academic_year: payload.academic_year,
       school_id: schoolId
     });
@@ -581,6 +628,24 @@ async function promoteClass(req, res) {
         success: false, 
         message: `Giáo viên chính đã có lớp trong năm học ${payload.academic_year}` 
       });
+    }
+
+    // Kiểm tra giáo viên phụ đã có lớp nào trong năm học đó chưa (nếu có giáo viên phụ)
+    if (payload.teacher_id2) {
+      const existingClassByTeacher2 = await ClassModel.findOne({
+        $or: [
+          { teacher_id: payload.teacher_id2 },
+          { teacher_id2: payload.teacher_id2 }
+        ],
+        academic_year: payload.academic_year,
+        school_id: schoolId
+      });
+      if (existingClassByTeacher2) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Giáo viên phụ đã có lớp trong năm học ${payload.academic_year}` 
+        });
+      }
     }
 
     // Tạo lớp mới

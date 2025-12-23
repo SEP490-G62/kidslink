@@ -1,5 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const connectDB = require('../src/config/database');
 
 // Import models
@@ -43,6 +44,9 @@ function getRandomDOB(age) {
   return new Date(year, month, day);
 }
 
+// Mật khẩu chung cho tất cả user: "123456"
+const COMMON_PASSWORD_HASH = bcrypt.hashSync('123456', 10);
+
 async function seedData() {
   try {
     // Kết nối database
@@ -50,17 +54,17 @@ async function seedData() {
     console.log('✅ Đã kết nối database');
 
     // Xóa dữ liệu cũ (tùy chọn - comment nếu không muốn xóa)
-    // await User.deleteMany({});
-    // await School.deleteMany({});
-    // await ClassAge.deleteMany({});
-    // await Class.deleteMany({});
-    // await Teacher.deleteMany({});
-    // await Student.deleteMany({});
-    // await Parent.deleteMany({});
-    // await ParentStudent.deleteMany({});
-    // await StudentClass.deleteMany({});
-    // await HealthCareStaff.deleteMany({});
-    // console.log('✅ Đã xóa dữ liệu cũ');
+    await ParentStudent.deleteMany({});
+    await StudentClass.deleteMany({});
+    await Student.deleteMany({});
+    await Parent.deleteMany({});
+    await HealthCareStaff.deleteMany({});
+    await Teacher.deleteMany({});
+    await Class.deleteMany({});
+    await ClassAge.deleteMany({});
+    await School.deleteMany({});
+    await User.deleteMany({});
+    console.log('✅ Đã xóa dữ liệu cũ');
 
     const schools = [];
     const allClassAges = [];
@@ -79,7 +83,8 @@ async function seedData() {
         phone: `028${1000000 + s}`,
         email: `school${s}@kidslink.vn`,
         logo_url: `https://picsum.photos/seed/school${s}/300`,
-        status: 1
+        status: 1,
+        qr_data: `QR_SCHOOL_${s}_${Date.now()}_${Math.random().toString(36).substring(7)}`
       });
       schools.push(school);
       console.log(`✅ Đã tạo school ${s}: ${school.school_name}`);
@@ -88,7 +93,7 @@ async function seedData() {
       const schoolAdminUser = await User.create({
         full_name: `Quản lý Trường ${s}`,
         username: `school${s}_admin`,
-        password_hash: '$2b$10$schooladminhashxxxxxxxxxxxxxxxxxxxx',
+        password_hash: COMMON_PASSWORD_HASH,
         role: 'school_admin',
         avatar_url: `https://picsum.photos/seed/school${s}admin/200`,
         status: 1,
@@ -104,7 +109,7 @@ async function seedData() {
         const teacherUser = await User.create({
           full_name: `Giáo viên ${getRandomName()}`,
           username: `school${s}_teacher${t}`,
-          password_hash: '$2b$10$teacherhashxxxxxxxxxxxxxxxxxxxx',
+          password_hash: COMMON_PASSWORD_HASH,
           role: 'teacher',
           avatar_url: `https://picsum.photos/seed/school${s}teacher${t}/200`,
           status: 1,
@@ -130,7 +135,7 @@ async function seedData() {
       const healthCareUser = await User.create({
         full_name: `Nhân viên Y tế ${getRandomName()}`,
         username: `school${s}_healthcare`,
-        password_hash: '$2b$10$healthcarehashxxxxxxxxxxxxxxxxx',
+        password_hash: COMMON_PASSWORD_HASH,
         role: 'health_care_staff',
         avatar_url: `https://picsum.photos/seed/school${s}healthcare/200`,
         status: 1,
@@ -154,7 +159,7 @@ async function seedData() {
       const nutritionUser = await User.create({
         full_name: `Nhân viên Dinh dưỡng ${getRandomName()}`,
         username: `school${s}_nutrition`,
-        password_hash: '$2b$10$nutritionhashxxxxxxxxxxxxxxxxxx',
+        password_hash: COMMON_PASSWORD_HASH,
         role: 'nutrition_staff',
         avatar_url: `https://picsum.photos/seed/school${s}nutrition/200`,
         status: 1,
@@ -189,7 +194,7 @@ async function seedData() {
           const endDate = new Date(2025, 5, 30); // 30/6/2025
           
           const classData = {
-            class_name: `${String.fromCharCode(65 + ca)}${c}`, // A1, A2, B1, B2, C1, C2
+            class_name: `S${s}-${String.fromCharCode(65 + ca)}${c}`, // S1-A1, S1-A2, S2-A1, S2-A2, etc.
             academic_year: '2024-2025',
             school_id: school._id,
             class_age_id: classAge._id,
@@ -242,7 +247,7 @@ async function seedData() {
             const parentUser = await User.create({
               full_name: `Phụ huynh ${getRandomName()}`,
               username: `school${s}_parent_${studentCounter}_${p}`,
-              password_hash: '$2b$10$parenthashxxxxxxxxxxxxxxxxxxxx',
+              password_hash: COMMON_PASSWORD_HASH,
               role: 'parent',
               avatar_url: `https://picsum.photos/seed/school${s}parent${studentCounter}${p}/200`,
               status: 1,
