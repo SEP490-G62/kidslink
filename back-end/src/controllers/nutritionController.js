@@ -362,6 +362,15 @@ exports.assignDishesToClassAgeMeal = async (req, res) => {
 
     const normalizedDate = new Date(date);
 
+    // Không cho phép chỉnh sửa thực đơn của ngày trong quá khứ
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const targetDate = new Date(normalizedDate);
+    targetDate.setHours(0, 0, 0, 0);
+    if (targetDate < today) {
+      return res.status(400).json({ error: 'Không thể chỉnh sửa thực đơn của ngày trong quá khứ' });
+    }
+
     // Tìm hoặc tạo ClassAgeMeal
     let classAgeMeal = await ClassAgeMeal.findOne({ class_age_id, meal_id, weekday_id, date: normalizedDate });
     if (!classAgeMeal) {

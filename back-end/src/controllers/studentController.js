@@ -362,9 +362,35 @@ exports.getAllStudents = async (req, res) => {
           };
         });
 
-        // Get class info
-        const studentClass = await StudentClass.findOne({ student_id: student._id }).lean();
-        const classInfo = studentClass ? await ClassModel.findById(studentClass.class_id).lean() : null;
+        // Get class info - lấy lớp có academic_year lớn nhất
+        const studentClasses = await StudentClass.find({ student_id: student._id }).lean();
+        let classInfo = null;
+        
+        if (studentClasses.length > 0) {
+          // Helper function to parse academic year and get start year
+          const parseAcademicYear = (academicYear) => {
+            if (!academicYear || typeof academicYear !== 'string') return -Infinity;
+            const parts = academicYear.split('-');
+            const startYear = parseInt(parts[0], 10);
+            return Number.isFinite(startYear) ? startYear : -Infinity;
+          };
+          
+          // Lấy tất cả các lớp của học sinh
+          const classIds = studentClasses.map(sc => sc.class_id);
+          const classes = await ClassModel.find({ _id: { $in: classIds } }).lean();
+          
+          if (classes.length > 0) {
+            // Sắp xếp theo academic_year (parse để lấy start year) giảm dần
+            classes.sort((a, b) => {
+              const yearA = parseAcademicYear(a.academic_year);
+              const yearB = parseAcademicYear(b.academic_year);
+              return yearB - yearA; // Descending order (newest first)
+            });
+            
+            // Lấy lớp có academic_year lớn nhất (đã được sort ở trên)
+            classInfo = classes[0];
+          }
+        }
 
         // Convert gender number to string for frontend
         const genderString = student.gender === 1 ? 'female' : 'male';

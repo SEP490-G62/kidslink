@@ -9,6 +9,7 @@
     "test": "jest",
     "remove-class-name-index": "node data/remove-class-name-unique-index.js",
     "seed-sample": "node data/seed-sample-data.js",
+    "seed-mongo-shell": "node data/run-seed-mongo-shell.js",
     "import-slots-activities": "node data/import-slots-activities.js"
   },
   "keywords": [
