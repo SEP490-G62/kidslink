@@ -119,12 +119,12 @@ const ParentManagerModal = ({ open, studentId, onClose }) => {
   const [availableParents, setAvailableParents] = useState([]);
   const [parentsLoading, setParentsLoading] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState("");
-  const [existingRelationship, setExistingRelationship] = useState("father");
+  const [existingRelationship, setExistingRelationship] = useState("Bố");
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     full_name: "",
     username: "",
-    relationship: "father",
+    relationship: "Bố",
     phone_number: "",
     email: "",
     address: "",
@@ -191,13 +191,13 @@ const ParentManagerModal = ({ open, studentId, onClose }) => {
       setForm({
         full_name: "",
         username: "",
-        relationship: "father",
+        relationship: "Bố",
         phone_number: "",
         email: "",
         address: "",
       });
       setSelectedParentId("");
-      setExistingRelationship("father");
+      setExistingRelationship("Bố");
       setError("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,12 +208,16 @@ const ParentManagerModal = ({ open, studentId, onClose }) => {
     setSaving(true);
     setError("");
     try {
-      await schoolAdminService.addParentForStudent(studentId, form);
+      // Lưu luôn relationship là tiếng Việt
+      await schoolAdminService.addParentForStudent(studentId, {
+        ...form,
+        relationship: form.relationship,
+      });
       await Promise.all([fetchStudentDetail(), fetchAvailableParents()]);
       setForm({
         full_name: "",
         username: "",
-        relationship: "father",
+        relationship: "Bố",
         phone_number: "",
         email: "",
         address: "",
@@ -231,13 +235,14 @@ const ParentManagerModal = ({ open, studentId, onClose }) => {
     setLinking(true);
     setError("");
     try {
+      // Lưu luôn relationship là tiếng Việt
       await schoolAdminService.linkExistingParent(
         selectedParentId,
         studentId,
         existingRelationship
       );
       setSelectedParentId("");
-      setExistingRelationship("father");
+      setExistingRelationship("Bố");
       await Promise.all([fetchStudentDetail(), fetchAvailableParents()]);
     } catch (err) {
       console.error("link parent error", err);
@@ -364,7 +369,10 @@ const ParentManagerModal = ({ open, studentId, onClose }) => {
                       </Typography>
                     </Stack>
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <Chip label={parent.relationship || "Không rõ"} color="primary" size="small" />
+                      <Chip 
+                        label={parent.relationship || "Không rõ"}
+                        color="primary" size="small" 
+                      />
                       <Tooltip title="Xóa">
                         <IconButton color="error" onClick={() => handleRemoveParent(parent.parent_id)}>
                           <DeleteIcon />
@@ -472,19 +480,14 @@ const ParentManagerModal = ({ open, studentId, onClose }) => {
                   Quan hệ
                 </InputLabel>
                 <Autocomplete
-                  freeSolo
                   size="small"
                   options={RELATIONSHIP_OPTIONS.map((option) => option.label)}
                   value={form.relationship}
                   onChange={(_, newValue) =>
                     setForm((prev) => ({ ...prev, relationship: newValue || "" }))
                   }
-                  inputValue={form.relationship}
-                  onInputChange={(_, newInput) =>
-                    setForm((prev) => ({ ...prev, relationship: newInput }))
-                  }
                   renderInput={(params) => (
-                    <TextField {...params} sx={fieldSx(200)} placeholder="Nhập mối quan hệ" />
+                    <TextField {...params} sx={fieldSx(200)} placeholder="Chọn mối quan hệ" />
                   )}
                 />
               </Grid>

@@ -1,0 +1,39 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10	UTC11	UTC12	UTC13	UTC14	UTC15
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+school_admin				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+admin									O					
+CONDITION - School:				
+School exists				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+School admin assigned to school				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+CONDITION - Activities data:				
+Activities exist (own school)				O		O		O	O	O	O	O	O	O	O	O	O	O
+Activities exist (other school)					O							
+No activities exist									O				
+Activities sorted alphabetically					O		O	O	O	O	O	O	O	O	O	O
+Multiple activities (50+)															O
+CONDITION - Activity fields:				
+Activity has description				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Activity has requireOutdoor field				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Activity with long description							O						
+Activity with special characters													O	O
+CONDITION - Data visibility:				
+school_admin sees only own school				O			O	O	O	O	O	O	O	O	O	O	O
+admin sees all schools						O					
+Deleted activities excluded				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Internal fields not exposed						O	O	O	O	O	O	O	O	O	O	O	O
+Return				
+TRUE				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+FALSE							
+Exception				
+200				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Log message				
+Lấy danh sách activities thành công				O	O	O	O	O	O	O	O	O	O	O	O	O	O	O
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A	A	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P	P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

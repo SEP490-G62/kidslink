@@ -1,0 +1,46 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O
+CONDITION - Requester role:				
+admin				O						
+school_admin								O	O	O
+CONDITION - Input:				
+student_id provided				O				O	O	O
+student_id invalid format					O					
+CONDITION - Student:				
+Student exists				O				O	O	O
+Student not found						O				
+CONDITION - School admin access:				
+School admin has school_id								O	O	O
+School admin missing school_id									O
+Class belongs to same school								O	O		
+Class belongs to different school									O		
+    CONDITION - Associations:				
+    Parents included				O				O	O	
+    Pickups included				O				O	O	
+    Classes included				O				O	O	
+    No parents/pickups/classes											O
+CONDITION - Data fields:				
+Allergy returned				O				O		O
+Gender preserved				O				O		O
+Return				
+TRUE				O				O		O
+FALSE					O	O	O		O	
+Exception				
+200				O				O		O
+400					O				O	
+403								O			
+404						O				
+Log message				
+Lấy chi tiết học sinh thành công				O				O		O
+student_id không hợp lệ					O					
+Không tìm thấy học sinh						O				
+Bạn không có quyền xem học sinh thuộc trường khác								O			
+School admin chưa được gán trường học									O
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

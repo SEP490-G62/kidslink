@@ -1,0 +1,33 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+    admin				O		O	O	O	O	O	O		O
+    school_admin					O							O	
+CONDITION - Filters:				
+school_id filter provided						O						
+academic_year filter provided							O					
+teacher_id filter provided								O	O				
+class_age_id filter provided										O				
+pagination params provided (page,limit)											O		
+CONDITION - School:				
+School admin has school_id					O								
+School admin missing school_id												O
+CONDITION - Data setup:				
+Classes exist for listing				O	O	O	O	O	O	O	O		O
+Return				
+TRUE				O	O	O	O	O	O	O	O		O
+FALSE												O
+Exception				
+200				O	O	O	O	O	O	O	O		O
+400												O
+Log message				
+Lấy danh sách lớp học thành công				O	O	O	O	O	O	O	O		O
+School admin chưa được gán trường học												O
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A	B	A
+Passed/Failed				P	P	P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

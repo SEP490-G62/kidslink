@@ -1,0 +1,40 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+admin				O		O	O		O	O	O
+school_admin					O			O	O		
+CONDITION - Input:				
+class_id provided				O	O		O	O	O	O	O
+class_id invalid						O					
+class_id not exists							O				
+CONDITION - School:				
+School admin has school_id					O			O			O
+School admin missing school_id									O		
+Class thuộc trường của school_admin					O					O	O
+Class thuộc trường khác								O			
+CONDITION - Data setup:				
+Class exists				O	O		O	O	O	O	O
+Class has students										O	
+Multiple classes exist											O
+Return				
+TRUE				O	O						O	O
+FALSE						O	O	O	O	O		
+Exception				
+200				O	O						O	O
+400						O			O			
+403							O	O			
+404								O				
+Log message				
+Xóa lớp thành công				O	O						O	O
+ID không hợp lệ						O					
+Không tìm thấy lớp							O				
+Bạn không có quyền xóa lớp thuộc trường khác								O			
+School admin chưa được gán trường học									O		
+Result				
+Type (N/A/B)				N	A	A	A	A	A	B	B
+Passed/Failed				P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				

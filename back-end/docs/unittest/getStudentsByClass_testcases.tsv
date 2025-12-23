@@ -1,0 +1,48 @@
+Test Case ID				UTC01	UTC02	UTC03	UTC04	UTC05	UTC06	UTC07	UTC08	UTC09	UTC10
+Condition				Precondition
+Can connect with server				O	O	O	O	O	O	O	O	O	O
+Requester authenticated				O	O	O	O	O	O	O	O	O	O
+Requester has permission				O	O	O	O	O	O	O	O	O	O
+CONDITION - Requester role:				
+admin				O								O	O
+school_admin					O				O	O	O	
+teacher								O				
+CONDITION - Input:				
+class_id provided				O	O			O	O	O	O	O	O
+class_id missing							O						
+class_id invalid						O						
+CONDITION - Class & Ownership:				
+Class exists				O	O			O	O	O	O	O	O
+Class not found								O			
+Class belongs to requester				O	O			O	O	O	O	O	O
+Class belongs to other school_admin									O		
+CONDITION - Teacher access:				
+Teacher is primary								O				
+Teacher is secondary													
+CONDITION - Students:				
+Students exist				O	O			O	O			O	O
+No students in class											O	
+Students have gender converted												O
+Students have parent list (0,1,2)				O	O			O	O			O	O
+CONDITION - School admin assignment:				
+School admin has school_id					O						
+School admin missing school_id										O	
+Return				
+TRUE				O	O			O		O	O	O	O
+FALSE						O	O	O	O			
+Exception				
+200				O	O			O		O	O	O	O
+400									O	O		
+403								O			
+404						O					
+Log message				
+Lấy danh sách học sinh của lớp thành công				O	O			O		O	O	O	O
+class_id không hợp lệ									O			
+Không tìm thấy lớp học						O					
+Bạn không có quyền xem lớp thuộc trường khác								O			
+School admin chưa được gán trường học										O	
+Result				
+Type (N/A/B)				N	A	A	A	A	A	A	A	A	A
+Passed/Failed				P	P	P	P	P	P	P	P	P	P
+Executed Date				12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09	12/09
+Defect ID				
