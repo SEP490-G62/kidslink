@@ -1,42 +1,51 @@
 Test Case ID	Test Case Description	Test Case Procedure	Expected Results	Pre-conditions
 Scenario A - Health Care Staff Operations				
-TC_HEALTH_01	Health staff views class list	1) Login as health_care_staff; 2) Mở dashboard "Y tế"; 3) Danh sách lớp hiển thị (or menu "Lớp phụ trách")	Shows classes in school; Status 200	Health staff logged in; Classes exist
-TC_HEALTH_02	View students in class	1) Login; 2) Click một lớp; 3) Bảng học sinh hiển thị	Students of class listed; Status 200	Students exist in class
-TC_HEALTH_03	Create health record for student	1) Login; 2) Chọn học sinh; 3) Click "Thêm hồ sơ sức khỏe"; 4) Nhập chiều cao/cân nặng/ngày/ghi chú; 5) Click "Lưu"	Health record created; 201 toast; visible in history	Health staff logged in; Student exists
-TC_HEALTH_04	Update health record	1) Login; 2) Vào hồ sơ sức khỏe học sinh; 3) Chọn record; 4) Click "Chỉnh sửa"; 5) Update notes; 6) "Lưu"	Record updated; 200 toast; timestamp updated	Record exists
-TC_HEALTH_05	Delete health record	1) Login; 2) Chọn record; 3) Click "Xóa"; 4) Confirm	Record deleted; 200; removed from history	Record exists
-TC_HEALTH_06	Create health notice for parent	1) Login; 2) Click "Gửi thông báo sức khỏe"; 3) Chọn học sinh; nhập Title/Content/Priority; 4) Click "Gửi"	Notice created; 201; parent gets notification; visible to parent	Health staff logged in; Student linked to parent
-TC_HEALTH_07	View health records of student	1) Login; 2) Tìm học sinh; 3) Tab "Hồ sơ sức khỏe"	All records listed sorted by date; Status 200	Health records exist
-TC_HEALTH_08	Update health notice	1) Login; 2) Chọn thông báo; 3) Click "Chỉnh sửa"; 4) Update content; 5) "Lưu"	Notice updated; 200; parent notified of update	Notice exists
-TC_HEALTH_09	Delete health notice	1) Login; 2) Chọn thông báo; 3) Click "Xóa"; 4) Confirm	Notice deleted; 200; removed	Notice exists
-TC_HEALTH_10	View health staff profile	1) Login; 2) Mở "Hồ sơ cá nhân" (Y tế)	Profile shows name/email/phone/school; 200	Logged in
-TC_HEALTH_11	Update profile	1) Login; 2) Profile -> "Chỉnh sửa"; 3) Update name/phone; 4) "Lưu"	Profile updated; 200	Logged in
-TC_HEALTH_12	Change password	1) Login; 2) Profile -> "Đổi mật khẩu"; 3) Enter old/new; 4) "Lưu"	Password changed; 200; can re-login	Logged in
-TC_HEALTH_13	Bulk create health records	1) Login; 2) Chọn lớp; 3) Click "Import" chiều cao/cân nặng; 4) Upload file; 5) Submit	Bulk records created; 200/201; all visible	Class exists; File prepared
+TC_HEALTH_01	Health staff login	1) Open login page; 2) Enter username/password for health_care_staff; 3) Click "Đăng nhập"	Dashboard loads; navbar shows; Status 200	Health staff account exists
+TC_HEALTH_02	Health staff views class list	1) Login as health_care_staff; 2) Dashboard loads automatically showing list of classes; 3) View page displays all classes	Classes displayed in list/card format; Status 200	Classes exist in system
+TC_HEALTH_03	View students in selected class	1) Login; 2) Click on a class card/item; 3) Student list modal/page opens	Students of that class displayed; Status 200; student avatars/names visible	Students exist in class
+TC_HEALTH_04	Search/Filter students in class	1) Login; 2) Select a class; 3) Use search box to filter by student name	Matching students displayed; list updates in real-time	Students exist
+TC_HEALTH_05	View student health details	1) Login; 2) Select class; 3) Click on a student; 4) Health detail modal/page opens	Student name/info displayed; tabs for health records/notices visible; Status 200	Student linked to class
+TC_HEALTH_06	Create health record for student	1) Login; 2) Select class → select student; 3) Click "Thêm hồ sơ sức khỏe" button; 4) Fill form (height/weight/date/notes); 5) Click "Lưu"	Record created; 201 response; success toast shown; new record appears in health records list	Health staff logged in; Student exists
+TC_HEALTH_07	View health records list	1) Login; 2) Select student; 3) Health records tab shows; 4) List displays all records sorted by date	Records shown with height/weight/date/notes; Status 200; most recent first	Health records exist for student
+TC_HEALTH_08	Edit health record	1) Login; 2) Select student; 3) Click on a health record; 4) Edit icon appears; 5) Update notes/height/weight; 6) Click "Lưu"	Record updated; 200 response; success toast; updated values displayed	Record exists
+TC_HEALTH_09	Delete health record	1) Login; 2) Select student; 3) Click delete icon on record; 4) Confirm in dialog	Record deleted; 200 response; record removed from list immediately	Record exists
+TC_HEALTH_10	Create health notice for parent	1) Login; 2) Select student; 3) Click "Gửi thông báo"; 4) Fill form (title/content/priority level); 5) Click "Gửi"	Notice created; 201 response; success toast shown; appears in health notices list	Student has linked parent
+TC_HEALTH_11	View health notices list	1) Login; 2) Select student; 3) Click "Thông báo sức khỏe" tab	All notices displayed with date/title; Status 200	Notices exist for student
+TC_HEALTH_12	Edit health notice	1) Login; 2) Select student; 3) Click on a notice; 4) Edit icon appears; 5) Update content; 6) Click "Lưu"	Notice updated; 200 response; changes reflected in list	Notice exists
+TC_HEALTH_13	Delete health notice	1) Login; 2) Select student; 3) Click delete icon on notice; 4) Confirm in dialog	Notice deleted; 200 response; removed from list immediately	Notice exists
+TC_HEALTH_14	View health care staff profile	1) Login; 2) Click profile icon (top right); 3) Click "Hồ sơ cá nhân"	Profile page shows name/email/phone/school; Status 200	Logged in
+TC_HEALTH_15	Update health care profile	1) Login; 2) Go to profile; 3) Click "Chỉnh sửa"; 4) Update name/phone/email; 5) Click "Lưu"	Profile updated; 200 response; changes saved	Logged in
+TC_HEALTH_16	Change password	1) Login; 2) Go to profile; 3) Click "Đổi mật khẩu"; 4) Enter old password/new password/confirm; 5) Click "Xác nhận"	Password changed; 200 response; success toast; can re-login with new password	Logged in
+TC_HEALTH_17	Logout	1) Login; 2) Click logout button (profile menu)	Redirected to login page; session cleared; Status 200	Logged in
 Scenario B - Nutrition Staff Operations - Dish Management				
-TC_NUT_01	Create new dish	1) Login as nutrition_staff; 2) Page "Món ăn"; 3) Click "Thêm món"; 4) Enter Name/Ingredients/Calories/Protein/Description; 5) "Lưu"	Dish created; 201; available for menu assignment	Nutrition staff logged in
-TC_NUT_02	Update dish	1) Login; 2) Page "Món ăn"; 3) Select dish; 4) Click "Chỉnh sửa"; 5) Update calories; 6) "Lưu"	Dish updated; 200; reflected in menus	Dish exists
-TC_NUT_03	Delete unused dish	1) Login; 2) Select dish not in menu; 3) Click "Xóa"; 4) Confirm	Dish deleted; 200	Dish exists, not assigned
-TC_NUT_04	Cannot delete dish in menu	1) Login; 2) Select dish in active menu; 3) Click "Xóa"; 4) Observe error	Shows error "Món đang được sử dụng"; 400; not deleted	Dish assigned to active menu
-TC_NUT_05	View all dishes	1) Login; 2) Page "Món ăn" list	List loads names/ingredients/nutrition; 200	Dishes exist
+TC_NUT_01	Nutrition staff login	1) Open login page; 2) Enter username/password for nutrition_staff; 3) Click "Đăng nhập"	Dashboard loads; navbar shows; Status 200	Nutrition staff account exists
+TC_NUT_02	View all dishes list	1) Login as nutrition_staff; 2) Dashboard loads showing list of dishes	Dish list displays with name/ingredients/calories/protein; Status 200	Dishes exist in system
+TC_NUT_03	Create new dish	1) Login; 2) Click "Thêm món" button; 3) Fill form (name/ingredients/calories/protein/description); 4) Click "Lưu"	Dish created; 201 response; success toast; new dish appears in list	Nutrition staff logged in
+TC_NUT_04	Search dishes	1) Login; 2) Use search box; 3) Enter dish name/keyword	Matching dishes filtered and displayed; list updates in real-time	Dishes exist
+TC_NUT_05	View dish details	1) Login; 2) Click on a dish card/row; 3) Detail modal opens	Dish name/ingredients/calories/protein/description displayed; Status 200	Dish exists
+TC_NUT_06	Edit dish information	1) Login; 2) Select a dish; 3) Click "Chỉnh sửa"; 4) Update name/calories/protein; 5) Click "Lưu"	Dish updated; 200 response; changes reflected in list	Dish exists
+TC_NUT_07	Delete unused dish	1) Login; 2) Select a dish not assigned to any menu; 3) Click "Xóa"; 4) Confirm in dialog	Dish deleted; 200 response; removed from list	Dish exists and not assigned to menu
+TC_NUT_08	View nutrition staff profile	1) Login; 2) Click profile icon; 3) Click "Hồ sơ cá nhân"	Profile shows name/email/phone/school; Status 200	Logged in
+TC_NUT_09	Update nutrition profile	1) Login; 2) Go to profile; 3) Click "Chỉnh sửa"; 4) Update name/phone/email; 5) Click "Lưu"	Profile updated; 200 response; changes saved	Logged in
+TC_NUT_10	Change password	1) Login; 2) Go to profile; 3) Click "Đổi mật khẩu"; 4) Enter old/new password/confirm; 5) Click "Xác nhận"	Password changed; 200 response; can re-login with new password	Logged in
+TC_NUT_11	Logout	1) Login; 2) Click logout button	Redirected to login page; session cleared; Status 200	Logged in
 Scenario C - Weekly Menu Creation and Management				
-TC_NUT_06	View class ages for planning	1) Login; 2) Page "Lập thực đơn"; 3) Dropdown "Khối tuổi" loads	Class ages listed; 200	Class ages exist
-TC_NUT_07	View meals and weekdays	1) Login; 2) Lập thực đơn; 3) View meals list (Sáng/Phụ sáng/Trưa/Phụ chiều) and weekdays (Thứ 2-6)	Meals and weekdays master data shown; 200	Master data configured
-TC_NUT_08	View class age meal schedule	1) Login; 2) Chọn khối tuổi + ngày; 3) Lịch món hiển thị	Schedule for class age/day shown; 200	Class age exists
-TC_NUT_09	Assign dishes to meal slot	1) Login; 2) Chọn khối tuổi + bữa + ngày; 3) Click "Chọn món"; 4) Tick dishes; 5) Click "Lưu"	Dishes assigned; 200/201; parents can view	Dishes exist
-TC_NUT_10	View assigned dishes	1) Login; 2) Chọn khối tuổi + bữa + ngày; 3) Xem danh sách món đã gán	Assigned dishes displayed; 200	Assignments exist
-TC_NUT_11	Create full weekly menu	1) Login; 2) For Mon-Fri and 4 meals/day, assign dishes; 3) Save each	Full week (20 slots) assigned; all saved; parents see menu	Sufficient dishes exist
-TC_NUT_12	View weekly dishes summary	1) Login; 2) Click "Tổng hợp tuần"; 3) Select class age + start date	Weekly menu shown grouped by day/meal; nutrition totals computed	Weekly menu exists
-TC_NUT_13	Update menu assignment	1) Login; 2) Chọn slot đã gán; 3) Đổi món; 4) Click "Lưu"	Old assignment replaced; 200; parents see updated	Assignment exists
-TC_NUT_14	Duplicate menu from previous week	1) Login; 2) Click "Sao chép thực đơn"; 3) Chọn from_week → to_week; 4) Confirm	Menu copied; 201; editable after copy	Previous week menu exists
-TC_NUT_15	View nutrition staff profile	1) Login; 2) Open "Hồ sơ cá nhân" (Dinh dưỡng)	Profile shows name/email/phone/school; 200	Logged in
-TC_NUT_16	Update nutrition profile	1) Login; 2) Profile -> "Chỉnh sửa"; 3) Update name/phone; 4) "Lưu"	Profile updated; 200	Logged in
-TC_NUT_17	Change password	1) Login; 2) Profile -> "Đổi mật khẩu"; 3) Enter old/new; 4) "Lưu"	Password changed; 200	Logged in
-TC_NUT_18	Export weekly menu to PDF	1) Login; 2) Select week; 3) Click "Xuất PDF"; 4) Download file	PDF exported with meals/nutrition; downloadable	Weekly menu exists
-TC_NUT_19	View parent feedback on menu	1) Login; 2) Page "Phản hồi thực đơn"; 3) View list	Feedback shown with dates; 200	Feedback exists
-TC_NUT_20	View nutritional summary for week	1) Login; 2) Click "Tổng dinh dưỡng tuần"; 3) Select class age	Totals (calories/protein/...) per day/meal shown; 200	Weekly menu exists
-TC_NUT_21	Create seasonal menu	1) Login; 2) Click "Tạo thực đơn mùa"; 3) Enter season/month and dishes; 4) Save	Seasonal menu created; 201; reusable	Logged in
-TC_NUT_22	View dietary restrictions/allergies	1) Login; 2) Search student; 3) Open "Dị ứng/Chế độ ăn" info	Allergies displayed; warning shows on conflicting dishes	Student with restrictions exists
-TC_NUT_23	Bulk import dishes from file	1) Login; 2) Click "Import món"; 3) Upload Excel/CSV; 4) Confirm	Dishes imported; 201; duplicates handled; errors reported	File prepared
-TC_NUT_24	Generate nutrition report for health staff	1) Login; 2) Click "Xuất báo cáo dinh dưỡng"; 3) Select week + class age; 4) Download	Report generated; 200; sent/available for health staff	Weekly menu exists
-TC_NUT_25	Schedule menu publishing	1) Login; 2) After creating menu click "Lên lịch công bố"; 3) Set publish_date + audience Parents; 4) Save	Menu scheduled; 201; auto publish and notify parents	Menu created
+TC_NUT_12	Access menu assignment page	1) Login as nutrition_staff; 2) Click "Lập thực đơn" or similar menu option; 3) Dashboard loads showing class age selector	Page loads; class ages dropdown visible; Status 200	ClassAges exist in system
+TC_NUT_13	Select class age for menu planning	1) Login; 2) Go to menu page; 3) Click class age dropdown; 4) Select a class age (e.g., "Nhóm 1")	Selected class age displayed; meals and weekdays table appears; Status 200	ClassAges exist
+TC_NUT_14	View weekly schedule structure	1) Login; 2) Select class age; 3) Table shows: rows=meals (Sáng/Phụ sáng/Trưa/Phụ chiều), columns=weekdays (Thứ 2-6)	Grid/table with meals × weekdays displayed; 20 cells (4×5); Status 200	ClassAge selected
+TC_NUT_15	View selected week	1) Login; 2) Go to menu page; 3) Week selector shows current week (e.g., "Tuần từ 11/12-15/12"); 4) Can navigate previous/next week	Week date range displayed correctly; can change week; Status 200	Logged in
+TC_NUT_16	Navigate to different week	1) Login; 2) Select class age; 3) Click "< Tuần trước" or "> Tuần tiếp"; 4) Observe week changes and schedule reloads	Week selector updates; schedule data for new week loads; Status 200	ClassAge selected
+TC_NUT_17	View meals list	1) Login; 2) Select class age; 3) View meal names in table rows	All 4 meals displayed (Sáng, Phụ sáng, Trưa, Phụ chiều); Status 200	Meals configured in system
+TC_NUT_18	View weekdays list	1) Login; 2) Select class age; 3) View weekday names in table columns	All 5 weekdays displayed (Thứ 2 - Thứ 6); Status 200	Weekdays configured in system
+TC_NUT_19	Assign single dish to meal slot	1) Login; 2) Select class age; 3) Click on an empty cell (e.g., Monday-Breakfast); 4) Modal/dialog opens; 5) Search/select a dish; 6) Click "Lưu"	Dish assigned; 200/201 response; cell displays dish name; Status 200	ClassAge/meal/weekday selected; dishes exist
+TC_NUT_20	View assigned dishes in cell	1) Login; 2) Select class age; 3) Click on cell with assigned dishes; 4) Modal shows list of dishes	All assigned dishes for that slot displayed; Status 200	Dishes assigned to slot
+TC_NUT_21	Assign multiple dishes to one slot	1) Login; 2) Click on a meal slot; 3) Select dish 1; 4) Still in same modal, add dish 2; 5) Confirm/Save	Multiple dishes assigned; 200/201; all visible in cell	Dishes exist
+TC_NUT_22	Edit meal slot (remove dish)	1) Login; 2) Click on cell with dishes; 3) Click delete icon on a dish; 4) Confirm	Dish removed; 200 response; list updates; cell updates	Dishes assigned to slot
+TC_NUT_23	Replace dish in slot	1) Login; 2) Click on cell; 3) Remove old dish; 4) Add new dish; 5) Save	Old dish removed, new dish added; 200/201; cell updates	Dishes assigned
+TC_NUT_24	Clear all dishes from slot	1) Login; 2) Click on cell with dishes; 3) Click "Xóa tất cả" or remove all dishes; 4) Confirm	All dishes removed; 200; cell becomes empty	Dishes exist in slot
+TC_NUT_25	Search dishes when assigning	1) Login; 2) Click on slot; 3) Search box appears; 4) Type dish name (e.g., "Cơm"); 5) List filters	Matching dishes displayed; search works in real-time	Dishes exist
+TC_NUT_26	View incomplete class ages (warning)	1) Login; 2) Look for indicator showing incomplete class ages; 3) Class ages with missing meal assignments highlighted	Incomplete class ages marked/colored; Status 200	Some slots have no dishes
+TC_NUT_27	Complete full week menu (Mon-Fri, all 4 meals)	1) Login; 2) Select class age; 3) For each of 20 slots (5 days × 4 meals), assign at least 1 dish; 4) Save each	All 20 cells filled; 201 responses; no "incomplete" warning; Status 200	Sufficient dishes exist
+TC_NUT_28	Navigate between weeks with menu persistence	1) Login; 2) Assign dishes to Week 1; 3) Switch to Week 2; 4) Assign different dishes; 5) Switch back to Week 1	Week 1 data preserved; Week 2 independent; Status 200	Multiple weeks manageable
+TC_NUT_29	View nutritional summary for week	1) Login; 2) After assigning menu; 3) Click "Tổng hợp" or summary button; 4) View totals per day (calories/protein/...)	Nutrition stats displayed grouped by day; accurate calculations; Status 200	Weekly menu assigned
+TC_NUT_30	Export/View menu for parents	1) Login (as nutrition); 2) After completing menu; 3) Menu becomes visible to parents; 4) Parents can view in their dashboard	Menu scheduled/published; parent-visible; Status 200	Menu created and saved

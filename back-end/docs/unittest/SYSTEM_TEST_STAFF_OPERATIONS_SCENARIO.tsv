@@ -1,0 +1,50 @@
+Test Case ID	Test Case Description	Test Case Procedure	Expected Results	Pre-conditions
+Scenario A - Health Care Staff Operations (UI thực tế HealthCareStaffDashboard + Profile)				
+TC_HEALTH_01	Login health staff	1) Mở trang login; 2) Nhập email/password role health_care_staff; 3) Click "Đăng nhập"	Đi tới /health-care, navbar hiển thị; Status 200	Tài khoản health_care_staff tồn tại
+TC_HEALTH_02	Xem danh sách lớp (sidebar)	1) Ở /health-care; 2) Sidebar "Danh sách lớp" load dữ liệu	Danh sách lớp dạng list item với chip age_name, school_name; có trạng thái loading spinner	Có dữ liệu lớp
+TC_HEALTH_03	Chọn lớp và xem học sinh	1) Click một lớp ở sidebar; 2) Main panel load grid học sinh	Hiển thị thẻ học sinh (avatar, full_name, allergy chip, DOB); Status 200	Lớp có học sinh
+TC_HEALTH_04	Mở modal sức khỏe học sinh	1) Click thẻ học sinh; 2) Modal mở với Tabs "Sổ sức khoẻ" / "Thông báo y tế"	Modal hiển thị avatar, DOB, allergy chip; tabs khả dụng	Học sinh được chọn
+TC_HEALTH_05	Thêm sổ sức khoẻ	1) Trong tab "Sổ sức khoẻ" click "Thêm sổ sức khoẻ"; 2) Điền checkup_date/height_cm/weight_kg/note; 3) Click "Lưu"	Ghi nhận mới xuất hiện trong list; snackbar success	Trường bắt buộc nhập đủ; logged in
+TC_HEALTH_06	Validate thiếu dữ liệu sổ sức khoẻ	1) Mở dialog thêm; 2) Bỏ trống bất kỳ trường bắt buộc; 3) Click "Lưu"	Snackbar lỗi "Không được để trống..."; không gọi API; dialog giữ nguyên	Dialog mở; logged in
+TC_HEALTH_07	Sửa sổ sức khoẻ	1) Tab "Sổ sức khoẻ"; 2) Click icon edit; 3) Cập nhật height/weight/note; 4) Click "Lưu" (qua confirm)	Snackbar "Cập nhật thành công"; list refresh	Bản ghi tồn tại
+TC_HEALTH_08	Xóa sổ sức khoẻ	1) Tab "Sổ sức khoẻ"; 2) Click icon delete; 3) Confirm	Snackbar "Xóa thành công"; bản ghi biến mất	Bản ghi tồn tại
+TC_HEALTH_09	Thêm thông báo y tế	1) Tab "Thông báo y tế"; 2) Click "Thêm thông báo y tế"; 3) Điền notice_time/symptoms/actions_taken/medications/note; 4) Click "Lưu" -> confirm "Đồng ý"	Snackbar success; notice xuất hiện trong list	Học sinh được chọn; trường bắt buộc nhập
+TC_HEALTH_10	Validate thiếu dữ liệu thông báo	1) Dialog thêm notice; 2) Bỏ trống trường bắt buộc; 3) Click "Lưu"	Snackbar lỗi "Không được để trống..."; không lưu	Dialog mở; logged in
+TC_HEALTH_11	Sửa thông báo y tế	1) Tab "Thông báo y tế"; 2) Click edit icon; 3) Cập nhật fields; 4) Click "Lưu" -> confirm	Snackbar "Cập nhật thông báo thành công"; list refresh	Notice tồn tại
+TC_HEALTH_12	Xóa thông báo y tế	1) Tab "Thông báo y tế"; 2) Click delete icon; 3) Confirm	Snackbar "Xóa thành công"; notice biến mất	Notice tồn tại
+TC_HEALTH_13	Xem hồ sơ cá nhân health staff	1) Đi tới /health-care/profile; 2) Trang load thông tin user + staff	Hiển thị form đọc/ghi: full_name, email, phone, qualification, major, experience_years, note; avatar preview	Đăng nhập health_care_staff
+TC_HEALTH_14	Cập nhật hồ sơ cá nhân	1) Tại profile; 2) Click "Cập nhật thông tin"; 3) Chỉnh sửa trường; 4) Lưu	Snackbar success; dữ liệu refresh	Đăng nhập health_care_staff
+TC_HEALTH_15	Đổi mật khẩu	1) Profile; 2) Click "Đổi mật khẩu"; 3) Nhập current/new/confirm; 4) Lưu	Snackbar success; có thể đăng nhập lại bằng mật khẩu mới	Đăng nhập health_care_staff
+TC_HEALTH_16	Logout health staff	1) Click user menu; 2) Chọn "Đăng xuất"	Chuyển về trang login; session clear	Đăng nhập
+Scenario B - Nutrition Staff Dish Management (DishList)				
+TC_NUT_01	Nutrition staff login	1) Open login; 2) Enter nutrition_staff email/password; 3) Click "Đăng nhập"	Redirected to /nutrition; dashboard visible; Status 200	Nutrition_staff account exists
+TC_NUT_02	View dish list	1) On /nutrition page; 2) See "Danh sách các món ăn" card/table	Table shows dish_name, description, meal_type, edit/delete actions	Dishes exist
+TC_NUT_03	Search dishes	1) In search box "Tìm kiếm theo tên món ăn hoặc mô tả"; 2) Type keyword	Table filters matching dishes instantly	Dishes exist
+TC_NUT_04	Filter dishes by meal type	1) Click meal type dropdown "Tất cả loại bữa ăn"; 2) Select a meal type	Table shows only dishes of selected meal type	Meals exist; dishes tagged with meal_type
+TC_NUT_05	Clear dish filters	1) Apply search/filter; 2) Click "Xóa bộ lọc"	Search cleared; meal filter reset; full list returns	Filters applied
+TC_NUT_06	Create new dish	1) Click "Thêm món"; 2) Dialog opens; 3) Fill dish_name, description, meal_type; 4) Click "Tạo mới"	Dish created; success toast; appears in table; dialog closes	Logged in; meals exist
+TC_NUT_07	Edit existing dish	1) Click edit (pencil) on dish row; 2) Dialog pre-filled; 3) Update fields; 4) Click "Cập nhật"	Dish updated; success toast; table refreshed	Dish exists; logged in
+TC_NUT_08	Delete dish	1) Click delete (trash) on dish row; 2) Confirm in dialog	Dish removed from list; success toast	Dish exists; not blocked by menu usage
+TC_NUT_09	Validate required fields on create	1) Click "Thêm món"; 2) Leave required fields empty; 3) Try to save	"Tạo mới" disabled; required fields highlighted; no API call	Dialog open; logged in
+TC_NUT_10	Validate meal type selection	1) In create dialog; 2) Fill name/description; 3) Leave meal_type empty; 4) Try to save	"Tạo mới" disabled; meal_type shows error state	Dialog open; logged in
+TC_NUT_11	Logout nutrition staff	1) Click user menu; 2) Click "Đăng xuất"	Redirected to login; session cleared	Logged in
+Scenario C - Weekly Menu Assignment (DishList UI)				
+TC_NUT_12	Open menu assignment view	1) Login nutrition_staff; 2) Navigate /nutrition; 3) Scroll to "Chọn món ăn cho từng nhóm tuổi" card	Card shows class-age dropdown, week nav buttons, empty grid	Class ages and meals seeded
+TC_NUT_13	Select class age	1) Click "Chọn nhóm tuổi" dropdown; 2) Choose a class age	Grid loads for selected class age; placeholder/alert if no data	Class ages exist
+TC_NUT_14	Navigate next week	1) Click "Tuần sau" button	Date range advances 7 days; grid reloads for new week	Class age selected
+TC_NUT_15	Navigate previous week	1) Click "Tuần trước" button	Date range moves back 7 days; grid reloads	Class age selected
+TC_NUT_16	View weekly grid structure	1) Observe grid headers and meal rows	Weekday headers with dates; meal rows color-coded; weekends show "Không có thực đơn"	Class age selected; meals and weekdays loaded
+TC_NUT_17	Open empty meal slot	1) Click empty meal cell (e.g., Breakfast Monday)	Dialog "Chọn món ăn" opens with search, checklist, "Chọn tất cả"/"Bỏ chọn hết", actions	Class age selected; dishes exist
+TC_NUT_18	Search dishes in dialog	1) In dialog search box, type keyword	Dish list filters to matches; no-match message if none	Dialog open with dishes loaded
+TC_NUT_19	Select all dishes	1) Click "Chọn tất cả" in dialog	All checkboxes checked; chips show selected dishes; count text updates	Dialog open; dishes available
+TC_NUT_20	Deselect all dishes	1) Click "Bỏ chọn hết"	All checkboxes cleared; chips removed; count zero	Dialog open with selections
+TC_NUT_21	Toggle single dish	1) Click checkbox for a dish; 2) Click again to uncheck	Checkbox toggles; chip appears/disappears; count updates	Dialog open with dishes
+TC_NUT_22	Save dish selection	1) Select some dishes; 2) Click "Lưu"	Button shows "Đang lưu..." then closes; cell shows assigned dish chips	Class age selected; dialog open
+TC_NUT_23	View assigned dishes in grid	1) After save, observe same cell	Cell lists chips with dish_name; colored border per meal type	Menu assignment saved
+TC_NUT_24	Clear dishes from slot	1) Reopen filled cell; 2) Click "Bỏ chọn hết"; 3) Click "Lưu"	Cell returns to "Click để chọn món" placeholder	Assignment exists for that cell
+TC_NUT_25	Update dishes for slot	1) Reopen filled cell; 2) Change selection; 3) Click "Lưu"	Cell updates to new dish list; success toast	Assignment exists; class age selected
+TC_NUT_26	Weekend cells non-interactive	1) Check Saturday/Sunday columns	Cells show "Không có thực đơn"; not clickable	Class age selected; grid loaded
+TC_NUT_27	Handle save network error	1) In dialog with selection; 2) Simulate network failure; 3) Click "Lưu"	Error alert "Lưu thất bại" displayed; button re-enabled; dialog stays open	Dialog open; network issue simulated
+TC_NUT_28	Save with empty selection behavior	1) Open cell; 2) Deselect all; 3) Click "Lưu"	Either clears slot successfully or save disabled depending on API; verify actual behavior	Dialog open; class age selected
+TC_NUT_29	Full week assignment	1) Select class age; 2) For Mon-Fri × all meals, assign dishes; 3) Save each cell	All weekday cells show dish chips; no placeholders; multiple success toasts	Class age selected; dishes available
+TC_NUT_30	Logout after menu work	1) Click user menu; 2) Click "Đăng xuất"	Redirected to login; session cleared	Logged in
