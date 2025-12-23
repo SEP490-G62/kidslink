@@ -15,6 +15,7 @@ const dailyReportController = require('../../../src/controllers/dailyReportContr
 
 // Cleanup before each test
 beforeEach(async () => {
+  jest.clearAllMocks();
   await Promise.all([
     User.deleteMany({}),
     School.deleteMany({}),
@@ -366,10 +367,11 @@ describe('checkOut', () => {
       class_id: classDoc._id
     });
 
-    // Create initial check-in report for today
-    const today = new Date().toISOString().split('T')[0];
+    // Create initial check-in report for today using local midnight (same as controller)
+    const now = new Date();
+    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     await DailyReport.create({
-      report_date: new Date(today + 'T00:00:00Z'),
+      report_date: localMidnight,
       checkin_time: '09:00:00',
       student_id: student._id,
       teacher_checkin_id: teacher._id,
