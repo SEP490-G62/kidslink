@@ -33,8 +33,12 @@ const schoolAdminService = {
   linkExistingParent: async (parentId, studentId, relationship) => {
     return await api.post('/parentcrud/link', { parent_id: parentId, student_id: studentId, relationship }, true);
   },
-  getClasses: async () => {
-    return await api.get('/classes', true);
+  getClasses: async (latestAcademicYearOnly = false) => {
+    // Get classes - if latestAcademicYearOnly is true, only get classes from latest academic year
+    const url = latestAcademicYearOnly 
+      ? '/classes?latestAcademicYear=true&limit=1000'
+      : '/classes?limit=1000';
+    return await api.get(url, true);
   },
 
   getPostById: async (postId) => {

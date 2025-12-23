@@ -159,6 +159,18 @@ const getTodayVietnam = () => {
   return `${year}-${month}-${day}`;
 };
 
+// Helper function: Lấy thời gian hiện tại theo múi giờ Việt Nam (UTC+7) dạng HH:MM:SS
+const getCurrentTimeVietnam = () => {
+  const now = new Date();
+  // getTime() trả về UTC timestamp, cộng thêm 7 giờ để có giờ Việt Nam
+  const vietnamTime = now.getTime() + (7 * 60 * 60 * 1000);
+  const vietnamDate = new Date(vietnamTime);
+  const hours = String(vietnamDate.getUTCHours()).padStart(2, '0');
+  const minutes = String(vietnamDate.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(vietnamDate.getUTCSeconds()).padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+};
+
 // Helper function: Chuyển Date sang ngày theo múi giờ Việt Nam (UTC+7)
 const getDateVietnam = (date) => {
   if (!date) return null;
@@ -264,8 +276,8 @@ const checkIn = async (req, res) => {
       targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
     
-    const currentTime = new Date().toTimeString().split(' ')[0]; // Format HH:MM:SS
-    console.log('Target date:', targetDate.toISOString(), 'Current time:', currentTime);
+    const currentTime = getCurrentTimeVietnam(); // Format HH:MM:SS theo múi giờ Việt Nam
+    console.log('Target date:', targetDate.toISOString(), 'Current time (Vietnam):', currentTime);
 
     const hasSchedule = await hasScheduleForClassDate(classDoc._id, targetDate);
     if (!hasSchedule) {
@@ -362,8 +374,8 @@ const checkOut = async (req, res) => {
       dateForScheduleCheck = `${year}-${month}-${day}`;
     }
     
-    const currentTime = new Date().toTimeString().split(' ')[0]; // Format HH:MM:SS
-    console.log('Target date:', targetDate.toISOString(), 'Date for schedule check:', dateForScheduleCheck, 'Current time:', currentTime);
+    const currentTime = getCurrentTimeVietnam(); // Format HH:MM:SS theo múi giờ Việt Nam
+    console.log('Target date:', targetDate.toISOString(), 'Date for schedule check:', dateForScheduleCheck, 'Current time (Vietnam):', currentTime);
 
     const hasSchedule = await hasScheduleForClassDate(classDoc._id, dateForScheduleCheck);
     if (!hasSchedule) {

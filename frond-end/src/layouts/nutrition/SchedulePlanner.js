@@ -657,6 +657,14 @@ export default function SchedulePlanner() {
                               const key = `${meal._id}-${wd.id}`;
                               const slotData = weeklyMealSelection[key] || { dishes: [] };
 
+                              // Xác định ngày của ô hiện tại (theo múi giờ Việt Nam) và kiểm tra quá khứ
+                              const cellDate = getDateForWeekdayTable(dayIndex);
+                              const todayVN = getVietnamDate();
+                              todayVN.setHours(0, 0, 0, 0);
+                              const cellDateStart = new Date(cellDate);
+                              cellDateStart.setHours(0, 0, 0, 0);
+                              const isPast = cellDateStart < todayVN;
+
                               return (
                                 <TableCell
                                   key={wd.id}
@@ -678,9 +686,9 @@ export default function SchedulePlanner() {
                                       border: `2px solid ${mealColor}`,
                                       borderRadius: 2,
                                       p: 1.5,
-                                      cursor: 'pointer',
+                                      cursor: isPast ? 'not-allowed' : 'pointer',
                                       transition: 'all 0.3s ease',
-                                      backgroundColor: '#fff',
+                                      backgroundColor: isPast ? '#f5f5f5' : '#fff',
                                       width: '100%',
                                       height: '100%',
                                       minHeight: '100px',
@@ -688,15 +696,18 @@ export default function SchedulePlanner() {
                                       display: 'flex',
                                       flexDirection: 'column',
                                       boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                                      '&:hover': {
-                                        backgroundColor: '#f9f9f9',
-                                        boxShadow: `0 4px 12px ${mealColor}40`,
-                                        transform: 'translateY(-2px)',
-                                        borderColor: mealColor,
-                                        borderWidth: 2.5
-                                      }
+                                      '&:hover': isPast
+                                        ? {}
+                                        : {
+                                            backgroundColor: '#f9f9f9',
+                                            boxShadow: `0 4px 12px ${mealColor}40`,
+                                            transform: 'translateY(-2px)',
+                                            borderColor: mealColor,
+                                            borderWidth: 2.5
+                                          }
                                     }}
                                     onClick={() => {
+                                      if (isPast) return; // Không cho mở dialog chỉnh sửa ngày quá khứ
                                       const dateStr = addDaysVietnam(weekStart, dayIndex);
                                       const dateStrISO = toVietnamISOString(dateStr);
                                       handleOpenWeeklyMealSlot(meal._id, wd.id, dateStrISO);
@@ -735,7 +746,7 @@ export default function SchedulePlanner() {
                                           py: 1
                                         }}
                                       >
-                                        Click để chọn món
+                                        {isPast ? 'Đã qua' : 'Click để chọn món'}
                                       </ArgonTypography>
                                     ) : (
                                       <ArgonBox
