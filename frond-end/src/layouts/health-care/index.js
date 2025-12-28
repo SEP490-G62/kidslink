@@ -262,7 +262,7 @@ export default function HealthCareStaffDashboard() {
       <DashboardNavbar />
       <ArgonBox py={3}>
         <ArgonTypography variant="h4" fontWeight="bold" mb={3}>
-          Quản lý sức khoẻ - Health Care Staff
+          Quản lý sức khoẻ - Nhân viên y tế
         </ArgonTypography>
         <Grid container spacing={3}>
           {/* Sidebar: Danh sách lớp */}

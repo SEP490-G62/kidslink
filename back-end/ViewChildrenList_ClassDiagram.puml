@@ -1,0 +1,124 @@
+@startuml View Children List - Teacher Backend Logic
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+
+' ============================================
+' Controller Layer
+' ============================================
+class teacherController {
+  - getTeacherByReqUser(req): Teacher
+  + getTeacherClasses(req, res): void
+  + getClassStudents(req, res): void
+}
+
+class teacherRouter {
+  + GET /class
+  + GET /class/students
+}
+
+' ============================================
+' Middleware Layer
+' ============================================
+class auth {
+  + authenticate(req, res, next): void
+  + authorize(allowedRoles): Function
+}
+
+' ============================================
+' Model Layer - Core Entities
+' ============================================
+class Teacher {
+  - _id: ObjectId
+  - qualification: String
+  - major: String
+  - experience_years: Number
+  - note: String
+  - user_id: ObjectId
+}
+
+class User {
+  - _id: ObjectId
+  - full_name: String
+  - email: String
+  - phone_number: String
+  - role: String
+  - school_id: ObjectId
+  - status: Number
+}
+
+class Class {
+  - _id: ObjectId
+  - class_name: String
+  - academic_year: String
+  - school_id: ObjectId
+  - class_age_id: ObjectId
+  - teacher_id: ObjectId
+  - teacher_id2: ObjectId
+  - start_date: Date
+  - end_date: Date
+}
+
+class Student {
+  - _id: ObjectId
+  - full_name: String
+  - dob: Date
+  - gender: Number
+  - avatar_url: String
+  - status: Number
+  - allergy: String
+  - school_id: ObjectId
+}
+
+' ============================================
+' Model Layer - Junction Tables
+' ============================================
+class StudentClass {
+  - _id: ObjectId
+  - student_id: ObjectId
+  - class_id: ObjectId
+  - discount: Number
+}
+
+' ============================================
+' Model Layer - Reference Entities
+' ============================================
+class School {
+  - _id: ObjectId
+  - school_name: String
+  - address: String
+}
+
+class ClassAge {
+  - _id: ObjectId
+  - age_name: String
+}
+
+' ============================================
+' Relationships
+' ============================================
+teacherRouter --> auth : uses
+teacherRouter --> teacherController : routes to
+
+teacherController --> Teacher : queries
+teacherController --> User : queries
+teacherController --> Class : queries
+teacherController --> Student : queries
+teacherController --> StudentClass : queries
+
+Teacher "1" --> "1" User : user_id
+User "1" --> "0..1" School : school_id
+
+Class "1" --> "1" Teacher : teacher_id
+Class "0..1" --> "0..1" Teacher : teacher_id2
+Class "1" --> "1" School : school_id
+Class "1" --> "1" ClassAge : class_age_id
+
+Student "1" --> "1" School : school_id
+
+StudentClass "1" --> "1" Student : student_id
+StudentClass "1" --> "1" Class : class_id
+
+@enduml
+

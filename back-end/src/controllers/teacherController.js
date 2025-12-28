@@ -50,6 +50,9 @@ async function getTeacherClasses(req, res) {
       return res.status(404).json({ error: 'Không tìm thấy giáo viên' });
     }
 
+    const teacherUser = await User.findById(teacher.user_id).select('school_id');
+    const schoolId = teacherUser?.school_id || null;
+
     const classes = await Class.find({
       $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
     })
@@ -65,10 +68,47 @@ async function getTeacherClasses(req, res) {
     }, {});
 
     const result = Object.keys(grouped)
-      .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+      .sort((a, b) => {
+        // Sort theo năm học: parse 4 ký tự đầu (năm bắt đầu) để so sánh số
+        // academic_year có dạng "xxxx-xxxx" (ví dụ: "2023-2024", "2024-2025")
+        const yearA = parseInt(a.substring(0, 4)) || 0;
+        const yearB = parseInt(b.substring(0, 4)) || 0;
+        return yearB - yearA; // Sort giảm dần để lấy năm học mới nhất trước
+      })
       .map((year) => ({ academic_year: year, classes: grouped[year] }));
 
-    return res.json({ teacher_id: teacher._id, data: result });
+    let latestAcademicYear = null;
+    let hasLatestAcademicYearClass = false;
+    if (schoolId) {
+      const academicYears = await Class.distinct('academic_year', { school_id: schoolId });
+      if (Array.isArray(academicYears) && academicYears.length > 0) {
+        // Sort theo năm học: parse 4 ký tự đầu (năm bắt đầu) để so sánh số
+        academicYears.sort((a, b) => {
+          const yearA = parseInt(a.substring(0, 4)) || 0;
+          const yearB = parseInt(b.substring(0, 4)) || 0;
+          return yearB - yearA; // Sort giảm dần để lấy năm học mới nhất
+        });
+        latestAcademicYear = academicYears[0];
+        if (latestAcademicYear) {
+          const match = await Class.exists({
+            school_id: schoolId,
+            academic_year: latestAcademicYear,
+            $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+          });
+          hasLatestAcademicYearClass = !!match;
+        }
+      }
+    }
+
+    return res.json({
+      teacher_id: teacher._id,
+      data: result,
+      metadata: {
+        latest_academic_year: latestAcademicYear,
+        has_latest_academic_year_class: hasLatestAcademicYearClass,
+        school_id: schoolId ? schoolId.toString() : null
+      }
+    });
   } catch (err) {
     return res.status(500).json({ error: 'Lỗi máy chủ', details: err.message });
   }
@@ -83,14 +123,41 @@ async function getClassStudents(req, res) {
 
     let cls;
     if (!classId || !mongoose.Types.ObjectId.isValid(classId)) {
-      const latest = await Class.find({
+      // Tìm năm học mới nhất từ các lớp của teacher
+      const teacherClasses = await Class.find({
         $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
-      })
-        .populate('school_id')
-        .populate('class_age_id')
-        .sort({ academic_year: -1 })
-        .limit(1);
-      cls = Array.isArray(latest) ? latest[0] : latest;
+      }).select('academic_year');
+      
+      let latestAcademicYear = null;
+      if (teacherClasses && teacherClasses.length > 0) {
+        const academicYears = [...new Set(teacherClasses.map(c => c.academic_year))];
+        if (academicYears.length > 0) {
+          // Sort theo năm học: parse 4 ký tự đầu (năm bắt đầu) để so sánh số
+          // academic_year có dạng "xxxx-xxxx" (ví dụ: "2023-2024", "2024-2025")
+          academicYears.sort((a, b) => {
+            const yearA = parseInt(a.substring(0, 4)) || 0;
+            const yearB = parseInt(b.substring(0, 4)) || 0;
+            return yearB - yearA; // Sort giảm dần để lấy năm học mới nhất
+          });
+          latestAcademicYear = academicYears[0];
+        }
+      }
+
+      // Lấy lớp của teacher trong năm học mới nhất
+      if (latestAcademicYear) {
+        const latest = await Class.findOne({
+          $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }],
+          academic_year: latestAcademicYear
+        })
+          .populate('school_id')
+          .populate('class_age_id')
+          .sort({ class_name: 1 });
+        cls = latest;
+      } else {
+        // Nếu không có lớp nào, trả về lỗi
+        return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
+      }
+
       if (!cls) return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
       classId = cls._id.toString();
     } else {
@@ -143,14 +210,41 @@ async function getStudentsAttendanceByDate(req, res) {
 
     let cls;
     if (!classId || !mongoose.Types.ObjectId.isValid(classId)) {
-      const latest = await Class.find({
+      // Tìm năm học mới nhất từ các lớp của teacher
+      const teacherClasses = await Class.find({
         $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
-      })
-        .populate('school_id')
-        .populate('class_age_id')
-        .sort({ academic_year: -1 })
-        .limit(1);
-      cls = Array.isArray(latest) ? latest[0] : latest;
+      }).select('academic_year');
+      
+      let latestAcademicYear = null;
+      if (teacherClasses && teacherClasses.length > 0) {
+        const academicYears = [...new Set(teacherClasses.map(c => c.academic_year))];
+        if (academicYears.length > 0) {
+          // Sort theo năm học: parse 4 ký tự đầu (năm bắt đầu) để so sánh số
+          // academic_year có dạng "xxxx-xxxx" (ví dụ: "2023-2024", "2024-2025")
+          academicYears.sort((a, b) => {
+            const yearA = parseInt(a.substring(0, 4)) || 0;
+            const yearB = parseInt(b.substring(0, 4)) || 0;
+            return yearB - yearA; // Sort giảm dần để lấy năm học mới nhất
+          });
+          latestAcademicYear = academicYears[0];
+        }
+      }
+
+      // Lấy lớp của teacher trong năm học mới nhất
+      if (latestAcademicYear) {
+        const latest = await Class.findOne({
+          $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }],
+          academic_year: latestAcademicYear
+        })
+          .populate('school_id')
+          .populate('class_age_id')
+          .sort({ class_name: 1 });
+        cls = latest;
+      } else {
+        // Nếu không có lớp nào, trả về lỗi
+        return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
+      }
+
       if (!cls) return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
       classId = cls._id.toString();
     } else {
@@ -205,7 +299,7 @@ async function getStudentsAttendanceByDate(req, res) {
         allergy: s.allergy,
         discount: studentIdToDiscount[s._id.toString()] || 0,
         attendance: {
-          has_checkin: !!r,
+          has_checkin: !!(r && r.checkin_time), // Chỉ có checkin khi có checkin_time
           has_checkout: !!(r && r.checkout_time),
           checkin_time: r ? r.checkin_time : null,
           checkout_time: r ? r.checkout_time : null
@@ -272,7 +366,10 @@ async function getTeacherLatestClassCalendar(req, res) {
       .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } });
 
     if (!latestClass) {
-      return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
+      return res.json({
+        class: null,
+        calendars: []
+      });
     }
 
     // Lấy calendars của lớp và populate dữ liệu liên quan
@@ -334,18 +431,6 @@ async function getTeacherTeachingCalendar(req, res) {
       return res.status(404).json({ error: 'Không tìm thấy giáo viên cho người dùng hiện tại' });
     }
 
-    // Lấy tất cả các lớp mà giáo viên dạy (teacher_id hoặc teacher_id2)
-    const classes = await Class.find({
-      $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
-    })
-      .sort({ academic_year: -1 })
-      .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } })
-      .populate({ path: 'teacher_id2', model: Teacher, populate: { path: 'user_id', model: 'User' } });
-
-    if (!classes || classes.length === 0) {
-      return res.status(404).json({ error: 'Giáo viên chưa có lớp học' });
-    }
-
     // Lấy tất cả calendars mà giáo viên dạy (theo teacher_id trong calendar)
     const calendars = await Calendar.find({ teacher_id: teacher._id })
       .populate('weekday_id')
@@ -354,14 +439,35 @@ async function getTeacherTeachingCalendar(req, res) {
       .populate({ path: 'class_id', model: Class, select: 'class_name academic_year' })
       .populate({ path: 'teacher_id', model: Teacher, populate: { path: 'user_id', model: 'User' } });
 
-    // Tạo map để nhóm theo lớp
-    const classesMap = new Map();
-    classes.forEach(cls => {
-      classesMap.set(cls._id.toString(), {
-        id: cls._id,
-        name: cls.class_name,
-        academicYear: cls.academic_year
+    // Nếu giáo viên chưa có lịch dạy nào, trả về rỗng
+    if (!calendars || calendars.length === 0) {
+      // Tuy nhiên vẫn trả về các lớp giáo viên phụ trách (nếu có) để UI hiển thị danh sách
+      const classes = await Class.find({
+        $or: [{ teacher_id: teacher._id }, { teacher_id2: teacher._id }]
+      })
+        .sort({ academic_year: -1 })
+        .select('class_name academic_year');
+
+      return res.json({
+        classes: classes.map(cls => ({
+          id: cls._id,
+          name: cls.class_name,
+          academicYear: cls.academic_year
+        })),
+        calendars: []
       });
+    }
+
+    // Tạo map để nhóm theo lớp (bao gồm cả các lớp không phải GVCN nhưng giáo viên có tiết dạy)
+    const classesMap = new Map();
+    calendars.forEach(cal => {
+      if (cal.class_id) {
+        classesMap.set(cal.class_id._id.toString(), {
+          id: cal.class_id._id,
+          name: cal.class_id.class_name,
+          academicYear: cal.class_id.academic_year
+        });
+      }
     });
 
     // Nhóm calendars theo ngày và lớp

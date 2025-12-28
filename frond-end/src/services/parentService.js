@@ -570,6 +570,27 @@ class ParentService {
   }
 
   /**
+   * Lấy số lượng khoản thu chưa thanh toán
+   * @returns {Promise<Object>} - Kết quả API call với unpaid_count
+   */
+  async getUnpaidFeesCount() {
+    try {
+      const response = await apiService.get('/parent/fees/unpaid-count');
+      return {
+        success: true,
+        data: response.data || { unpaid_count: 0 }
+      };
+    } catch (error) {
+      console.error('ParentService.getUnpaidFeesCount Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Có lỗi xảy ra khi lấy số lượng khoản thu chưa thanh toán',
+        data: { unpaid_count: 0 }
+      };
+    }
+  }
+
+  /**
    * Tạo yêu cầu thanh toán PayOS cho phụ huynh
    * @param {Object} payload - { student_id, class_fee_id, student_class_id, invoice_id? }
    * @returns {Promise<Object>}

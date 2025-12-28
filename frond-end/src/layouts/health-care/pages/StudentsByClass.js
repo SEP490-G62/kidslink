@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Grid,
   Card,
@@ -40,12 +40,19 @@ const INFO_COLORS = {
 
 export default function StudentsByClass() {
   const { classId } = useParams();
+  const location = useLocation();
   const [students, setStudents] = useState([]);
-  const [classInfo, setClassInfo] = useState(null);
+  const [classInfo, setClassInfo] = useState(location.state?.classInfo || null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.state?.classInfo) {
+      setClassInfo(location.state.classInfo);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const load = async () => {
@@ -72,10 +79,54 @@ export default function StudentsByClass() {
     }
   }, [classId]);
 
+  useEffect(() => {
+    if (classInfo || !classId) return;
+    let ignore = false;
+
+    const fetchClassInfo = async () => {
+      const response = await healthService.getClasses();
+      if (!ignore && response.success) {
+        const found = response.data.find((cls) => cls._id === classId);
+        if (found) {
+          setClassInfo(found);
+        }
+      }
+    };
+
+    fetchClassInfo();
+    return () => {
+      ignore = true;
+    };
+  }, [classId, classInfo]);
+
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredStudents = normalizedQuery
     ? students.filter((s) => s.full_name?.toLowerCase().includes(normalizedQuery))
     : students;
+
+  const classDisplayName = useMemo(() => {
+    if (classInfo?.class_name) {
+      return `Lớp ${classInfo.class_name}`;
+    }
+    return "Lớp học";
+  }, [classInfo]);
+
+  const classMeta = useMemo(() => {
+    const chips = [];
+    if (classInfo?.class_age_id?.age_name) {
+      chips.push(classInfo.class_age_id.age_name);
+    }
+    if (classInfo?.academic_year) {
+      chips.push(classInfo.academic_year);
+    }
+    return chips;
+  }, [classInfo]);
+
+  const goToStudentPage = (student, page) => {
+    navigate(`/health-care/students/${student._id}/${page}`, {
+      state: { student, classInfo },
+    });
+  };
 
   if (loading) {
     return (
@@ -129,16 +180,14 @@ export default function StudentsByClass() {
               <Box>
                 <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
                   <ClassIcon color="primary" />
-                  <ArgonTypography
-                    variant="h5"
-                    fontWeight="bold"
-                    letterSpacing={0.2}
-                  >
-                    Học sinh của lớp
+                  <ArgonTypography variant="h5" fontWeight="bold" letterSpacing={0.2}>
+                    Học sinh - {classDisplayName}
                   </ArgonTypography>
                 </Stack>
                 <ArgonTypography variant="body2" color="text" mt={0.5}>
-                  Danh sách học sinh và lối tắt truy cập hồ sơ sức khỏe
+                  {classInfo?.school_id?.school_name
+                    ? `Trường ${classInfo.school_id.school_name}`
+                    : "Danh sách học sinh và lối tắt truy cập hồ sơ sức khỏe"}
                 </ArgonTypography>
               </Box>
               <Stack
@@ -146,13 +195,18 @@ export default function StudentsByClass() {
                 spacing={2}
                 alignItems={{ xs: "stretch", sm: "center" }}
               >
-                <Chip
-                  icon={<PersonIcon />}
-                  color="primary"
-                  variant="outlined"
-                  label={`${filteredStudents.length} học sinh`}
-                  sx={{ fontWeight: 600 }}
-                />
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  <Chip
+                    icon={<PersonIcon />}
+                    color="primary"
+                    variant="outlined"
+                    label={`${filteredStudents.length} học sinh`}
+                    sx={{ fontWeight: 600 }}
+                  />
+                  {classMeta.map((label) => (
+                    <Chip key={label} variant="outlined" label={label} sx={{ fontWeight: 600 }} />
+                  ))}
+                </Stack>
                 <ArgonButton
                   color="secondary"
                   variant="outlined"
@@ -251,7 +305,7 @@ export default function StudentsByClass() {
         <Card>
           <CardContent>
             <ArgonTypography variant="h6" fontWeight="bold" mb={3}>
-              Danh sách học sinh ({filteredStudents.length} học sinh)
+              Danh sách học sinh - {classDisplayName} ({filteredStudents.length} học sinh)
             </ArgonTypography>
 
             {filteredStudents.length === 0 ? (
@@ -320,9 +374,7 @@ export default function StudentsByClass() {
                           size="medium"
                           variant="contained"
                           color="success"
-                          onClick={() =>
-                            navigate(`/health-care/students/${s._id}/records`)
-                          }
+                          onClick={() => goToStudentPage(s, "records")}
                           startIcon={<HealthAndSafetyIcon />}
                           sx={{
                             textTransform: "none",
@@ -343,9 +395,7 @@ export default function StudentsByClass() {
                           size="medium"
                           variant="contained"
                           color="warning"
-                          onClick={() =>
-                            navigate(`/health-care/students/${s._id}/notices`)
-                          }
+                          onClick={() => goToStudentPage(s, "notices")}
                           startIcon={<NotificationsIcon />}
                           sx={{
                             textTransform: "none",

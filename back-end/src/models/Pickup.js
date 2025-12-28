@@ -14,6 +14,7 @@ const pickupSchema = new mongoose.Schema({
   id_card_number: {
     type: String,
     required: true,
+    unique: true,
     trim: true
   },
   avatar_url: {
@@ -23,6 +24,7 @@ const pickupSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: true,
+    unique: true,
     trim: true
   }
 }, {

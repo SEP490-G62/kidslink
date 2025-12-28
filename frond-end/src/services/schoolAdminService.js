@@ -33,8 +33,12 @@ const schoolAdminService = {
   linkExistingParent: async (parentId, studentId, relationship) => {
     return await api.post('/parentcrud/link', { parent_id: parentId, student_id: studentId, relationship }, true);
   },
-  getClasses: async () => {
-    return await api.get('/classes', true);
+  getClasses: async (latestAcademicYearOnly = false) => {
+    // Get classes - if latestAcademicYearOnly is true, only get classes from latest academic year
+    const url = latestAcademicYearOnly 
+      ? '/classes?latestAcademicYear=true&limit=1000'
+      : '/classes?limit=1000';
+    return await api.get(url, true);
   },
 
   getPostById: async (postId) => {
@@ -78,8 +82,8 @@ const schoolAdminService = {
   },
 
   // Likes
-  getLikes: async (postId) => {
-    return await api.get(`/school-admin/posts/${postId}/likes`, true);
+  getLikes: async (postId, page = 1, limit = 10) => {
+    return await api.get(`/school-admin/posts/${postId}/likes?page=${page}&limit=${limit}`, true);
   },
 
   toggleLike: async (postId) => {

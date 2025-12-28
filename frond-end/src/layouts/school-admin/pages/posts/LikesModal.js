@@ -25,6 +25,20 @@ import ArgonTypography from "components/ArgonTypography";
 import parentService from "services/parentService";
 import schoolAdminService from "services/schoolAdminService";
 
+// Helper function to convert role to Vietnamese
+const getRoleLabel = (role) => {
+  switch (role) {
+    case 'parent':
+      return 'Phụ huynh';
+    case 'teacher':
+      return 'Giáo viên';
+    case 'school_admin':
+      return 'Quản trị viên';
+    default:
+      return '';
+  }
+};
+
 function LikesModal({ 
   open, 
   onClose, 
@@ -45,7 +59,8 @@ function LikesModal({
     try {
       setLikesLoading(true);
       const service = isAdmin ? schoolAdminService : parentService;
-      const response = await service.getLikes(selectedPost.id);
+      // Load all likes by using a very large limit
+      const response = await service.getLikes(selectedPost.id, 1, 10000);
       if (response?.success) {
         const dataPayload = response.data?.data || response.data || {};
         const likesData = dataPayload.likes || response.data?.likes || [];
@@ -164,12 +179,19 @@ function LikesModal({
                     }}
                   />
                   <ArgonBox>
-                    <ArgonTypography variant="subtitle2" fontWeight="bold" color="dark">
-                      {like.user_id?.full_name}
-                    </ArgonTypography>
-                    <ArgonTypography variant="caption" color="text.secondary">
+                    <ArgonBox display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                      <ArgonTypography variant="subtitle2" fontWeight="bold" color="dark">
+                        {like.user_id?.full_name}
+                      </ArgonTypography>
+                      {like.user_id?.role && (
+                        <ArgonTypography variant="caption" color="text.secondary" fontSize="11px">
+                          ({getRoleLabel(like.user_id.role)})
+                        </ArgonTypography>
+                      )}
+                    </ArgonBox>
+                    {/* <ArgonTypography variant="caption" color="text.secondary">
                       @{like.user_id?.username}
-                    </ArgonTypography>
+                    </ArgonTypography> */}
                   </ArgonBox>
                 </ArgonBox>
               </ArgonBox>

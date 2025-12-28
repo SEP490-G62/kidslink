@@ -208,8 +208,8 @@ const ActivityModal = ({ open, onClose }) => {
           }}
         >
           <ArgonTypography variant="h5" fontWeight="bold" color="#fff">
-            Quản lý môn học / Hoạt động
-          </ArgonTypography>
+          Quản lý môn học / Hoạt động
+        </ArgonTypography>
           <IconButton
             size="small"
             sx={{
@@ -221,7 +221,7 @@ const ActivityModal = ({ open, onClose }) => {
           >
             <CloseIcon fontSize="small" />
           </IconButton>
-        </DialogTitle>
+      </DialogTitle>
         <DialogContent
           sx={{
             pt: 3,
@@ -231,29 +231,29 @@ const ActivityModal = ({ open, onClose }) => {
           }}
         >
 
-          <Grid container spacing={3}>
-            {/* Form thêm/sửa */}
-            <Grid item xs={12} md={6}>
-              <ArgonBox 
-                sx={{ 
-                  p: 2, 
-                  border: '2px dashed #dee2e6', 
-                  borderRadius: 2,
-                  backgroundColor: '#f8f9fa'
-                }}
-              >
-                <ArgonTypography variant="h6" fontWeight="bold" mb={2}>
-                  {editingActivity ? "Chỉnh sửa môn học" : "Thêm môn học mới"}
-                </ArgonTypography>
-                <ArgonBox>
+        <Grid container spacing={3}>
+          {/* Form thêm/sửa */}
+          <Grid item xs={12} md={6}>
+            <ArgonBox 
+              sx={{ 
+                p: 2, 
+                border: '2px dashed #dee2e6', 
+                borderRadius: 2,
+                backgroundColor: '#f8f9fa'
+              }}
+            >
+              <ArgonTypography variant="h6" fontWeight="bold" mb={2}>
+                {editingActivity ? "Chỉnh sửa môn học" : "Thêm môn học mới"}
+              </ArgonTypography>
+              <ArgonBox>
                   <ArgonBox mb={2}>
                     <ArgonTypography variant="body2" fontWeight="medium" mb={1}>
                       Tên môn học *
                     </ArgonTypography>
-                    <TextField
-                      value={formData.name}
-                      onChange={(e) => handleChange('name', e.target.value)}
-                      placeholder="VD: Toán học, Nghệ thuật, ..."
+                <TextField
+                  value={formData.name}
+                  onChange={(e) => handleChange('name', e.target.value)}
+                  placeholder="VD: Toán học, Nghệ thuật, ..."
                       error={!!errors.name}
                       helperText={errors.name || "Nhập tên môn học"}
                       required
@@ -282,12 +282,12 @@ const ActivityModal = ({ open, onClose }) => {
                     <ArgonTypography variant="body2" fontWeight="medium" mb={1}>
                       Mô tả *
                     </ArgonTypography>
-                    <TextField
+                <TextField
                       multiline
                       rows={4}
-                      value={formData.description}
-                      onChange={(e) => handleChange('description', e.target.value)}
-                      placeholder="Mô tả ngắn về môn học"
+                  value={formData.description}
+                  onChange={(e) => handleChange('description', e.target.value)}
+                  placeholder="Mô tả ngắn về môn học"
                       error={!!errors.description}
                       helperText={errors.description || "Nhập mô tả môn học"}
                       required
@@ -313,11 +313,11 @@ const ActivityModal = ({ open, onClose }) => {
                     />
                   </ArgonBox>
                   <ArgonBox mb={2}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={formData.requireOutdoor}
-                          onChange={(e) => handleChange('requireOutdoor', e.target.checked)}
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.requireOutdoor}
+                      onChange={(e) => handleChange('requireOutdoor', e.target.checked)}
                           sx={{
                             color: "#1976d2",
                             "&.Mui-checked": {
@@ -334,116 +334,116 @@ const ActivityModal = ({ open, onClose }) => {
                     />
                   </ArgonBox>
                   <ArgonBox display="flex" gap={1}>
+                  <ArgonButton 
+                    onClick={handleSubmit} 
+                    color="info" 
+                    disabled={loading}
+                    fullWidth
+                  >
+                    {loading ? <CircularProgress size={20} color="inherit" /> : (editingActivity ? "Cập nhật" : "Thêm mới")}
+                  </ArgonButton>
+                  {editingActivity && (
                     <ArgonButton 
-                      onClick={handleSubmit} 
-                      color="info" 
-                      disabled={loading}
-                      fullWidth
+                      onClick={resetForm} 
+                      color="secondary"
+                      variant="outlined"
                     >
-                      {loading ? <CircularProgress size={20} color="inherit" /> : (editingActivity ? "Cập nhật" : "Thêm mới")}
+                      Hủy
                     </ArgonButton>
-                    {editingActivity && (
-                      <ArgonButton 
-                        onClick={resetForm} 
-                        color="secondary"
-                        variant="outlined"
-                      >
-                        Hủy
-                      </ArgonButton>
-                    )}
-                  </ArgonBox>
+                  )}
                 </ArgonBox>
               </ArgonBox>
-            </Grid>
+            </ArgonBox>
+          </Grid>
 
-            {/* Danh sách môn học */}
-            <Grid item xs={12} md={6}>
-              <ArgonTypography variant="h6" fontWeight="bold" mb={2}>
-                Danh sách môn học ({activities.length})
-              </ArgonTypography>
-              <ArgonBox 
-                sx={{ 
-                  maxHeight: 400, 
-                  overflowY: 'auto',
-                  border: '1px solid #dee2e6',
-                  borderRadius: 2,
-                  backgroundColor: '#fff'
-                }}
-              >
+          {/* Danh sách môn học */}
+          <Grid item xs={12} md={6}>
+            <ArgonTypography variant="h6" fontWeight="bold" mb={2}>
+              Danh sách môn học ({activities.length})
+            </ArgonTypography>
+            <ArgonBox 
+              sx={{ 
+                maxHeight: 400, 
+                overflowY: 'auto',
+                border: '1px solid #dee2e6',
+                borderRadius: 2,
+                backgroundColor: '#fff'
+              }}
+            >
                 {loading && activities.length === 0 ? (
                   <ArgonBox p={3} textAlign="center">
                     <CircularProgress size={24} />
                   </ArgonBox>
                 ) : activities.length === 0 ? (
-                  <ArgonBox p={3} textAlign="center">
-                    <ArgonTypography variant="body2" color="text">
-                      Chưa có môn học nào
-                    </ArgonTypography>
-                  </ArgonBox>
-                ) : (
-                  <List>
-                    {activities.map((activity, index) => (
-                      <React.Fragment key={activity._id}>
-                        <ListItem
-                          secondaryAction={
-                            <ArgonBox display="flex" gap={0.5}>
-                              <IconButton
-                                edge="end"
-                                size="small"
-                                onClick={() => handleEdit(activity)}
-                                sx={{ color: '#1976d2' }}
-                              >
+                <ArgonBox p={3} textAlign="center">
+                  <ArgonTypography variant="body2" color="text">
+                    Chưa có môn học nào
+                  </ArgonTypography>
+                </ArgonBox>
+              ) : (
+                <List>
+                  {activities.map((activity, index) => (
+                    <React.Fragment key={activity._id}>
+                      <ListItem
+                        secondaryAction={
+                          <ArgonBox display="flex" gap={0.5}>
+                            <IconButton
+                              edge="end"
+                              size="small"
+                              onClick={() => handleEdit(activity)}
+                              sx={{ color: '#1976d2' }}
+                            >
                                 <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                edge="end"
-                                size="small"
-                                onClick={() => handleDelete(activity._id)}
-                                sx={{ color: '#f44336' }}
-                              >
+                            </IconButton>
+                            <IconButton
+                              edge="end"
+                              size="small"
+                              onClick={() => handleDelete(activity._id)}
+                              sx={{ color: '#f44336' }}
+                            >
                                 <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </ArgonBox>
-                          }
-                          sx={{ alignItems: 'flex-start', py: 2 }}
-                        >
-                          <ListItemText
-                            primary={
-                              <ArgonBox display="flex" alignItems="center" gap={1}>
-                                <ArgonTypography variant="body2" fontWeight="bold">
-                                  {activity.name}
-                                </ArgonTypography>
-                                {activity.requireOutdoor === 1 && (
-                                  <Chip 
-                                    label="Ngoài trời" 
-                                    size="small" 
-                                    sx={{ 
+                            </IconButton>
+                          </ArgonBox>
+                        }
+                        sx={{ alignItems: 'flex-start', py: 2 }}
+                      >
+                        <ListItemText
+                          primary={
+                            <ArgonBox display="flex" alignItems="center" gap={1}>
+                              <ArgonTypography variant="body2" fontWeight="bold">
+                                {activity.name}
+                              </ArgonTypography>
+                              {activity.requireOutdoor === 1 && (
+                                <Chip 
+                                  label="Ngoài trời" 
+                                  size="small" 
+                                  sx={{ 
                                       height: 20, 
                                       fontSize: '0.7rem',
-                                      backgroundColor: '#81c784',
+                                    backgroundColor: '#81c784',
                                       color: '#fff',
                                       fontWeight: 600
-                                    }} 
-                                  />
-                                )}
-                              </ArgonBox>
-                            }
-                            secondary={
-                              <ArgonTypography variant="caption" color="text">
-                                {activity.description}
-                              </ArgonTypography>
-                            }
-                          />
-                        </ListItem>
-                        {index < activities.length - 1 && <Divider />}
-                      </React.Fragment>
-                    ))}
-                  </List>
-                )}
-              </ArgonBox>
-            </Grid>
+                                  }} 
+                                />
+                              )}
+                            </ArgonBox>
+                          }
+                          secondary={
+                            <ArgonTypography variant="caption" color="text">
+                              {activity.description}
+                            </ArgonTypography>
+                          }
+                        />
+                      </ListItem>
+                      {index < activities.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
+            </ArgonBox>
           </Grid>
-        </DialogContent>
+        </Grid>
+      </DialogContent>
         <DialogActions
           sx={{
             px: 3,
@@ -452,11 +452,11 @@ const ActivityModal = ({ open, onClose }) => {
             background: "linear-gradient(135deg, #f8fbff 0%, #ffffff 100%)",
           }}
         >
-          <ArgonButton onClick={onClose} color="secondary" variant="outlined">
-            Đóng
-          </ArgonButton>
-        </DialogActions>
-      </Dialog>
+        <ArgonButton onClick={onClose} color="secondary" variant="outlined">
+          Đóng
+        </ArgonButton>
+      </DialogActions>
+    </Dialog>
 
       {/* Snackbar thông báo */}
       <Snackbar

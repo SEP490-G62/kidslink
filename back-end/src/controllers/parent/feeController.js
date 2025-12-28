@@ -909,9 +909,143 @@ const checkPayOSPaymentStatus = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/parent/fees/unpaid-count - Lấy số lượng khoản thu chưa thanh toán
+ */
+const getUnpaidFeesCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Lấy thông tin phụ huynh từ user_id
+    const parent = await Parent.findOne({ user_id: userId });
+    if (!parent) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy thông tin phụ huynh'
+      });
+    }
+
+    // Lấy danh sách học sinh của phụ huynh
+    const parentStudents = await ParentStudent.find({ parent_id: parent._id })
+      .populate('student_id');
+
+    if (parentStudents.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          unpaid_count: 0
+        }
+      });
+    }
+
+    let totalUnpaidCount = 0;
+
+    // Đếm số lượng khoản thu chưa thanh toán cho từng học sinh
+    for (const ps of parentStudents) {
+      const student = ps.student_id;
+
+      // Lấy tất cả lớp học của học sinh
+      const studentClasses = await StudentClass.find({ student_id: student._id })
+        .populate({
+          path: 'class_id',
+          select: 'class_name class_age_id academic_year'
+        });
+
+      if (studentClasses.length === 0) {
+        continue;
+      }
+
+      // Sắp xếp theo năm học giảm dần và lấy lớp lớn nhất
+      const sortedClasses = studentClasses.sort((a, b) => {
+        const yearA = a.class_id?.academic_year || '';
+        const yearB = b.class_id?.academic_year || '';
+        return yearB.localeCompare(yearA);
+      });
+
+      const latestStudentClass = sortedClasses[0];
+      const latestClass = latestStudentClass?.class_id;
+
+      if (!latestClass) {
+        continue;
+      }
+
+      // Lấy các ClassFee của lớp này (chỉ active)
+      const classFees = await ClassFee.find({
+        class_id: latestClass._id,
+        status: 1
+      })
+        .populate({
+          path: 'fee_id',
+          select: 'fee_name description amount'
+        })
+        .lean();
+
+      // Đếm số lượng khoản thu chưa thanh toán
+      for (const classFee of classFees) {
+        if (!classFee.fee_id) {
+          continue;
+        }
+
+        // Tìm Invoice cho student_class_id và class_fee_id này
+        const invoice = await Invoice.findOne({
+          student_class_id: latestStudentClass._id,
+          class_fee_id: classFee._id
+        }).lean();
+
+        // Xác định trạng thái
+        let status = 'pending';
+
+        if (invoice) {
+          if (invoice.status === 1) {
+            status = 'paid';
+          } else if (invoice.status === 2) {
+            status = 'overdue';
+          } else {
+            // Kiểm tra xem có quá hạn không
+            const now = new Date();
+            const dueDate = new Date(invoice.due_date);
+            if (now > dueDate) {
+              status = 'overdue';
+            } else {
+              status = 'pending';
+            }
+          }
+        } else {
+          // Chưa có invoice, kiểm tra due_date của ClassFee
+          const now = new Date();
+          const classFeeDueDate = new Date(classFee.due_date);
+          if (now > classFeeDueDate) {
+            status = 'overdue';
+          }
+        }
+
+        // Đếm nếu chưa thanh toán
+        if (status !== 'paid') {
+          totalUnpaidCount++;
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        unpaid_count: totalUnpaidCount
+      }
+    });
+  } catch (error) {
+    console.error('getUnpaidFeesCount error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi lấy số lượng khoản thu chưa thanh toán',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getStudentFees,
   createPayOSPaymentRequest,
-  checkPayOSPaymentStatus
+  checkPayOSPaymentStatus,
+  getUnpaidFeesCount
 };
 

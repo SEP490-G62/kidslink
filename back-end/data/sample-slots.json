@@ -1,0 +1,231 @@
+[
+  {
+    "slot_name": "Đón trẻ",
+    "start_time": "07:00",
+    "end_time": "07:30",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Thể dục buổi sáng",
+    "start_time": "07:30",
+    "end_time": "08:00",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Vệ sinh cá nhân",
+    "start_time": "08:00",
+    "end_time": "08:15",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Giờ ăn sáng",
+    "start_time": "08:15",
+    "end_time": "08:45",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Hoạt động góc",
+    "start_time": "08:45",
+    "end_time": "09:30",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Giờ học chính",
+    "start_time": "09:30",
+    "end_time": "10:15",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Vệ sinh cá nhân",
+    "start_time": "10:15",
+    "end_time": "10:30",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Hoạt động ngoài trời",
+    "start_time": "10:30",
+    "end_time": "11:15",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Vệ sinh cá nhân",
+    "start_time": "11:15",
+    "end_time": "11:30",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Giờ ăn trưa",
+    "start_time": "11:30",
+    "end_time": "12:00",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Vệ sinh cá nhân",
+    "start_time": "12:00",
+    "end_time": "12:15",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Giờ ngủ trưa",
+    "start_time": "12:15",
+    "end_time": "14:00",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Vệ sinh cá nhân",
+    "start_time": "14:00",
+    "end_time": "14:15",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Giờ ăn xế",
+    "start_time": "14:15",
+    "end_time": "14:45",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Hoạt động nghệ thuật",
+    "start_time": "14:45",
+    "end_time": "15:30",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Âm nhạc và vận động",
+    "start_time": "15:30",
+    "end_time": "16:00",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Đọc sách và kể chuyện",
+    "start_time": "16:00",
+    "end_time": "16:30",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Hoạt động tự do",
+    "start_time": "16:30",
+    "end_time": "17:00",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Trả trẻ",
+    "start_time": "17:00",
+    "end_time": "17:30",
+    "school_id": "{{school_id_1}}"
+  },
+  {
+    "slot_name": "Đón trẻ",
+    "start_time": "07:00",
+    "end_time": "07:30",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Thể dục buổi sáng",
+    "start_time": "07:30",
+    "end_time": "08:00",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Vệ sinh cá nhân",
+    "start_time": "08:00",
+    "end_time": "08:15",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Giờ ăn sáng",
+    "start_time": "08:15",
+    "end_time": "08:45",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Hoạt động góc",
+    "start_time": "08:45",
+    "end_time": "09:30",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Giờ học chính",
+    "start_time": "09:30",
+    "end_time": "10:15",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Vệ sinh cá nhân",
+    "start_time": "10:15",
+    "end_time": "10:30",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Hoạt động ngoài trời",
+    "start_time": "10:30",
+    "end_time": "11:15",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Vệ sinh cá nhân",
+    "start_time": "11:15",
+    "end_time": "11:30",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Giờ ăn trưa",
+    "start_time": "11:30",
+    "end_time": "12:00",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Vệ sinh cá nhân",
+    "start_time": "12:00",
+    "end_time": "12:15",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Giờ ngủ trưa",
+    "start_time": "12:15",
+    "end_time": "14:00",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Vệ sinh cá nhân",
+    "start_time": "14:00",
+    "end_time": "14:15",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Giờ ăn xế",
+    "start_time": "14:15",
+    "end_time": "14:45",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Hoạt động nghệ thuật",
+    "start_time": "14:45",
+    "end_time": "15:30",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Âm nhạc và vận động",
+    "start_time": "15:30",
+    "end_time": "16:00",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Đọc sách và kể chuyện",
+    "start_time": "16:00",
+    "end_time": "16:30",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Hoạt động tự do",
+    "start_time": "16:30",
+    "end_time": "17:00",
+    "school_id": "{{school_id_2}}"
+  },
+  {
+    "slot_name": "Trả trẻ",
+    "start_time": "17:00",
+    "end_time": "17:30",
+    "school_id": "{{school_id_2}}"
+  }
+]
+

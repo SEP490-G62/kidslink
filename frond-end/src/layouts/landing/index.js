@@ -55,7 +55,7 @@ function Landing() {
             navigate('/health-care');
             return;
           default:
-            navigate('/');
+            navigate('/authentication/sign-in');
             return;
         }
       }

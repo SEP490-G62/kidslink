@@ -1,0 +1,121 @@
+@startuml Manage Dish - Nutrition Staff
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+skinparam backgroundColor white
+skinparam classBackgroundColor white
+skinparam classBorderColor black
+skinparam arrowColor black
+
+package "Routes" {
+  class C_NutritionStaffRoutes {
+    + registerRoutes(router: ExpressRouter): void
+  }
+}
+
+package "Controller" {
+  class C_NutritionController {
+    + listDishes(req: Request, res: Response): Promise<void>
+    + createDish(req: Request, res: Response): Promise<void>
+    + updateDish(req: Request, res: Response): Promise<void>
+    + deleteDish(req: Request, res: Response): Promise<void>
+    - getUserSchoolId(req: Request): Promise<ObjectId>
+  }
+}
+
+package "Middleware" {
+  class C_AuthMiddleware {
+    + authenticate(req, res, next): void
+    + authorize(allowedRoles: String[]): Function
+  }
+  
+  class C_ErrorHandlerMiddleware {
+    + handleError(err, req, res, next): void
+  }
+}
+
+package "Models" {
+  class C_DishModel {
+    - _id: ObjectId
+    - dish_name: String
+    - description: String
+    - meal_type: ObjectId
+    - school_id: ObjectId
+    - createdAt: Date
+    - updatedAt: Date
+    + find(query: Object): Promise<Dish[]>
+    + findOne(query: Object): Promise<Dish>
+    + findById(id: ObjectId): Promise<Dish>
+    + create(data: Object): Promise<Dish>
+    + findByIdAndUpdate(id: ObjectId, data: Object): Promise<Dish>
+    + findByIdAndDelete(id: ObjectId): Promise<Dish>
+  }
+  
+  class C_MealModel {
+    - _id: ObjectId
+    - meal: String
+    - createdAt: Date
+    - updatedAt: Date
+    + findById(id: ObjectId): Promise<Meal>
+    + find(): Promise<Meal[]>
+  }
+  
+  class C_UserModel {
+    - _id: ObjectId
+    - full_name: String
+    - username: String
+    - role: String
+    - school_id: ObjectId
+    + findById(id: ObjectId): Promise<User>
+  }
+  
+  class C_SchoolModel {
+    - _id: ObjectId
+    - school_name: String
+  }
+}
+
+' Relationships
+C_NutritionStaffRoutes --> C_NutritionController : use
+C_NutritionStaffRoutes --> C_AuthMiddleware : use
+
+C_NutritionController --> C_AuthMiddleware : auth check
+C_NutritionController --> C_DishModel : find\nfindOne\ncreate\nfindByIdAndUpdate\nfindByIdAndDelete
+C_NutritionController --> C_MealModel : findById
+C_NutritionController --> C_UserModel : findById
+
+C_AuthMiddleware ..> C_ErrorHandlerMiddleware : on failure
+
+C_DishModel --> C_MealModel : meal_type
+C_DishModel --> C_SchoolModel : school_id
+C_UserModel --> C_SchoolModel : school_id
+
+note right of C_NutritionController::getUserSchoolId
+  Get school_id from logged-in user
+end note
+
+note right of C_NutritionController::listDishes
+  Filter dishes by school_id
+end note
+
+note right of C_NutritionController::createDish
+  Validate meal_type exists
+  Auto-assign school_id from user
+end note
+
+note right of C_NutritionController::updateDish
+  Verify dish belongs to user's school
+  Validate meal_type if updated
+end note
+
+note right of C_NutritionController::deleteDish
+  Verify dish belongs to user's school
+end note
+
+note right of C_DishModel
+  school_id: Required
+  meal_type: Required (ref Meal)
+end note
+
+@enduml
+

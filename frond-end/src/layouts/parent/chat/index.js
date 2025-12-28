@@ -331,12 +331,39 @@ function ParentChat() {
   };
 
   const getTitle = (conv) => {
-    // Nếu conversation có 2 thành viên, hiển thị tên đối phương
+    // Nếu conversation có 2 thành viên, hiển thị "Tên đối phương - Tên lớp - Năm học"
     if (conv.participants_count === 2 && conv.participants && Array.isArray(conv.participants)) {
       const otherParticipant = conv.participants.find(
         p => (p._id?.toString() || p._id) !== (currentUserId?.toString() || currentUserId)
       );
       if (otherParticipant && otherParticipant.full_name) {
+        // Lấy thông tin lớp từ class_id hoặc từ title
+        let className = '';
+        let academicYear = '';
+        
+        // Xử lý class_id có thể là object hoặc string
+        if (conv.class_id) {
+          if (typeof conv.class_id === 'object' && conv.class_id !== null) {
+            className = conv.class_id.class_name || '';
+            academicYear = conv.class_id.academic_year || '';
+          }
+        }
+        
+        // Nếu không có từ class_id, parse từ title: "Tên parent - Tên teacher - Tên lớp - Năm học"
+        if ((!className || !academicYear) && conv.title) {
+          const parts = conv.title.split(' - ');
+          if (parts.length >= 4) {
+            className = className || parts[parts.length - 2] || '';
+            academicYear = academicYear || parts[parts.length - 1] || '';
+          }
+        }
+        
+        // Tạo title hiển thị: "Tên đối phương - Tên lớp - Năm học"
+        if (className && academicYear) {
+          return `${otherParticipant.full_name} - ${className} - ${academicYear}`;
+        } else if (className) {
+          return `${otherParticipant.full_name} - ${className}`;
+        }
         return otherParticipant.full_name;
       }
     }
@@ -434,17 +461,17 @@ function ParentChat() {
                         }
                         // Prefetch teachers for each child
                         const entries = await Promise.all(childrenList.map(async (child) => {
-                          try {
-                            const r = await messagingService.getTeachersByStudent(child._id);
-                            return [child._id, r.success ? (r.data.teachers || []) : []];
-                          } catch {
-                            return [child._id, []];
-                          }
-                        }));
-                        const map = {};
-                        entries.forEach(([k, v]) => { map[k] = v; });
-                        setTeachersByChild(map);
-                        setOpenTeacherSelect(true);
+                              try {
+                                const r = await messagingService.getTeachersByStudent(child._id);
+                                return [child._id, r.success ? (r.data.teachers || []) : []];
+                              } catch {
+                                return [child._id, []];
+                              }
+                            }));
+                            const map = {};
+                            entries.forEach(([k, v]) => { map[k] = v; });
+                            setTeachersByChild(map);
+                          setOpenTeacherSelect(true);
                       } catch (e) {
                         setError(e.message || 'Không thể tải danh sách giáo viên');
                       }

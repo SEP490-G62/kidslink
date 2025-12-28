@@ -17,7 +17,7 @@ const nutritionStaffRoutes = [
     type: "route",
     name: "Quản lý thực đơn",
     key: "nutrition-dishes",
-    route: "/nutrition",
+    route: "/nutrition/dishes",
     icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-basket" />,
     component: <ProtectedRoute requiredRoles={["nutrition_staff"]}><NutritionStaffHome /></ProtectedRoute>
   },

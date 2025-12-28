@@ -1,0 +1,143 @@
+// Weekly Menu Database Schema - dbdiagram.io
+// Schema for Nutrition Staff Weekly Menu Management
+
+Table School {
+  _id ObjectId [pk]
+  school_name string
+  address string
+  phone string [unique]
+  email string [unique]
+  logo_url string
+  status number [default: 1]
+  qr_data string
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table User {
+  _id ObjectId [pk]
+  full_name string
+  username string [unique]
+  password_hash string
+  role string [note: 'nutrition_staff, school_admin, teacher, parent, health_care_staff, admin']
+  avatar_url string
+  status number [default: 1]
+  email string
+  phone_number string
+  school_id ObjectId [ref: > School._id]
+  address string
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table Meal {
+  _id ObjectId [pk]
+  meal string [note: 'Sáng, Trưa, Xế']
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table Dish {
+  _id ObjectId [pk]
+  dish_name string
+  description string
+  meal_type ObjectId [ref: > Meal._id, note: 'Loại bữa ăn']
+  school_id ObjectId [ref: > School._id]
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table ClassAge {
+  _id ObjectId [pk]
+  age number [note: 'Độ tuổi (3, 4, 5...)']
+  age_name string [note: 'Tên nhóm tuổi']
+  school_id ObjectId [ref: > School._id]
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table WeekDay {
+  _id ObjectId [pk]
+  day_of_week string [note: 'Monday, Tuesday, ..., Sunday']
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table ClassAgeMeal {
+  _id ObjectId [pk]
+  class_age_id ObjectId [ref: > ClassAge._id]
+  meal_id ObjectId [ref: > Meal._id]
+  weekday_id ObjectId [ref: > WeekDay._id]
+  date datetime [note: 'Ngày cụ thể trong tuần']
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table DishesClassAgeMeal {
+  _id ObjectId [pk]
+  class_age_meal_id ObjectId [ref: > ClassAgeMeal._id]
+  dish_id ObjectId [ref: > Dish._id]
+  createdAt datetime
+  updatedAt datetime
+  
+  indexes {
+    (class_age_meal_id, dish_id) [unique]
+  }
+}
+
+Table Class {
+  _id ObjectId [pk]
+  class_name string
+  academic_year string [note: 'Năm học (2024-2025)']
+  school_id ObjectId [ref: > School._id]
+  class_age_id ObjectId [ref: > ClassAge._id]
+  teacher_id ObjectId [ref: > Teacher._id]
+  teacher_id2 ObjectId [ref: > Teacher._id, null]
+  start_date datetime
+  end_date datetime
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table Student {
+  _id ObjectId [pk]
+  full_name string
+  school_id ObjectId [ref: > School._id]
+  dob datetime
+  gender number [note: '0: male, 1: female']
+  avatar_url string
+  status number [default: 1]
+  allergy string [note: 'Thông tin dị ứng của học sinh']
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table StudentClass {
+  _id ObjectId [pk]
+  student_id ObjectId [ref: > Student._id]
+  class_id ObjectId [ref: > Class._id]
+  discount number [default: 0]
+  createdAt datetime
+  updatedAt datetime
+  
+  indexes {
+    (student_id, class_id) [unique]
+  }
+}
+
+// Relationships Summary:
+// School 1:N User (nutrition_staff)
+// School 1:N Dish
+// School 1:N ClassAge
+// School 1:N Class
+// School 1:N Student
+// Meal 1:N Dish
+// ClassAge 1:N ClassAgeMeal
+// Meal 1:N ClassAgeMeal
+// WeekDay 1:N ClassAgeMeal
+// ClassAgeMeal 1:N DishesClassAgeMeal
+// Dish 1:N DishesClassAgeMeal
+// ClassAge 1:N Class
+// Class 1:N StudentClass
+// Student 1:N StudentClass
+

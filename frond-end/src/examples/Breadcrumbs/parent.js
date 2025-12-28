@@ -54,7 +54,16 @@ function Breadcrumbs({ icon, title, route, light }) {
       'settings': 'Cài đặt',
       'notifications': 'Thông báo',
       'help': 'Trợ giúp',
-      'logout': 'Đăng xuất'
+      'logout': 'Đăng xuất',
+      'health-care': 'Y tế',
+      'classes': 'Lớp học',
+      'students': 'Học sinh',
+      'records': 'Sổ sức khỏe',
+      'notices': 'Thông báo y tế',
+      'students': 'Học sinh',
+      'nutrition': 'Dinh dưỡng',
+      'dishes': 'Thực đơn',
+
     };
     
     return translations[routeName] || routeName;
@@ -83,7 +92,14 @@ function Breadcrumbs({ icon, title, route, light }) {
       'settings': 'Cài đặt',
       'notifications': 'Thông báo',
       'help': 'Trợ giúp',
-      'logout': 'Đăng xuất'
+      'logout': 'Đăng xuất',
+      'health-care': 'Y tế',
+      'records': 'Sổ sức khỏe',
+      'notices': 'Thông báo y tế',
+      'students': 'Học sinh',
+      'nutrition': 'Dinh dưỡng',
+      'dishes': 'Món ăn',
+
     };
     
     return titleTranslations[titleName] || titleName.replace("-", " ");

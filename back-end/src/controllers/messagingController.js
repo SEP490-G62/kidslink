@@ -8,6 +8,7 @@ const Teacher = require('../models/Teacher');
 const StudentClass = require('../models/StudentClass');
 const ParentStudent = require('../models/ParentStudent');
 const Parent = require('../models/Parent');
+const Student = require('../models/Student');
 const cloudinary = require('../utils/cloudinary');
 
 // Tạo cuộc trò chuyện mới
@@ -22,10 +23,11 @@ exports.createConversation = async (req, res) => {
       return res.status(404).json({ error: 'Lớp học không tồn tại' });
     }
 
-    // Tạo conversation
+    // Tạo conversation (không phải nhóm lớp)
     const conversation = new Conversation({
       title: title || `${classExists.class_name} - Chat`,
       class_id: class_id,
+      is_class_group: false,
       create_at: new Date(),
       last_message_at: new Date()
     });
@@ -125,7 +127,7 @@ exports.getConversations = async (req, res) => {
     const conversations = await Conversation.find({
       _id: { $in: conversationIds }
     })
-      .populate('class_id', 'class_name')
+      .populate('class_id', 'class_name academic_year')
       .sort({ last_message_at: -1 });
 
     // Lấy tin nhắn cuối cùng và danh sách participants của mỗi conversation
@@ -147,16 +149,66 @@ exports.getConversations = async (req, res) => {
           .populate('user_id', 'full_name avatar_url role')
           .select('user_id');
 
+        const participantsData = participants.map(p => ({
+          _id: p.user_id?._id || p.user_id,
+          full_name: p.user_id?.full_name,
+          avatar_url: p.user_id?.avatar_url,
+          role: p.user_id?.role
+        }));
+
+        // Nếu là conversation 1-1 giữa teacher và parent, và user hiện tại là teacher, lấy danh sách students
+        let students = [];
+        if (participants_count === 2 && conv.class_id && req.user.role === 'teacher') {
+          // Tìm parent trong participants
+          const parentParticipant = participantsData.find(p => p.role === 'parent');
+          if (parentParticipant) {
+            try {
+              // Lấy parent document
+              const parentDoc = await Parent.findOne({ user_id: parentParticipant._id });
+              if (parentDoc) {
+                // Lấy class_id (có thể là object hoặc string)
+                const classId = conv.class_id._id || conv.class_id;
+                
+                // Lấy tất cả students của parent
+                const parentStudents = await ParentStudent.find({ parent_id: parentDoc._id })
+                  .populate('student_id', 'full_name avatar_url');
+                
+                // Lọc chỉ lấy students trong lớp hiện tại
+                const studentIds = parentStudents
+                  .filter(ps => ps.student_id)
+                  .map(ps => ps.student_id._id);
+                
+                if (studentIds.length > 0) {
+                  const studentsInClass = await StudentClass.find({
+                    student_id: { $in: studentIds },
+                    class_id: classId
+                  }).populate({
+                    path: 'student_id',
+                    select: 'full_name avatar_url'
+                  });
+                  
+                  students = studentsInClass
+                    .filter(sc => sc.student_id && sc.student_id._id)
+                    .map(sc => ({
+                      _id: sc.student_id._id,
+                      full_name: sc.student_id.full_name || 'Học sinh',
+                      avatar_url: sc.student_id.avatar_url || ''
+                    }));
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching students for conversation:', err);
+              // Không throw error, chỉ log và tiếp tục
+            }
+          }
+        }
+
         return {
           ...conv.toObject(),
           lastMessage: lastMessage || null,
           participants_count,
-          participants: participants.map(p => ({
-            _id: p.user_id?._id || p.user_id,
-            full_name: p.user_id?.full_name,
-            avatar_url: p.user_id?.avatar_url,
-            role: p.user_id?.role
-          }))
+          participants: participantsData,
+          students: students.length > 0 ? students : undefined
         };
       })
     );
@@ -422,7 +474,7 @@ exports.createDirectConversationWithTeacher = async (req, res) => {
 
       // Tìm lớp mới nhất (theo academic_year) trong các lớp mà con đang/đã học
       const latestStudentClass = await StudentClass.find({ student_id: { $in: studentIds } })
-        .populate('class_id')
+        .populate('class_id', 'class_name academic_year teacher_id teacher_id2')
         .sort({ 'class_id.academic_year': -1, createdAt: -1 })
         .limit(1);
       if (!latestStudentClass || latestStudentClass.length === 0 || !latestStudentClass[0].class_id) {
@@ -489,6 +541,9 @@ exports.createDirectConversationWithTeacher = async (req, res) => {
       for (const conv of candidates) {
         const count = await ConversationParticipant.countDocuments({ conversation_id: conv._id });
         if (count === 2) {
+          // Populate class_id đầy đủ để frontend có thể hiển thị title đúng
+          await conv.populate('class_id', 'class_name academic_year');
+          
           // Populate participants để trả về cho frontend
           const participants = await ConversationParticipant.find({ conversation_id: conv._id })
             .populate('user_id', 'full_name avatar_url role')
@@ -508,15 +563,30 @@ exports.createDirectConversationWithTeacher = async (req, res) => {
       }
     }
 
-    // Tạo conversation mới thuộc lớp mới nhất, tiêu đề: "Tên parent - Tên teacher"
+    // Đảm bảo clazz có đầy đủ thông tin (nếu chưa có, populate lại)
+    if (!clazz.class_name || !clazz.academic_year) {
+      const fullClass = await Class.findById(clazz._id).select('class_name academic_year');
+      if (fullClass) {
+        clazz.class_name = fullClass.class_name;
+        clazz.academic_year = fullClass.academic_year;
+      }
+    }
+    
+    // Lấy tên của cả 2 người
     const teacherUserDoc = await User.findById(teacher_user_id).select('full_name');
     const parentUserDoc = await User.findById(parent_user_id).select('full_name');
     const teacherName = teacherUserDoc?.full_name || 'Giáo viên';
     const parentName = parentUserDoc?.full_name || 'Phụ huynh';
-    const title = `${parentName} - ${teacherName}`;
+    
+    // Tạo title lưu trong database: "Tên parent - Tên teacher - Tên lớp - Năm học"
+    const className = clazz.class_name || 'Lớp học';
+    const academicYear = clazz.academic_year || '';
+    const title = `${parentName} - ${teacherName} - ${className} - ${academicYear}`;
+    
     const conversation = new Conversation({
       title,
       class_id: clazz._id,
+      is_class_group: false,
       create_at: new Date(),
       last_message_at: new Date()
     });
@@ -526,6 +596,9 @@ exports.createDirectConversationWithTeacher = async (req, res) => {
     await ConversationParticipant.create({ user_id: parent_user_id, conversation_id: conversation._id });
     await ConversationParticipant.create({ user_id: teacher_user_id, conversation_id: conversation._id });
 
+    // Populate class_id đầy đủ để frontend có thể hiển thị title đúng
+    await conversation.populate('class_id', 'class_name academic_year');
+    
     // Populate participants để trả về cho frontend
     const participants = await ConversationParticipant.find({ conversation_id: conversation._id })
       .populate('user_id', 'full_name avatar_url role')
@@ -606,10 +679,6 @@ exports.createClassChatGroup = async (req, res) => {
         return res.status(404).json({ error: 'Không tìm thấy lớp phù hợp để tạo nhóm' });
       }
       class_id = latestClass[0]._id;
-      // Nếu không truyền title, dùng tên lớp
-      if (!title) {
-        title = `Nhóm chat - ${latestClass[0].class_name}`;
-      }
     }
 
     // Kiểm tra lớp học có tồn tại và giáo viên có quyền với lớp không
@@ -625,34 +694,45 @@ exports.createClassChatGroup = async (req, res) => {
       return res.status(404).json({ error: 'Lớp học không tồn tại hoặc bạn không có quyền truy cập' });
     }
 
-    // Kiểm tra lớp đã có nhóm chat chưa
-    const existingConversation = await Conversation.findOne({ class_id });
+    // Kiểm tra lớp đã có nhóm chat chưa (chỉ xét các conversation là nhóm lớp)
+    const existingConversation = await Conversation.findOne({ class_id, is_class_group: true });
     if (existingConversation) {
-      // Nếu đã có, kiểm tra user đã tham gia chưa
+      // Nếu đã có, chỉ đảm bảo giáo viên hiện tại là thành viên (không đồng bộ lại toàn bộ phụ huynh)
       const existingParticipant = await ConversationParticipant.findOne({
         conversation_id: existingConversation._id,
         user_id
       });
 
       if (!existingParticipant) {
-        // Nếu chưa tham gia, thêm vào
         await ConversationParticipant.create({
           user_id,
           conversation_id: existingConversation._id
         });
       }
 
-      await existingConversation.populate('class_id', 'class_name');
+      await existingConversation.populate('class_id', 'class_name academic_year');
+
+      const participantsCountExisting = await ConversationParticipant.countDocuments({
+        conversation_id: existingConversation._id
+      });
+
       return res.status(200).json({
         message: 'Lớp học đã có nhóm chat. Bạn đã được thêm vào nhóm.',
-        conversation: existingConversation
+        conversation: {
+          ...existingConversation.toObject(),
+          participants_count: participantsCountExisting
+        }
       });
     }
 
-    // Tạo conversation mới
+    // Tạo title: "Tên lớp - Năm học"
+    const classTitle = title || `${classExists.class_name} - ${classExists.academic_year}`;
+
+    // Tạo conversation mới (nhóm chat lớp)
     const conversation = new Conversation({
-      title: title || `Nhóm chat - ${classExists.class_name}`,
+      title: classTitle,
       class_id: class_id,
+      is_class_group: true,
       create_at: new Date(),
       last_message_at: new Date()
     });
@@ -707,7 +787,7 @@ exports.createClassChatGroup = async (req, res) => {
     await Promise.all(participantPromises);
 
     // Populate thông tin conversation
-    await conversation.populate('class_id', 'class_name');
+    await conversation.populate('class_id', 'class_name academic_year');
 
     // Lấy số lượng participants
     const participantsCount = await ConversationParticipant.countDocuments({
@@ -788,19 +868,35 @@ exports.getParentsByTeacherClass = async (req, res) => {
         path: 'user_id',
         select: 'full_name avatar_url'
       }
+    }).populate({
+      path: 'student_id',
+      select: 'full_name avatar_url'
     });
 
-    // Tạo map để loại bỏ duplicate (một phụ huynh có thể có nhiều con trong cùng lớp)
+    // Tạo map để loại bỏ duplicate và nhóm students theo parent
     const parentMap = new Map();
     parentStudents.forEach(ps => {
-      if (ps.parent_id && ps.parent_id.user_id) {
+      if (ps.parent_id && ps.parent_id.user_id && ps.student_id) {
         const parentUserId = ps.parent_id.user_id._id.toString();
         if (!parentMap.has(parentUserId)) {
           parentMap.set(parentUserId, {
             parent_id: ps.parent_id._id,
             user_id: ps.parent_id.user_id._id,
             full_name: ps.parent_id.user_id.full_name,
-            avatar_url: ps.parent_id.user_id.avatar_url
+            avatar_url: ps.parent_id.user_id.avatar_url,
+            students: [] // Khởi tạo mảng students
+          });
+        }
+        // Thêm student vào danh sách students của parent (chỉ lấy students trong lớp này)
+        const parentData = parentMap.get(parentUserId);
+        const studentExists = parentData.students.some(s => 
+          s._id.toString() === ps.student_id._id.toString()
+        );
+        if (!studentExists) {
+          parentData.students.push({
+            _id: ps.student_id._id,
+            full_name: ps.student_id.full_name,
+            avatar_url: ps.student_id.avatar_url
           });
         }
       }
