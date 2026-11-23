@@ -252,3 +252,24 @@
 5. Nếu cần đọc logic cũ: `%TEMP%\kidslink-src\back-end\src` (đã clone) — KHÔNG clone lại.
 6. Khi bị lỗi môi trường (port, docker, build) → report BLOCKED kèm lỗi nguyên văn, không tự ý đổi hạ tầng.
 7. Cuối task, báo cáo: files đã tạo/sửa, check đã chạy + kết quả, ảnh hưởng tới task phía sau.
+
+---
+
+## Phân bổ model cho subagent (cập nhật)
+
+Quota `anthropic/claude-opus-5-5` đã cạn. Phân bổ theo độ khó:
+
+| Wave | Task | Model | Lý do |
+|---|---|---|---|
+| 1 | 0.x schema + entity | `opencode-go/glm-5.3` | nền tảng, nhiều file nhưng mô tả DDL đã có sẵn; cần model mạnh để khớp validate |
+| 2 | 1.x nền tảng (JWT/MinIO/STOMP) | `opencode-go/qwen4-max` | logic khó, nhiều API mới của Spring |
+| 3 | 2.x auth/user + 3.x school/class/student | `opencode-go/mimo-v2.6-pro` | nghiệp vụ chính, nhiều endpoint |
+| 3 | 4.x calendar + nutrition | `opencode-go/qwen3.8-max` | bulk upsert, menu tuần |
+| 3 | 5.x fees + PayOS | `opencode-go/qwen3.8-max` | BigDecimal, HMAC |
+| 3 | 6.x posts + messaging | `opencode-go/mimo-v2.6-pro` | cây comment, STOMP |
+| 3 | 7.x report/health/complaint/pickup | `opencode-go/mimo-v2.6-flash` | CRUD đơn giản |
+| 4 | 8.x seed | `opencode-go/deepseek-v4.1-flash` | sinh dữ liệu, không phức tạp |
+| 5 | 9.x frontend | `opencode-go/qwen4-max` + `mimo-v2.6-pro` | UI nhiều màn hình, cần model tốt |
+| 6 | 10.x docs + E2E | `opencode-go/deepseek-v4.1-flash` | viết tài liệu |
+
+Quy tắc: wave phụ thuộc chỉ chạy sau khi wave trước commit xong và verify pass.

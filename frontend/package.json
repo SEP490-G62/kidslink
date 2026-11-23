@@ -9,15 +9,24 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.5.0",
+    "@tanstack/react-query": "^5.108.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
     "next": "16.4.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "react-hook-form": "^7.92.0",
+    "recharts": "^3.11.0",
+    "sockjs-client": "^1.6.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sockjs-client": "^1.5.4",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
