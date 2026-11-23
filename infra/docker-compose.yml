@@ -1,0 +1,44 @@
+name: kidslink
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kidslink-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kidslink}
+      POSTGRES_USER: ${POSTGRES_USER:-kidslink}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kidslink}
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${POSTGRES_PORT:-5439}:5432"
+    volumes:
+      - kidslink-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kidslink} -d ${POSTGRES_DB:-kidslink}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    image: bitnamilegacy/minio:latest
+    container_name: kidslink-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-kidslink}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-kidslink123}
+      MINIO_DEFAULT_BUCKETS: ${MINIO_BUCKET:-kidslink}:download
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - kidslink-minio:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  kidslink-pgdata:
+  kidslink-minio:
