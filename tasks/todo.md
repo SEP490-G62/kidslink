@@ -3,8 +3,8 @@
 Nguồn: `tasks/plan.md`. Đánh dấu `[x]` khi task xong và đã kiểm tra.
 
 ## Phase 0 — Schema & Entity
-- [ ] 0.1 Flyway migration 37 bảng — `backend/src/main/resources/db/migration/V1__init_schema.sql`
-- [ ] 0.2 JPA entities + repositories — `backend/src/main/java/vn/kidslink/domain/`
+- [x] 0.1 Flyway migration 38 bảng — `backend/src/main/resources/db/migration/V1__init_schema.sql`
+- [x] 0.2 JPA entities + repositories — `backend/src/main/java/vn/kidslink/domain/`
 
 ## Phase 1 — Nền tảng Backend
 - [ ] 1.1 Common web layer (global exception handler, API error)
