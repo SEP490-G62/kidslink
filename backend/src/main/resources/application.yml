@@ -45,8 +45,10 @@ spring:
     test-connection: false
 
   jackson:
+    property-naming-strategy: SNAKE_CASE
     default-property-inclusion: non_null
-    time-zone: Asia/Ho_Chi_Minh
+    serialization:
+      write-dates-as-timestamps: false
 
 server:
   port: ${SERVER_PORT:8080}
@@ -79,6 +81,9 @@ app:
     enabled: ${SEED_ENABLED:true}
 
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
