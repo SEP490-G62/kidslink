@@ -140,7 +140,7 @@ export async function uploadFiles(files: File[]): Promise<string[]> {
   return urls;
 }
 
-export function queryString(params: Record<string, unknown>): string {
+export function queryString(params: Record<string, unknown> | object): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === "") continue;

@@ -73,11 +73,17 @@ export function listDishes(): Promise<Dish[]> {
   return api.get<Dish[]>("/nutrition/dishes");
 }
 
-export function createDish(payload: Partial<Dish> & { category?: string[] }): Promise<Dish> {
+export interface DishPayload {
+  dishName: string;
+  description: string;
+  category?: string[];
+}
+
+export function createDish(payload: DishPayload): Promise<Dish> {
   return api.post<Dish>("/nutrition/dishes", payload);
 }
 
-export function updateDish(id: string, payload: Partial<Dish> & { category?: string[] }): Promise<Dish> {
+export function updateDish(id: string, payload: Partial<DishPayload>): Promise<Dish> {
   return api.put<Dish>(`/nutrition/dishes/${id}`, payload);
 }
 

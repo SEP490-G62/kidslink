@@ -144,3 +144,34 @@ export function checkPayosStatus(invoiceId: string): Promise<{ status?: number; 
 }
 
 export type { Complaint };
+
+// ---------- School-admin fees ----------
+export interface SchoolFee {
+  id: string;
+  fee_name: string;
+  description: string;
+  amount: number;
+  late_fee_type: "none" | "fixed" | "percentage";
+  late_fee_value: number;
+  late_fee_description?: string;
+}
+
+export interface SchoolFeePayload {
+  feeName: string;
+  description: string;
+  amount: number;
+  lateFeeType: string;
+  lateFeeValue: number;
+}
+
+export function listSchoolFees(): Promise<SchoolFee[] | { fees: SchoolFee[] }> {
+  return api.get<SchoolFee[] | { fees: SchoolFee[] }>("/school-admin/fees");
+}
+
+export function createSchoolFee(payload: SchoolFeePayload): Promise<SchoolFee> {
+  return api.post<SchoolFee>("/school-admin/fees", payload);
+}
+
+export function deleteSchoolFee(id: string): Promise<void> {
+  return api.delete(`/school-admin/fees/${id}`);
+}

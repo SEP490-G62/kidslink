@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     "KidsLink kết nối nhà trường, giáo viên và phụ huynh: quản lý lớp học, lịch học, thực đơn, học phí, báo cáo hằng ngày và trò chuyện trực tuyến.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
       <head>
