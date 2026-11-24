@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +24,7 @@ import vn.kidslink.security.CurrentUser;
 
 /** System-admin surface: manage every school in the platform. */
 @RestController
+@Transactional(rollbackFor = Exception.class)
 @RequestMapping("/api/admin/schools")
 public class AdminSchoolController {
 

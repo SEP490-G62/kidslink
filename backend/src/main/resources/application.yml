@@ -47,8 +47,7 @@ spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
     default-property-inclusion: non_null
-    serialization:
-      write-dates-as-timestamps: false
+    # Jackson 3 writes ISO-8601 dates by default; write-dates-as-timestamps no longer exists.
 
 server:
   port: ${SERVER_PORT:8080}

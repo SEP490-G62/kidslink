@@ -14,4 +14,6 @@ public interface ClassAgeMealRepository extends JpaRepository<ClassAgeMeal, UUID
     Optional<ClassAgeMeal> findByClassAgeIdAndMealIdAndWeekdayIdAndDate(UUID classAgeId, UUID mealId, UUID weekdayId, LocalDate date);
 
     List<ClassAgeMeal> findByClassAgeIdAndDateBetween(UUID classAgeId, LocalDate from, LocalDate to);
+
+    List<ClassAgeMeal> findByClassAgeIdOrderByDateDesc(UUID classAgeId);
 }

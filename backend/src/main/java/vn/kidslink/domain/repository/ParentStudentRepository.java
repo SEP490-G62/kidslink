@@ -8,9 +8,22 @@ import vn.kidslink.domain.entity.ParentStudent;
 
 public interface ParentStudentRepository extends JpaRepository<ParentStudent, UUID> {
 
-    List<ParentStudent> findByParentId(UUID parentId);
+    List<ParentStudent> findByParent_Id(UUID parentId);
 
-    List<ParentStudent> findByStudentId(UUID studentId);
+    List<ParentStudent> findByStudent_Id(UUID studentId);
 
-    Optional<ParentStudent> findByParentIdAndStudentId(UUID parentId, UUID studentId);
+    Optional<ParentStudent> findByParent_IdAndStudent_Id(UUID parentId, UUID studentId);
+
+    default List<ParentStudent> findByParentId(UUID parentId) {
+        return findByParent_Id(parentId);
+    }
+
+    default List<ParentStudent> findByStudentId(UUID studentId) {
+        return findByStudent_Id(studentId);
+    }
+
+    default Optional<ParentStudent> findByParentIdAndStudentId(UUID parentId, UUID studentId) {
+        return findByParent_IdAndStudent_Id(parentId, studentId);
+    }
+
 }

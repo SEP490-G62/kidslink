@@ -6,6 +6,7 @@ import java.util.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 import vn.kidslink.common.BadRequestException;
 import vn.kidslink.common.ConflictException;
 import vn.kidslink.common.ForbiddenException;
@@ -17,6 +18,7 @@ import vn.kidslink.domain.repository.*;
 import vn.kidslink.security.CurrentUser;
 
 @RestController
+@Transactional(rollbackFor = Exception.class)
 @RequestMapping("/api/classes")
 public class ClassController {
 

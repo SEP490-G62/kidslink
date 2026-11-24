@@ -7,7 +7,11 @@ import vn.kidslink.domain.entity.HealthRecord;
 
 public interface HealthRecordRepository extends JpaRepository<HealthRecord, UUID> {
 
-    List<HealthRecord> findByStudentIdOrderByCheckupDateDesc(UUID studentId);
+    List<HealthRecord> findByStudent_IdOrderByCheckupDateDesc(UUID studentId);
 
-    List<HealthRecord> findByStudentStudentIdInOrderByCheckupDateDesc(List<UUID> studentIds);
+    List<HealthRecord> findByStudent_IdInOrderByCheckupDateDesc(List<UUID> studentIds);
+
+    default List<HealthRecord> findByStudentIdOrderByCheckupDateDesc(UUID studentId) {
+        return findByStudent_IdOrderByCheckupDateDesc(studentId);
+    }
 }

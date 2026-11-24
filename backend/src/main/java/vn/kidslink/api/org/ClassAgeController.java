@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 import vn.kidslink.common.BadRequestException;
 import vn.kidslink.common.ForbiddenException;
 import vn.kidslink.common.NotFoundException;
@@ -16,6 +17,7 @@ import vn.kidslink.domain.repository.SchoolRepository;
 import vn.kidslink.security.CurrentUser;
 
 @RestController
+@Transactional(rollbackFor = Exception.class)
 @RequestMapping("/api/class-ages")
 public class ClassAgeController {
 

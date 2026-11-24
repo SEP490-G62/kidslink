@@ -14,5 +14,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
 
     Optional<Invoice> findByPayosOrderCode(Long payosOrderCode);
 
-    List<Invoice> findByStudentClassStudentId(UUID studentId);
+    List<Invoice> findAllByPayosOrderCode(Long payosOrderCode);
+
+    List<Invoice> findByStudentClass_Student_Id(UUID studentId);
 }

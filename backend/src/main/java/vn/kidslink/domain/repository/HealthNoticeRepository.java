@@ -7,9 +7,13 @@ import vn.kidslink.domain.entity.HealthNotice;
 
 public interface HealthNoticeRepository extends JpaRepository<HealthNotice, UUID> {
 
-    List<HealthNotice> findByStudentIdOrderByCreatedAtDesc(UUID studentId);
+    List<HealthNotice> findByStudent_IdOrderByCreatedAtDesc(UUID studentId);
 
-    List<HealthNotice> findByStudentSchoolIdOrderByCreatedAtDesc(UUID schoolId);
+    List<HealthNotice> findByStudent_School_IdOrderByCreatedAtDesc(UUID schoolId);
 
-    List<HealthNotice> findByStudentStudentIdInOrderByCreatedAtDesc(List<UUID> studentIds);
+    List<HealthNotice> findByStudent_IdInOrderByCreatedAtDesc(List<UUID> studentIds);
+
+    default List<HealthNotice> findByStudentIdOrderByCreatedAtDesc(UUID studentId) {
+        return findByStudent_IdOrderByCreatedAtDesc(studentId);
+    }
 }

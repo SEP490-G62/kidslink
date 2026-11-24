@@ -2,6 +2,7 @@ package vn.kidslink.api.school;
 
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,6 +17,7 @@ import vn.kidslink.security.CurrentUser;
 
 /** School-admin surface: read and update the caller's own school. */
 @RestController
+@Transactional(rollbackFor = Exception.class)
 @RequestMapping("/api/school-admin/school")
 public class SchoolAdminSchoolController {
 

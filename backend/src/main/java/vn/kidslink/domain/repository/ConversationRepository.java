@@ -10,5 +10,5 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
 
     Optional<Conversation> findFirstByClassEntityIdAndIsClassGroupTrue(UUID classId);
 
-    List<Conversation> findByClassEntityIdAndIsClassGroupFalse(UUID classId);
+    List<Conversation> findByClassEntity_IdAndIsClassGroupFalse(UUID classId);
 }

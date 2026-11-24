@@ -10,4 +10,8 @@ public interface DishesClassAgeMealRepository extends JpaRepository<DishesClassA
     List<DishesClassAgeMeal> findByClassAgeMealId(UUID classAgeMealId);
 
     void deleteByClassAgeMealId(UUID classAgeMealId);
+
+    void deleteByDishId(UUID dishId);
+
+    List<DishesClassAgeMeal> findByClassAgeMealIdIn(java.util.Collection<UUID> classAgeMealIds);
 }

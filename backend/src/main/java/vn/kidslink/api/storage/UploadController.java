@@ -1,6 +1,7 @@
 package vn.kidslink.api.storage;
 
 import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -9,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.kidslink.infra.storage.StorageService;
 
 @RestController
+@Transactional(rollbackFor = Exception.class)
 @RequestMapping("/api")
 public class UploadController {
 
