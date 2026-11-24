@@ -43,6 +43,7 @@ import vn.kidslink.security.CurrentUser;
  * weekly menu assignment and profile management.
  */
 @RestController
+@Transactional(rollbackFor = Exception.class)
 @RequestMapping("/api/nutrition")
 public class NutritionController {
 

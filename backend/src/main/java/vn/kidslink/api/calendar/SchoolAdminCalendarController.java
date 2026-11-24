@@ -34,6 +34,7 @@ import vn.kidslink.security.CurrentUser;
 
 /** School-admin slot / activity / calendar management, ported from schoolAdminCalendarController.js. */
 @RestController
+@Transactional(rollbackFor = Exception.class)
 @RequestMapping("/api/school-admin/calendar")
 public class SchoolAdminCalendarController {
 
