@@ -32,6 +32,19 @@ export default function ParentDashboard() {
     .reduce((sum, invoice) => sum + invoice.amount_due + (invoice.late_fee_amount ?? 0), 0);
   const latestReports = (reports.data ?? []).slice(0, 5);
   const latestPosts = (posts.data ?? []).slice(0, RECENT_POST_COUNT);
+  const queryError = children.isError
+    ? children.error instanceof ApiError
+      ? children.error.message
+      : "Không tải được danh sách con"
+    : unpaid.isError
+      ? "Không tải được số hoá đơn chưa thanh toán"
+      : fees.isError
+        ? "Không tải được thông tin học phí"
+        : posts.isError
+          ? "Không tải được bài đăng"
+          : reports.isError
+            ? "Không tải được báo cáo ngày"
+            : null;
 
   return (
     <div>
@@ -40,11 +53,9 @@ export default function ParentDashboard() {
         description={user?.full_name ? `Xin chào ${user.full_name}` : "Theo dõi hoạt động học tập của con"}
       />
 
-      {children.isError && (
+      {queryError && (
         <div className="mb-4">
-          <Alert variant="error">
-            {children.error instanceof ApiError ? children.error.message : "Không tải được danh sách con"}
-          </Alert>
+          <Alert variant="error">{queryError}</Alert>
         </div>
       )}
 

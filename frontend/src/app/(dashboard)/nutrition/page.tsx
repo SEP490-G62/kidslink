@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader, StatCard, Card, CardBody, CardHeader } from "@/components/ui/card";
-import { Loading } from "@/components/ui/feedback";
+import { Alert, EmptyState, Loading } from "@/components/ui/feedback";
 import { listDishes, listMeals, listClassAgeMeals } from "@/lib/services/calendar";
 import { useAuth } from "@/lib/auth-store";
 
@@ -12,14 +12,25 @@ export default function NutritionDashboard() {
   const meals = useQuery({ queryKey: ["meals"], queryFn: listMeals });
   const menus = useQuery({ queryKey: ["class-age-meals"], queryFn: listClassAgeMeals });
 
-  if (dishes.isLoading) return <Loading />;
+  if (dishes.isLoading || meals.isLoading || menus.isLoading) return <Loading />;
 
+  const queryError = dishes.isError
+    ? "Không tải được danh sách món ăn"
+    : meals.isError
+      ? "Không tải được danh sách bữa ăn"
+      : menus.isError
+        ? "Không tải được thực đơn"
+        : null;
   const menuCount = Array.isArray(menus.data) ? menus.data.length : 0;
 
   return (
     <div>
       <PageHeader title="Tổng quan dinh dưỡng" description={`Xin chào ${user?.full_name ?? ""}`} />
-
+      {queryError && (
+        <div className="mb-4">
+          <Alert variant="error">{queryError}</Alert>
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Món ăn" value={dishes.data?.length ?? 0} icon="🍲" />
         <StatCard label="Bữa ăn" value={meals.data?.length ?? 0} icon="🍽" />
@@ -36,7 +47,7 @@ export default function NutritionDashboard() {
                 <p className="text-xs text-slate-500">{dish.description}</p>
               </div>
             ))}
-            {(dishes.data ?? []).length === 0 && <p className="text-sm text-slate-400">Chưa có món ăn</p>}
+            {(dishes.data ?? []).length === 0 && <EmptyState title="Chưa có món ăn" />}
           </CardBody>
         </Card>
 
@@ -48,7 +59,7 @@ export default function NutritionDashboard() {
                 {meal.meal}
               </div>
             ))}
-            {(meals.data ?? []).length === 0 && <p className="text-sm text-slate-400">Chưa có bữa ăn</p>}
+            {(meals.data ?? []).length === 0 && <EmptyState title="Chưa có bữa ăn" />}
           </CardBody>
         </Card>
       </div>

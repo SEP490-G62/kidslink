@@ -33,7 +33,6 @@ export default function TeacherDashboard() {
   const posts = useQuery({ queryKey: ["teacher-posts"], queryFn: () => listPosts("teachers") });
   const complaints = useQuery({ queryKey: ["teacher-complaints"], queryFn: () => listMyComplaints("teachers") });
   const calendar = useQuery({ queryKey: ["teacher-calendar"], queryFn: getMyTeachingCalendar });
-
   const classList = normalizeTeacherClasses(classes.data);
   const studentList = normalizeTeacherStudents(students.data);
   const today = todayISO();
@@ -41,6 +40,17 @@ export default function TeacherDashboard() {
     normalizeTeachingCalendar(calendar.data).days.find((day) => day.date === today)?.slots ?? [];
   const latestPosts = (posts.data ?? []).slice(0, RECENT_POST_COUNT);
   const pendingComplaints = (complaints.data ?? []).filter((complaint) => complaint.status === "pending");
+  const queryError = classes.isError
+    ? errorMessage(classes.error, "Không tải được danh sách lớp")
+    : students.isError
+      ? errorMessage(students.error, "Không tải được danh sách học sinh")
+      : posts.isError
+        ? errorMessage(posts.error, "Không tải được bài đăng")
+        : complaints.isError
+          ? errorMessage(complaints.error, "Không tải được khiếu nại")
+          : calendar.isError
+            ? errorMessage(calendar.error, "Không tải được lịch dạy")
+            : null;
 
   return (
     <div>
@@ -49,9 +59,9 @@ export default function TeacherDashboard() {
         description={user?.full_name ? `Xin chào ${user.full_name}` : "Theo dõi lớp học và hoạt động trong ngày"}
       />
 
-      {classes.isError && (
+      {queryError && (
         <div className="mb-4">
-          <Alert variant="error">{errorMessage(classes.error, "Không tải được danh sách lớp")}</Alert>
+          <Alert variant="error">{queryError}</Alert>
         </div>
       )}
 

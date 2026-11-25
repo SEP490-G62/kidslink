@@ -75,7 +75,11 @@ export default function TeacherCalendarPage() {
         </Field>
       </div>
 
-      {calendar.isLoading ? (
+      {calendar.isError ? (
+        <div className="mb-4">
+          <Alert variant="error">Không tải được lịch dạy</Alert>
+        </div>
+      ) : calendar.isLoading ? (
         <Loading />
       ) : slots.length === 0 ? (
         <EmptyState title="Chưa có lịch dạy" description="Nhà trường chưa xếp lịch cho lớp của bạn" />

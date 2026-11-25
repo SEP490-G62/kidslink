@@ -104,19 +104,21 @@ export default function PostsPage() {
                     <div className="ml-auto flex gap-3">
                       {post.status === "pending" && (
                         <button
-                          className="font-medium text-emerald-600 hover:underline"
+                          className="font-medium text-emerald-600 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={approve.isPending}
                           onClick={() => approve.mutate(post.id)}
                         >
-                          Duyệt
+                          {approve.isPending && approve.variables === post.id ? "Đang duyệt..." : "Duyệt"}
                         </button>
                       )}
                       <button
-                        className="font-medium text-rose-600 hover:underline"
+                        className="font-medium text-rose-600 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={remove.isPending}
                         onClick={() => {
                           if (confirm("Xoá bài đăng này?")) remove.mutate(post.id);
                         }}
                       >
-                        Xoá
+                        {remove.isPending && remove.variables === post.id ? "Đang xoá..." : "Xoá"}
                       </button>
                     </div>
                   </div>

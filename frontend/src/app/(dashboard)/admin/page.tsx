@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader, StatCard, Card, CardBody, CardHeader } from "@/components/ui/card";
-import { Loading } from "@/components/ui/feedback";
+import { Alert, Loading } from "@/components/ui/feedback";
 import { listSchools } from "@/lib/services/school";
 import { listUsers, type UserPage } from "@/lib/services/user";
 import { ROLE_LABEL, type Role } from "@/lib/constants";
@@ -19,12 +19,22 @@ export default function AdminDashboard() {
 
   if (schools.isLoading || users.isLoading) return <Loading />;
 
+  const queryError = schools.isError
+    ? "Không tải được danh sách trường học"
+    : users.isError
+      ? "Không tải được danh sách người dùng"
+      : null;
   const allUsers = usersOf(users.data);
   const activeSchools = (schools.data ?? []).filter((school) => school.status === 1).length;
 
   return (
     <div>
       <PageHeader title="Quản trị hệ thống" description="Tổng quan toàn bộ nền tảng KidsLink" />
+      {queryError && (
+        <div className="mb-4">
+          <Alert variant="error">{queryError}</Alert>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Trường học" value={schools.data?.length ?? 0} hint={`${activeSchools} đang hoạt động`} icon="🏫" />

@@ -1,9 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { PageHeader, StatCard } from "@/components/ui/card";
-import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { Loading } from "@/components/ui/feedback";
+import { PageHeader, StatCard, Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Alert, EmptyState, Loading } from "@/components/ui/feedback";
 import { listClasses, listStudents, listParents } from "@/lib/services/school";
 import { listAllComplaints } from "@/lib/services/health";
 import { useAuth } from "@/lib/auth-store";
@@ -15,9 +14,19 @@ export default function SchoolAdminDashboard() {
   const parents = useQuery({ queryKey: ["parents"], queryFn: listParents });
   const complaints = useQuery({ queryKey: ["complaints"], queryFn: () => listAllComplaints() });
 
-  const pendingComplaints = (complaints.data ?? []).filter(c => c.status === "pending").length;
+  const pendingComplaints = (complaints.data ?? []).filter((c) => c.status === "pending").length;
 
-  if (classes.isLoading || students.isLoading) return <Loading />;
+  if (classes.isLoading || students.isLoading || parents.isLoading || complaints.isLoading) return <Loading />;
+
+  const queryError = classes.isError
+    ? "Không tải được danh sách lớp học"
+    : students.isError
+      ? "Không tải được danh sách học sinh"
+      : parents.isError
+        ? "Không tải được danh sách phụ huynh"
+        : complaints.isError
+          ? "Không tải được khiếu nại"
+          : null;
 
   return (
     <div>
@@ -25,6 +34,11 @@ export default function SchoolAdminDashboard() {
         title="Tổng quan nhà trường"
         description={`Xin chào ${user?.full_name}`}
       />
+      {queryError && (
+        <div className="mb-4">
+          <Alert variant="error">{queryError}</Alert>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Lớp học" value={classes.data?.length ?? 0} icon="🏫" />
@@ -43,7 +57,7 @@ export default function SchoolAdminDashboard() {
                 <span className="text-xs text-slate-500">{cls.academic_year}</span>
               </div>
             ))}
-            {(classes.data ?? []).length === 0 && <p className="text-sm text-slate-400">Chưa có lớp học</p>}
+            {(classes.data ?? []).length === 0 && <EmptyState title="Chưa có lớp học" />}
           </CardBody>
         </Card>
 
@@ -58,7 +72,7 @@ export default function SchoolAdminDashboard() {
                 <span className="text-sm text-slate-700">{student.full_name}</span>
               </div>
             ))}
-            {(students.data ?? []).length === 0 && <p className="text-sm text-slate-400">Chưa có học sinh</p>}
+            {(students.data ?? []).length === 0 && <EmptyState title="Chưa có học sinh" />}
           </CardBody>
         </Card>
       </div>
