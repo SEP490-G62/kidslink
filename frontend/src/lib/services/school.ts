@@ -1,6 +1,15 @@
 import { api } from "@/lib/api";
 import type { ClassAge, School, SchoolClass, Student, StudentClass, User } from "@/lib/types";
 
+/** Payload tạo/cập nhật trường — khớp `SchoolDtos.SchoolRequest` phía backend. */
+export interface SchoolPayload {
+  school_name: string;
+  address: string;
+  phone?: string;
+  email?: string;
+  logo_url?: string;
+  status?: number;
+}
 export function listSchools(): Promise<School[]> {
   return api.get<School[]>("/admin/schools");
 }
@@ -9,11 +18,11 @@ export function getSchool(id: string): Promise<School> {
   return api.get<School>(`/admin/schools/${id}`);
 }
 
-export function createSchool(payload: Partial<School>): Promise<School> {
+export function createSchool(payload: SchoolPayload): Promise<School> {
   return api.post<School>("/admin/schools", payload);
 }
 
-export function updateSchool(id: string, payload: Partial<School>): Promise<School> {
+export function updateSchool(id: string, payload: Partial<SchoolPayload>): Promise<School> {
   return api.put<School>(`/admin/schools/${id}`, payload);
 }
 

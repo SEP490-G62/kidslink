@@ -90,6 +90,7 @@ export function Modal({
   children,
   footer,
   wide,
+  className,
 }: {
   open: boolean;
   title: string;
@@ -97,6 +98,8 @@ export function Modal({
   children: ReactNode;
   footer?: ReactNode;
   wide?: boolean;
+  /** Ghi đè độ rộng mặc định, ví dụ `"max-w-4xl"`. */
+  className?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -119,7 +122,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={clsx("mt-10 w-full rounded-xl bg-white shadow-xl", wide ? "max-w-3xl" : "max-w-lg")}
+        className={clsx("mt-10 w-full rounded-xl bg-white shadow-xl", wide ? "max-w-3xl" : "max-w-lg", className)}
       >
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>

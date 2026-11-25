@@ -25,8 +25,39 @@ export interface UserQuery {
   size?: number;
 }
 
-export function listUsers(query: UserQuery = {}): Promise<User[] | { items: User[]; total: number }> {
+export interface UserPage {
+  items: User[];
+  total: number;
+  page?: number;
+  size?: number;
+}
+
+export function listUsers(query: UserQuery = {}): Promise<User[] | UserPage> {
   return api.get(`/users${queryString(query)}`);
+}
+
+/** Payload tạo người dùng — khớp `UserController.CreateUserRequest`. */
+export interface CreateUserPayload {
+  full_name: string;
+  username: string;
+  password?: string;
+  role: string;
+  email?: string;
+  phone_number?: string;
+  avatar_url?: string;
+  school_id?: string | null;
+  status?: number;
+}
+
+/** Payload cập nhật người dùng — khớp `UserController.UpdateProfileRequest`. */
+export interface UpdateUserPayload {
+  full_name?: string;
+  email?: string;
+  phone_number?: string;
+  avatar_url?: string;
+  address?: string | null;
+  role?: string;
+  status?: number;
 }
 
 export function getUser(id: string): Promise<User> {

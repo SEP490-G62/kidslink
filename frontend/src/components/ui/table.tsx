@@ -62,3 +62,17 @@ export function DataTable<T extends { id: string }>({
     </div>
   );
 }
+
+/**
+ * Đọc danh sách trả về từ API dạng `{ items }` (có phân trang) hoặc mảng thuần,
+ * trả về phần tử và tổng số bản ghi của một response có hai dạng.
+ */
+export function unwrapItems<T>(data: T[] | { items: T[]; total?: number } | undefined): {
+  items: T[];
+  total: number;
+} {
+  if (!data) return { items: [], total: 0 };
+  if (Array.isArray(data)) return { items: data, total: data.length };
+  const items = Array.isArray(data.items) ? data.items : [];
+  return { items, total: typeof data.total === "number" ? data.total : items.length };
+}

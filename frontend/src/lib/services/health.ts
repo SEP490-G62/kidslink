@@ -1,5 +1,6 @@
 import { api, queryString } from "@/lib/api";
 import type { Complaint, ComplaintType, DailyReport, HealthNotice, HealthRecord, Pickup } from "@/lib/types";
+import type { User } from "@/lib/types";
 
 // ---------- Daily reports ----------
 export function teacherCheckin(payload: {
@@ -48,24 +49,83 @@ export function getStudentDetail(id: string): Promise<unknown> {
   return api.get(`/teachers/students/${id}`);
 }
 
-// ---------- Health ----------
-export function healthClasses(): Promise<unknown[]> {
-  return api.get("/health-staff/classes");
+// ---------- Health staff ----------
+/** Lớp học do nhân viên y tế phụ trách (theo trường). */
+export interface HealthClass {
+  id: string;
+  className: string;
+  academicYear?: string;
+  classAgeName?: string | null;
+  teacherName?: string | null;
+  coTeacherName?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
-export function healthClassStudents(classId: string): Promise<unknown[]> {
-  return api.get(`/health-staff/classes/${classId}/students`);
+/** Học sinh trong lớp — shape rút gọn của `/health-staff/classes/{id}/students`. */
+export interface HealthStudent {
+  id: string;
+  fullName: string;
+  avatarUrl?: string | null;
+  dob?: string | null;
+  gender?: number | null;
+  status?: number | null;
+  allergy?: string | null;
+  discount?: number | null;
+}
+
+export interface HealthStaffProfile {
+  id: string;
+  qualification?: string | null;
+  major?: string | null;
+  experienceYears?: number | null;
+  note?: string | null;
+}
+
+export interface HealthStaffProfileResponse {
+  user: User;
+  staff: HealthStaffProfile;
+}
+
+/** Định dạng payload của `POST/PUT /health-staff/health/records`. */
+export interface HealthRecordPayload {
+  student_id: string;
+  checkup_date: string;
+  height_cm: number;
+  weight_kg: number;
+  note: string;
+}
+
+/** Định dạng payload của `POST/PUT /health-staff/health/notices`. */
+export interface HealthNoticePayload {
+  student_id: string;
+  symptoms: string;
+  actions_taken: string;
+  medications: string;
+  notice_time: string;
+  note: string;
+}
+
+export function healthClasses(): Promise<HealthClass[]> {
+  return api.get<HealthClass[]>("/health-staff/classes");
+}
+
+export function healthClassStudents(classId: string): Promise<HealthStudent[]> {
+  return api.get<HealthStudent[]>(`/health-staff/classes/${classId}/students`);
 }
 
 export function listHealthRecords(studentId?: string): Promise<HealthRecord[]> {
   return api.get<HealthRecord[]>(`/health-staff/health/records${queryString({ student_id: studentId })}`);
 }
 
-export function createHealthRecord(payload: Partial<HealthRecord>): Promise<HealthRecord> {
+export function createHealthRecord(payload: Partial<HealthRecord> & Partial<HealthRecordPayload>): Promise<HealthRecord> {
   return api.post<HealthRecord>("/health-staff/health/records", payload);
 }
 
-export function updateHealthRecord(id: string, payload: Partial<HealthRecord>): Promise<HealthRecord> {
+export function updateHealthRecord(
+  id: string,
+  payload: Partial<HealthRecord> & Partial<HealthRecordPayload>,
+): Promise<HealthRecord> {
   return api.put<HealthRecord>(`/health-staff/health/records/${id}`, payload);
 }
 
@@ -77,16 +137,38 @@ export function listHealthNotices(studentId?: string): Promise<HealthNotice[]> {
   return api.get<HealthNotice[]>(`/health-staff/health/notices${queryString({ student_id: studentId })}`);
 }
 
-export function createHealthNotice(payload: Partial<HealthNotice>): Promise<HealthNotice> {
+export function createHealthNotice(
+  payload: Partial<HealthNotice> & Partial<HealthNoticePayload>,
+): Promise<HealthNotice> {
   return api.post<HealthNotice>("/health-staff/health/notices", payload);
 }
 
-export function updateHealthNotice(id: string, payload: Partial<HealthNotice>): Promise<HealthNotice> {
+export function updateHealthNotice(
+  id: string,
+  payload: Partial<HealthNotice> & Partial<HealthNoticePayload>,
+): Promise<HealthNotice> {
   return api.put<HealthNotice>(`/health-staff/health/notices/${id}`, payload);
 }
 
 export function deleteHealthNotice(id: string): Promise<void> {
   return api.delete(`/health-staff/health/notices/${id}`);
+}
+
+export function getHealthStaffProfile(): Promise<HealthStaffProfileResponse> {
+  return api.get<HealthStaffProfileResponse>("/health-staff/profile");
+}
+
+export function updateHealthStaffProfile(payload: {
+  full_name?: string;
+  avatar_url?: string | null;
+  email?: string;
+  phone_number?: string;
+  qualification?: string;
+  major?: string;
+  experience_years?: number | null;
+  note?: string;
+}): Promise<HealthStaffProfileResponse> {
+  return api.put<HealthStaffProfileResponse>("/health-staff/profile", payload);
 }
 
 // ---------- Complaints ----------
