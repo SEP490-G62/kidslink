@@ -116,7 +116,7 @@ public class UserController {
                        @RequestParam(defaultValue = "20") int size) {
         requireAdmin(principal);
         UUID schoolFilter = schoolId == null || schoolId.isBlank() ? null : UUID.fromString(schoolId);
-        Role roleFilter = role == null || role.isBlank() ? null : Role.from(role);
+        String roleFilter = role == null || role.isBlank() ? null : role;
         var pageResult = userRepository.search(schoolFilter, roleFilter, status,
                 q == null || q.isBlank() ? null : q.trim(),
                 PageRequest.of(Math.max(0, page - 1), Math.max(1, Math.min(size, 200))));
