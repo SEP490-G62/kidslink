@@ -34,7 +34,6 @@ import vn.kidslink.security.JwtService;
 public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-    private static final String ADMIN_ID = "admin";
     private static final String PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -47,11 +46,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final JavaMailSender mailSender;
 
-    @Value("${app.admin.username:}")
-    private String adminUsername;
 
-    @Value("${app.admin.password:}")
-    private String adminPassword;
 
     @Value("${app.mail.from:no-reply@kidslink.vn}")
     private String mailFrom;
@@ -79,18 +74,6 @@ public class AuthService {
         String username = request.username() == null ? "" : request.username().trim();
         String password = request.password();
 
-        // Synthetic system admin configured through environment variables (not stored in DB).
-        if (!adminUsername.isBlank() && username.equals(adminUsername.trim())) {
-            boolean matched = adminPassword != null && !adminPassword.isBlank() && adminPassword.equals(password);
-            if (!matched) {
-                throw new UnauthorizedException("Sai thông tin đăng nhập");
-            }
-            UserDto adminDto = new UserDto(ADMIN_ID, "System Admin", adminUsername, "admin",
-                    "https://www.vecteezy.com/vector-art/290610-administration-vector-icon",
-                    "", "", (short) 1, null, null);
-            CurrentUser principal = new CurrentUser(ADMIN_ID, Role.ADMIN, adminUsername, "System Admin", null);
-            return new AuthDtos.LoginResponse(jwtService.generateToken(principal), adminDto);
-        }
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UnauthorizedException("Sai thông tin đăng nhập"));
@@ -169,8 +152,8 @@ public class AuthService {
     /** Loads the DB-backed caller (used by /users/me when the token belongs to a real user). */
     @Transactional(readOnly = true)
     public User requireUser(CurrentUser principal) {
-        if (principal == null || ADMIN_ID.equals(principal.id())) {
-            throw new ForbiddenException("Tài khoản quản trị hệ thống không có hồ sơ người dùng");
+        if (principal == null) {
+            throw new ForbiddenException("Chưa đăng nhập");
         }
         return userRepository.findById(UUID.fromString(principal.id()))
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));

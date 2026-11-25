@@ -146,7 +146,26 @@ Khởi động lại `npm run dev` sau khi thay đổi biến môi trường.
 | `nurse1` | `Nurse@123` | Nhân viên y tế | `/health-care` |
 | `cook1` | `Cook@123` | Nhân viên dinh dưỡng | `/nutrition` |
 
-Bảy tài khoản thuộc nhà trường được tạo bởi seed. Tài khoản quản trị hệ thống dùng cấu hình `ADMIN_USERNAME`/`ADMIN_PASSWORD`, mặc định như bảng trên. Chỉ dùng các tài khoản và secret mặc định cho môi trường phát triển.
+Tám tài khoản đều là user thật trong database, được tạo bởi seed. Tài khoản `superadmin` có vai trò `admin` (không gắn trường). Chỉ dùng các tài khoản và secret mặc định cho môi trường phát triển.
+
+## Kiểm thử smoke
+
+Hai script kiểm thử nhanh, chạy sau khi backend (cổng 18080) và frontend (cổng 3001) đã lên:
+
+```bash
+# bash, từ thư mục gốc repo
+bash scripts/smoke-test.sh            # 53 test API cho cả 6 role
+bash scripts/smoke-test-frontend.sh   # 45 route frontend phải trả 200
+```
+
+Đổi cổng bằng biến môi trường:
+
+```bash
+BASE=http://localhost:8080/api bash scripts/smoke-test.sh
+FE=http://localhost:3000 bash scripts/smoke-test-frontend.sh
+```
+
+Kết quả mong đợi: `PASS=53 FAIL=0` và `PASS=45 FAIL=0`.
 
 ## Seed dữ liệu
 

@@ -58,7 +58,7 @@ server:
 
 app:
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001}
   jwt:
     secret: ${JWT_SECRET:kidslink-dev-secret-key-change-me-in-production-0123456789}
     access-token-ttl: ${JWT_TTL:24h}

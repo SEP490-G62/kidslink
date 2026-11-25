@@ -60,6 +60,7 @@ public class DataSeeder implements ApplicationRunner {
             List<Activity> activities = activities(school);
             List<ClassAge> ages = classAges(school);
 
+            user("Quản trị hệ thống", "superadmin", "Admin@123", Role.ADMIN, null, "superadmin@kidslink.vn", "0900000000");
             User adminUser = user("Admin Trường", "schooladmin", "Admin@123", Role.SCHOOL_ADMIN, school, "admin@kidslink.vn", "0900000001");
             User teacher1User = user("Nguyễn Thu Hà", "teacher1", "Teacher@123", Role.TEACHER, school, "teacher1@kidslink.vn", "0900000002");
             User teacher2User = user("Trần Minh Quân", "teacher2", "Teacher@123", Role.TEACHER, school, "teacher2@kidslink.vn", "0900000003");

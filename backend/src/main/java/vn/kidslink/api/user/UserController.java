@@ -114,8 +114,16 @@ public class UserController {
                        @RequestParam(required = false) Short status,
                        @RequestParam(defaultValue = "1") int page,
                        @RequestParam(defaultValue = "20") int size) {
-        requireAdmin(principal);
-        UUID schoolFilter = schoolId == null || schoolId.isBlank() ? null : UUID.fromString(schoolId);
+        requireAdminOrSchoolAdmin(principal);
+        UUID schoolFilter;
+        if (principal.role() == Role.SCHOOL_ADMIN) {
+            if (principal.schoolId() == null) {
+                throw new ForbiddenException("Tài khoản không gắn với trường nào");
+            }
+            schoolFilter = UUID.fromString(principal.schoolId());
+        } else {
+            schoolFilter = schoolId == null || schoolId.isBlank() ? null : UUID.fromString(schoolId);
+        }
         String roleFilter = role == null || role.isBlank() ? null : role;
         var pageResult = userRepository.search(schoolFilter, roleFilter, status,
                 q == null || q.isBlank() ? null : q.trim(),
@@ -224,11 +232,19 @@ public class UserController {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
     }
 
+    private void requireAdminOrSchoolAdmin(CurrentUser principal) {
+        if (principal == null
+                || (principal.role() != Role.ADMIN && principal.role() != Role.SCHOOL_ADMIN)) {
+            throw new ForbiddenException("Chỉ quản trị hệ thống hoặc quản trị trường được thực hiện thao tác này");
+        }
+    }
+
     private void requireAdmin(CurrentUser principal) {
         if (principal == null || principal.role() != Role.ADMIN) {
             throw new ForbiddenException("Chỉ quản trị hệ thống được thực hiện thao tác này");
         }
     }
+
 
     public record UpdateProfileRequest(
             String fullName,
